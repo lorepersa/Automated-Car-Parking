@@ -1,0 +1,712 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+    <!--
+<link rel="stylesheet" type="text/css" href="../css/issStyle1.css">
+<script type="text/javascript" src="../css/issStyle.js"></script>
+-->
+<style type="text/css">
+body
+{
+    margin-left:  30px;
+    margin-right: 30px;
+};
+
+P
+{
+    font-family: Tahoma;
+    font-size: 10pt;
+};
+
+a, a:visited, a:active, a:link, a:hover {
+    text-decoration: underline;
+    color: #545454;
+    background-color: transparent;
+	font-size: 93%;
+}
+
+a:hover {
+    background-color: #cccccc;
+}
+
+
+hr {
+    clear: both;
+    height: 1px;
+    color: #242424;
+    background-color: transparent;
+}
+
+h1, h2, h3 {
+    color: #242424;
+    clear: left;
+    font: 100% Tahoma, Helvetica, Arial, sans-serif;
+    margin-bottom: 0.5em;
+    padding-top: 0.5em;
+	border-radius: 10px;
+	padding: 5px;
+}
+
+top {
+	width: 100%;
+}
+
+
+#i {
+    color: #ff1010;
+}
+tt{
+	font-family: "Arial";
+    font-size: 90%;
+	color: #006600;
+}
+em{
+	font-family: "Arial";
+    font-size: 80%;
+	font-weight: bold;
+	border-style:solid;
+	border-color: #abe876;
+    color: #1632cc;
+}
+bc{
+	font-family: "Arial";
+	font-size: 90%;
+	font-weight: bold;
+    color: #990000;
+	background-color: #fcf8c7;
+}
+ks{
+	font-family: "Arial";
+	font-weight: bold;
+    color: #0000CD	;
+	font-size: 90%;
+}
+kc{
+	font-family: "Arial";
+	font-weight: bold;
+    color: #008000	;
+	font-size: 90%;
+}
+pre{
+	font-family: "Consolas";
+	font-size: 85%;
+	background-color: #f5f5f5;
+	border: 1.5px solid silver;
+	padding: 5px;
+}
+m{
+	font-family: "Helvetica";
+	line-height: 100%;
+ 	font-size: 75%;
+}
+div.body{
+
+    font-size: 18px;
+}
+k{
+    color: #990000;
+	font-weight: bold;
+	font-size: 90%;
+}
+h1 {
+    font-size: 150%;
+    background-color: #b2c0ff;
+	padding: 10px;
+}
+
+h2 {
+    background-color: #9ed8ff;
+    font-size: 130%;
+}
+
+h3 {
+	background-color: #e6ccff;
+    font-size: 100%;
+}
+h4 {
+    background-color: #ccffcc;
+    font-size: 100%;
+	width: 100%;
+	border-radius: 5px;
+	padding: 2px;
+}
+h5 {
+    background-color: #d5ffb0;
+    font-size: 100%;
+
+}
+div.req{
+	background-color: #d9ffb3;
+    font-size: 18px;
+	width: 700px;
+    border: 3px solid green;
+    padding: 15px;
+    margin: 10px;
+}
+div.remark{
+	background-color: #E3F2FD;
+    border: 1.5px solid #d5f2ed;
+    padding: 15px;
+    margin: 10px;
+	border-radius: 25px;
+}
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+}
+
+ol, ul, li {
+  margin: 0;
+  margin-left: 10px;
+  padding: 0;
+  padding-bottom: 5px;
+}
+
+table, th, td {
+	border: 1px solid black;
+}
+
+img {
+	border: 1.5px solid #d5f2ed
+
+}
+
+a, a:visited, a:active, a:link, a:hover {
+    text-decoration: underline;
+    color: #545454;
+    background-color: transparent;
+}
+
+div.wrapdesc{
+	width: 90%;
+	margin: auto;
+}
+
+div.imagedesc{
+	width: 85%;
+	margin: auto;
+}
+
+/*CUSTOM CSS*/
+.legenda__image img{
+  width:35%;
+  height:auto;
+  margin-left: auto;
+  margin-right: auto;
+}
+.interactions__image {
+  width:80%;
+  height:auto;
+  margin-bottom:40px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.interactions_table__image img{
+  width:85%;
+  height:auto;
+}
+
+
+</style>
+
+<head>
+
+<title>TemplateToFill</title></head>
+
+<body>
+<div id="top">
+<h1>LABORATORIO DI INGEGNERIA DEI SISTEMI SOFTWARE <font size="5"></font> </h1>
+</div>
+
+<div class="body">
+<h2>Introduction</h2>
+
+
+<h2>Requirements</h2>
+
+
+<div class="remark">
+Customer's requirements are available <a href="https://raw.githubusercontent.com/anatali/issLab2021/main/it.unibo.issLabStart/userDocs/TFBO21ISS.pdf">here</a>.
+</div>
+
+
+
+<h2>Requirement analysis</h2>
+
+<div class="remark">
+    <h3>Glossary</h3>
+    <div class="remark">
+      <h4>NOUNS</h4>
+      <ul>
+        <li>
+          <ks>DDR robot</ks>:
+           A device capable of moving by means of external commands.
+        </li>
+        <li>
+          <ks>Transport trolley</ks>:
+          A device capable of moving cars by carrying them over it. It is shaped like an RD-side square and is built on top of a DDR robot.
+        </li>
+        <li>
+          <ks>Empty room</ks>:
+          A room bounded by walls and free of obstacles in the internal area.
+        </li>
+        <li>
+          <ks>Map</ks>:
+          A logical grid of the parking-area in which each cell has the shape of a square with an RD side. To each cell of the map we associate one and only one of the following symbols: <br>
+          <b style="color:#FF0000">X</b>: Parking-slot. The transport trolley cannot walk over this cell. <br>
+          <b>X</b>: Fixed obstacle. The transport trolley cannot walk over this cell.<br>
+          <b>0</b>: Empty cell. The transport trolley can walk over this cell. <br>
+          <br>
+          The symbol <b>r</b> means that the transport trolley is located above that cell.
+
+        </li>
+        <li>
+          <ks>Client</ks>:
+          The user who wants to park and then pick up the car from the parking area. He interacts with the service via the ParkServiceGUI.
+        </li>
+        <li>
+          <ks>Manager</ks>:
+          The user who administers the system via the ParkServiceStatusGUI. He has the job (and permissions) to observe the state of the system in order to manage critical situations as described in the requirements document.
+        </li>
+        <li>
+          <ks>Parking-area</ks>:
+          The bounded area where the transport trolley performs its tasks. In this area there are six parking-slots, a fan, a thermometer and two doors (indoor and outdoor).
+        </li>
+        <li>
+          <ks>Parking-slot</ks>:
+           It is shaped like an RD-side square and represent the area where the transport trolley parks the cars. There are 6 parking-slots in the parking-area. We refer to a <b>free</b> parking-slot if there isn't a car on its area, otherwise we refer to a <b>busy</b> parking-slot. At most one car can stay on a parking-slot.
+        </li>
+        <li>
+          <ks>Indoor</ks>:
+          The door from which the car enters in the parking-area.
+        </li>
+        <li>
+          <ks>Indoor-area</ks>:
+          The area from which the car is taken by the transport trolley to be parked. The area is equipped with a weight sensor capable of detecting the presence of the car in the area. The area is therefore considered free when the sensor does not detect the weight and engaged otherwise. For logical purposes, the indoor area could be also considered engaged from the moment we allow a car to enter in it and until the transport trolley takes it.
+        </li>
+        <li>
+          <ks>Current state</ks>:
+          The logical state of system's entities at a specific time. <br>
+          Fan: on/off. <br>
+          Thermometer: measured temperature. <br>
+          WeightSensor: measured weight. <br>
+          Outsonar: measured distance. <br>
+          TransportTrolley:
+          <ol>
+              <li><k>IDLE</k>: The Transport Trolley is at HOME position and waits for a request.</li>
+              <li><k>WORKING</k>: The Transport Trolley is serving a request or waiting for it. </li>
+              <li><k>STOPPED</k>: The Transport Trolley cannot serve any request or perform any movement. </li>
+          </ol>
+        </li>
+        <li>
+          <ks>At home</ks>:
+          A cell in the parking-area where the transport trolley waits when there aren't incoming requests.
+        </li>
+        <li>
+          <ks>TokenID</ks>:
+          A progressive number that uniquely identifies at most one car in the parking-area. If the car is currently parked in the parking-area the TokenID given by the client must match with the dual associated to a busy parking-slot in which the car is parked.
+        </li>
+        <li>
+          <ks>Outdoor</ks>:
+          The door from which the car exits from the parking-area.
+        </li>
+        <li>
+          <ks>Outdoor-area</ks>:
+          The area where the car stays after the pick up task. The area is equipped with a sonar that detects the presence of the car. The area is therefore considered free if the sonar doesn't detect the presence of the car, and engaged otherwise. The area must be freed by the client in at most DTFREE time.
+        </li>
+        <li>
+          <ks>WeightSensor</ks>:
+          A sensor that measures the weight of the car in the indoor area. It could be logically seen as like as two level sensor: car detected, car not detected.
+        </li>
+        <li>
+          <ks>Outsonar</ks>:
+          A sensor that measures the free space in front of him in the outdoor area. It could be logically seen as like as two level sensor: car detected, car not detected. The customer asked us to test the system with a real sonar and not with a mocked one.
+        </li>
+        <li>
+          <ks>Thermometer</ks>:
+          A sensor that measures the temperature in the parking area.
+        </li>
+        <li>
+          <ks>Fan</ks>:
+          An on/off device used to lower the temperature when it is above the TMAX threshold. It can be both automated or controlled by the manager.
+        </li>
+        <li>
+          <ks>TMAX</ks>:
+          The threshold temperature. When the temperature is above TMAX the manager should stop the transport trolley and start the fan. When the temperature is lower than TMAX the manager should start (resume) the trolley
+        </li>
+        <li>
+          <ks>DTFREE</ks>:
+          The time limit within which a car must free the outdoor area.
+        </li>
+        <li>
+          <ks>ParkServiceStatusGUI</ks>:
+          Used by the manager to observe the current state of the parking-area. It also provides the functionality to start/stop the transport trolley and the fan.
+        </li>
+        <li>
+          <ks>ParkServiceGui</ks>:
+          Used by the client to notify the interest to notify the interest to enter in the parking area and to pick up the car.
+        </li>
+        <li>
+          <ks>Hopefully/Optionally</ks>:
+          The customer hopes to see the default behavior implemented but also the alternative one.
+        </li>
+
+      </ul>
+
+      <h4>VERBS</h4>
+      <ul>
+        <li><ks>supervises</ks>: the parking-manager should be able to control the current state of the parking-area</li>
+        <li><ks>handles critical situations</ks>: on the occurrence of particular conditions, the parking-manager should be able to manage the situation, doing the right thing.</li>
+        <li><ks>park the car</ks>: the trolley should be able to take the car from the Indoor-area e put it in one of the free parking slots.</li>
+        <li><ks>pick up the car</ks>: the trolley should be able to take the car from the right parking slot e bring it to the Outdoor-area.</li>
+        <li><ks>move</ks> (for trolley): sequence of steps and turn left/right to get to destination</li>
+        <li><ks>deduce the number of the parking slot</ks>: the ParkManagerService should be able to find the right parking slot from the client's TOKENID.</li>
+        <li><ks>update</ks>: at each change the ParkManagerService must keep consistent the data shown by the ParkServiceStatusGUI</li>
+        <li><ks>stop/start trolley</ks>: the parking-manager should be able to stop, and then resume, the trolley's behavior. This operation is always up to the parking-manager.</li>
+        <li><ks>start/stop fan</ks>: the parking-manager should be able to stop, and then resume, the fan's behavior. This operation can either be automated (by checking the temperature) or not.</li>
+        <li><ks>could also be automated</ks>: in addition to the manual management of the parking-manager, the fan could start and stop by itself checking the temperature.</li>
+      </ul>
+
+    </div>
+
+    <h3>Additional requirements given by the customer</h4>
+      <li>The orientation of the TransportTrolley has not rilevance when loading the car on itself.</li>
+
+    <h3>Provided hardware and software</h3>
+    <div class="remark">
+      <h4>Map</h4>
+        <table style="border: none;">
+          <tr>
+            <td style="border: none; padding-right: 0;"><center><img src="./img/emptyMap.png" alt="emptyMap.png" width="70%" height="auto"/></center></td>
+            <td style="border: none; padding-left: 0;"><img src="./img/map-legenda.png" alt="emptyMap.png" width="110%" height="auto"/></td>
+          </tr>
+        </table>
+        <p></p>
+
+      A version of the map with the cells coordinates is available at this link: <a href="./img/emptyMapWithCells.png">emptyMapWithCellCoordinates.png</a> <br>
+      The code to realize the virtual map has been provided by the customer: <a href="https://github.com/anatali/issLab2021/tree/main/it.unibo.kotlinSupports/app/src/main/kotlin/mapRoomKotlin">it.unibo.kotlinSupports/mapRoomKotlin</a>.<br>
+      The state of the parking-area (i.e. parking-slot available, indoor or outdoor area free) should be observable.
+
+      <h4>Transport Trolley</h4>
+      The virtual environment (with virtual robot) <a href="http://htmlpreview.github.io/?https://github.com/anatali/issLab2021/blob/main/it.unibo.virtualRobot2020/userDocs/VirtualRobot2021.html">WEnv</a>  has been provided to us by the customer. So we will perform all tests on this virtual environment.<br>
+      The code in <a href="https://github.com/anatali/issLab2021/tree/main/it.unibo.qak21.basicrobot">it.unibo.qak21.basicrobot</a> provided by the customer is able to abstract from the real implementation of the DDR Robot and is compatible also with WEnv. <br>
+      The state of the transport trolley (idle, working or stopped) should be observable.
+      <h4>Sonar</h4>
+      The code for a real sonar has been provided by the customer: <a href="https://github.com/anatali/issLab2021/blob/main/it.unibo.rasp2021/resources/rasp/sonar/SonarAlone.c">SonarAlone.c</a>.
+      We should initially simulate this sensor with a mock-object or mock-actor but also integrate a real sonar in the final application. It should be modeled as active component.
+      The state of the sensor should be observable.
+      <h4>Weight Sensor</h4>
+      The customer doesn't provide code for the weight sensor. We should simulate this sensor with a mock-object or mock-actor. It could be modeled as both passive or active component. The state of the sensor should be observable.
+      <h4>Thermometer</h4>
+      The customer doesn't provide code for the thermometer. We should simulate this sensor with a mock-object or mock-actor. It could be modeled as both passive or active component. The state of the sensor should be observable.
+      <h4>Fan</h4>
+      The customer doesn't provide code for the fan. We should simulate this sensor with a mock-object or mock-actor. It should be modeled as passive component. The state of the sensor should be observable.
+    </div>
+
+    <h3>Interactions</h3>
+    <div class="remark">
+      This section summarizes the interactions between the entities of the most interesting use cases of the application. The management of corner cases is postponed to the analysis of the problem, so the following use cases are valid only if each assumption (precondition) is verified.
+
+      <h4>Legenda</h4>
+      <div class="legenda__image">
+        <center>
+          <img src="./img/interactions-legenda.png" alt="interactions-legenda.png"/>
+        </center>
+      </div>
+
+      <h4>Client acceptIn request</h4>
+      <table width="100%" style="margin-bottom: 40px;">
+        <tr>
+          <th style="text-align:left; padding-top: 8px; padding-bottom: 8px; padding-left:10px;">Assumptions:</th>
+        </tr>
+        <tr>
+          <td style="text-align:left; padding-top: 10px; padding-left:10px;">
+            <ol>
+              <li>The initial state of the INDOOR-AREA is: free.</li>
+              <li>There is at least one parking slot available.</li>
+            </ol>
+          </td>
+        </tr>
+      </table>
+
+      <div class="interactions__image">
+        <center>
+          <img src="./img/an_req_acceptIn_informIn.png" alt="an_req_acceptIn_informIn.png"/>
+        </center>
+      </div>
+
+      <table width="100%" style="margin-bottom: 40px;">
+        <tr>
+          <td style="text-align:left; padding-top: 10px; padding-left:10px; width:60%">
+            <ol>
+              <li>The client via the ParkServiceGUI notifies to the ParkManagerService the interest to enter in the INDOOR-AREA. </li>
+              <li>The ParkManagerService send to the client the SLOTNUM and permits him to enter in the INDOOR AREA.</li>
+              <li>The weightSensor detects the weight of the car.</li>
+            </ol>
+          </td>
+        </tr>
+      </table>
+
+      <h4>Client carEnter request</h4>
+      <table width="100%" style="margin-bottom: 40px;">
+        <tr>
+          <th style="text-align:left; padding-top: 8px; padding-bottom: 8px; padding-left:10px;">Assumptions:</th>
+        </tr>
+        <tr>
+          <td style="text-align:left; padding-top: 10px; padding-left:10px;">
+            <ol>
+              <li>The car is in the INDOOR-AREA.</li>
+            </ol>
+          </td>
+        </tr>
+      </table>
+
+      <div class="interactions__image">
+        <center>
+          <img src="./img/an_req_carEnter.png" alt="an_req_carEnter.png"/>
+        </center>
+      </div>
+
+      <table width="100%" style="margin-bottom: 40px;">
+        <tr>
+          <td colspan="2" rowspan="2" style="text-align:left; padding-top: 10px; padding-left:10px; padding-right:10px; width:66%">
+            <ol>
+              <li>The client press the CARENTER button in the ParkServiceGui and informs the ParkManagerService about the intention to enter in the parking-area. </li>
+              <li>The weightSensor confirms the presence of the car in the INDOOR-AREA.</li>
+              <li>The ParkManagerService informs the transport trolley to go at the INDOOR.</li>
+              <li>The TransportTrolley informs the ParkManagerService that it is arrived at the INDOOR.</li>
+              <li>The ParkManagerService sends to the client the TOKENID.</li>
+              <li>The ParkManagerService informs the TransportTrolley to start the park of the car at the slot SLOTNUM.</li>
+              <li>The TransportTrolley informs the ParkManagerService that finished its job.</li>
+              <li>The ParkManagerService informs the TransportTrolley to go to one of the following specific positions:
+                <ul>
+                  <li>HOME Position</li>
+                  <li>INDOOR</li>
+                  <li>Parking slot n. #.</li>
+                </ul>
+              </li>
+            </ol>
+          </td>
+          <td class="interactions_table__image">
+            <center>
+              <img src="./img/moveToIn.png" alt="moveToIn.png"/>
+            </center>
+              <p style="font-size:11pt; padding-left:10px; padding-right:10px; text-align: center;"><i>3. The ParkManagerService informs the transport trolley to go at the INDOOR.</i></p>
+          </td>
+        </tr>
+        <tr>
+          <td class="interactions_table__image">
+            <center>
+              <img src="./img/moveToSlotIn.png" alt="moveToSlotIn.png"/>
+              <p style="font-size:11pt; padding-left: 10px; padding-right: 10px; text-align: center;"><i>6. The ParkManagerService informs the TransportTrolley to start the park of the car at the slot SLOTNUM.</i></p>
+            </center>
+          </td>
+        </tr>
+        <tr>
+          <td class="interactions_table__image">
+            <center>
+              <img src="./img/fromParkSlotToHome.png" alt="fromParkSlotToHome.png"/>
+            </center>
+            <p style="font-size:11pt; padding-left:10px; padding-right:10px; text-align: center;"><i>8. The ParkManagerService informs the TransportTrolley to go HOME Position</i></p>
+          </td>
+          <td class="interactions_table__image">
+            <center>
+              <img src="./img/fromParkSlotToIndoor.png" alt="fromParkSlotToIndoor.png"/>
+            </center>
+            <p style="font-size:11pt; padding-left:10px; padding-right:10px; text-align: center;"><i>8. The ParkManagerService informs the TransportTrolley to go INDOOR</i></p>
+          </td>
+          <td class="interactions_table__image">
+            <center>
+              <img src="./img/fromParkSlotToParkSlot.png" alt="fromParkSlotToParkSlot.png"/>
+            </center>
+            <p style="font-size:11pt; padding-left:10px; padding-right:10px; text-align: center;"><i>8. The ParkManagerService informs the TransportTrolley to go Parking Slot n.#</i></p>
+          </td>
+        </tr>
+      </table>
+
+      <h4>Client acceptOut request</h4>
+
+      <table width="100%" style="margin-bottom: 40px;">
+        <tr>
+          <th style="text-align:left; padding-top: 8px; padding-bottom: 8px; padding-left:10px;">Assumptions:</th>
+        </tr>
+        <tr>
+          <td style="text-align:left; padding-top: 10px; padding-left:10px;">
+            <ol>
+              <li>The initial state of the OUTDOOR-AREA is: free.</li>
+              <li>The TOKENID is valid.</li>
+            </ol>
+          </td>
+        </tr>
+      </table>
+
+      <div class="interactions__image">
+        <center>
+          <img src="./img/an_req_acceptOut.png" alt="an_req_acceptOut.png"/>
+        </center>
+      </div>
+
+      <table width="100%" style="margin-bottom: 40px;">
+        <tr>
+          <td colspan="2" style="text-align:left; padding-top: 10px; padding-left:10px; width:66%">
+            <ol>
+              <li>The client via the ParkServiceGUI informs the ParkManagerService that he want to pickup the car and shows its TOKENID.</li>
+              <li>The outSonar confirms that the OUTDOOR-AREA is free.</li>
+              <li>The ParkManagerService checks the validity of the TOKENID and informs the TransportTrolley to pick up the car at the parking-slot identified by the TOKENID.</li>
+              <li>The TransportTrolley informs the ParkManagerService that it has finished its job.</li>
+              <li>The sonar detects the presence of the car in the OUTDOOR AREA.</li>
+              <li>The ParkManagerService informs the client that he can pick up the car from the OUTDOOR-AREA.</li>
+              <li>The ParkManagerService informs the TransportTrolley to go to one of the following specific positions:
+              <ul>
+                <li>HOME Position</li>
+                <li>INDOOR</li>
+                <li>Parking slot n. #.</li>
+              </ul></li>
+            </ol>
+          </td>
+          <td class="interactions_table__image">
+            <center>
+              <img src="./img/moveToSlotOut.png" alt="moveToSlotOut.png"/>
+            </center>
+              <p style="font-size:11pt; padding-left:10px; padding-right:10px; text-align: center;"><i>3. The ParkManagerService informs the TransportTrolley to pick up the car at the parking-slot.</i></p>
+          </td>
+        </tr>
+        <tr>
+          <td class="interactions_table__image">
+            <center>
+              <img src="./img/fromOutdoorToHome.png" alt="fromParkSlotToHome.png"/>
+            </center>
+            <p style="font-size:11pt; padding-left:10px; padding-right:10px; text-align: center;"><i>7. The ParkManagerService informs the TransportTrolley to go HOME Position</i></p>
+          </td>
+          <td class="interactions_table__image">
+            <center>
+              <img src="./img/fromOutdoorToIndoor.png" alt="fromParkSlotToIndoor.png"/>
+            </center>
+            <p style="font-size:11pt; padding-left:10px; padding-right:10px; text-align: center;"><i>7. The ParkManagerService informs the TransportTrolley to go INDOOR</i></p>
+          </td>
+          <td class="interactions_table__image">
+            <center>
+              <img src="./img/fromOutdoorToParkSlot.png" alt="fromParkSlotToParkSlot.png"/>
+            </center>
+            <p style="font-size:11pt; padding-left:10px; padding-right:10px; text-align: center;"><i>7. The ParkManagerService informs the TransportTrolley to go Parking Slot n.#</i></p>
+          </td>
+        </tr>
+      </table>
+
+
+    <h4>Parking-Manager handle temperature from LOW to HIGH</h4>
+
+    <table width="100%" style="margin-bottom: 40px;">
+      <tr>
+        <th style="text-align:left; padding-top: 8px; padding-bottom: 8px; padding-left:10px;">Assumptions:</th>
+      </tr>
+      <tr>
+        <td style="text-align:left; padding-top: 10px; padding-left:10px;">
+          <ol>
+            <li>The start/stop of the fan is not in automatic mode.</li>
+          </ol>
+        </td>
+      </tr>
+    </table>
+
+    <div class="interactions__image">
+      <center>
+        <img src="./img/an_req_manager_temp_high.png" alt="an_req_manager_temp_high.png"/>
+      </center>
+    </div>
+
+    <table width="100%" style="margin-bottom: 40px;">
+      <tr>
+        <td style="text-align:left; padding-top: 10px; padding-left:10px; width:60%">
+          <ol>
+            <li>The ParkManagerService monitors the temperature measured by the thermometer.</li>
+            <li>The temperature (TA) measured has become greater than TMAX, so the ParkManagerService notifies that to the ParkServiceStatusGUI. </li>
+            <li>The manager by means of the ParkServiceStatusGUI notifies to the ParkManagerService to stop the transport-trolley.</li>
+            <li>The ParkManagerService stops the TransportTrolley.</li>
+            <li>The manager by means of the ParkServiceStatusGUI notifies to the ParkManagerService to start the fan.</li>
+            <li>The ParkManagerService starts the fan.</li>
+          </ol>
+        </td>
+      </tr>
+    </table>
+
+
+    <h4>Parking-Manager handle temperature from HIGH to LOW</h4>
+
+    <table width="100%" style="margin-bottom: 40px;">
+      <tr>
+        <th style="text-align:left; padding-top: 8px; padding-bottom: 8px; padding-left:10px;">Assumptions:</th>
+      </tr>
+      <tr>
+        <td style="text-align:left; padding-top: 10px; padding-left:10px;">
+          <ol>
+            <li>The start/stop of the fan is not in automatic mode.</li>
+          </ol>
+        </td>
+      </tr>
+    </table>
+
+    <div class="interactions__image">
+      <center>
+        <img src="./img/an_req_manager_temp_low.png" alt="an_req_manager_temp_low.png"/>
+      </center>
+    </div>
+
+    <table width="100%" style="margin-bottom: 40px;">
+      <tr>
+        <td style="text-align:left; padding-top: 10px; padding-left:10px; width:60%">
+          <ol>
+            <li>The ParkManagerService monitors the temperature measured by the thermometer.</li>
+            <li>The temperature (TA) measured has become lower than TMAX, so the ParkManagerService notifies that to the ParkServiceStatusGUI. </li>
+            <li>The manager by means of the ParkServiceStatusGUI notifies to the ParkManagerService to start the transport-trolley.</li>
+            <li>The ParkManagerService start the TransportTrolley.</li>
+            <li>The manager by means of the ParkServiceStatusGUI notifies to the ParkManagerService to stop the fan.</li>
+            <li>The ParkManagerService stops the fan.</li>
+          </ol>
+        </td>
+      </tr>
+    </table>
+
+
+    <h4>Parking-Manager watches current status of the Parking-Area</h4>
+
+    <div class="interactions__image">
+      <center>
+        <img src="./img/an_req_manager_status.png" alt="an_req_manager_status.png"/>
+      </center>
+    </div>
+
+    <table width="100%" style="margin-bottom: 40px;">
+      <tr>
+        <td style="text-align:left; padding-top: 10px; padding-left:10px; width:60%">
+          <ol>
+            <li>The ParkManagerService monitors the status of the entities in the parking-area.</li>
+            <li>The data are shown on the ParkServiceStatusGUI. </li>
+          </ol>
+        </td>
+      </tr>
+    </table>
+
+
+    <h4>Parking-Manager handle alarm</h4>
+
+    <div class="interactions__image">
+      <center>
+        <img src="./img/an_req_dtfree.png" alt="an_req_dtfree.png"/>
+      </center>
+    </div>
+
+    <table width="100%" style="margin-bottom: 40px;">
+      <tr>
+        <td style="text-align:left; padding-top: 10px; padding-left:10px; width:60%">
+          <ol>
+            <li>The sonar has been detecting the car in the outdoor area for at least a DTFREE time. So informs the ParkManagerService about this event. </li>
+            <li>The ParkManagerService sends the ALARM to the ParkServiceStatusGUI.</li>
+          </ol>
+        </td>
+      </tr>
+    </table>
+  </div><!--  Interactions div.class="remark"-->
+</div><!--  Requirements analysis div.class="remark"-->
+
+</body>
+</html>
