@@ -1,0 +1,132 @@
+
+System first_model
+
+Request   parking_car_interest : parking_car_interest( X )
+Reply     inform_in            : inform_in( SLOTNUM )
+Request   car_enter            : car_enter( SLOTNUM )
+Reply     response_car_enter   : response_car_enter( TOKENID )
+Request   car_pickup           : car_pickup( TOKENID )
+Reply     accept_out_success   : accept_out_success( X )
+Reply     accept_out_failure   : accept_out_failure( X )
+
+Request  req_client_accept_in          : req_client_accept_in( X )
+Reply    rep_client_accept_in          : rep_client_accept_in( SLOTNUM )
+Request  req_client_car_enter          : req_client_car_enter( SLOTNUM )
+Reply    rep_client_car_enter          : rep_client_car_enter( TOKENID )
+Request  req_client_accept_out         : req_client_accept_out( TOKENID )
+Reply    rep_client_accept_out_success : rep_client_accept_out_success( X )
+Reply    rep_client_accept_out_failure : rep_client_accept_out_failure( X )
+
+
+Context ctxFirstModel  ip [host="localhost" port=8053]
+
+// NOTE: 
+// The businesslogic is not defined in this QAK demo file.
+// We want just to show how the interactions discussed in the first 
+// problem analysis about the ParkServiceGUI could be 
+// modeled with the QAK meta-model.
+
+
+QActor parkservicegui context ctxFirstModel {
+	
+	[# 
+		var SLOTNUM = 0 
+		var TOKENID = ""
+		var response_car_pickup = ""
+	#]
+	
+	State init initial {
+		println("[parkservicegui] | [State] init | Entry point.")
+		[# 
+			SLOTNUM = 0 
+			TOKENID = ""
+			response_car_pickup = ""
+		#]
+				
+		println("[parkservicegui] | [State] init | Exit point.")
+	} Goto wait
+	
+	State wait {
+		println("[parkservicegui] | [State] wait | Entry point.")
+		println("[parkservicegui] | [State] wait | Exit point.")
+	} Transition t0
+	whenRequest req_client_accept_in -> interestedInParkingCar
+	whenReply   inform_in -> enterIndoor
+	whenRequest req_client_car_enter -> carEnter
+	whenRequest req_client_accept_out -> askForPickUpCar
+	whenReply   response_car_enter -> receiveTokenId
+	whenReply   accept_out_success -> pickUpCar
+	whenReply   accept_out_failure -> cannotPickUpCar
+	
+	State interestedInParkingCar {
+		println("[parkservicegui] | [State] InterestedInParkingCar | Entry point.")
+		onMsg(req_client_accept_in : req_client_accept_in(X)) {
+			
+		}
+		request businesslogic -m parking_car_interest : parking_car_interest(io)
+		println("[parkservicegui] | [State] InterestedInParkingCar | Exit point.")
+	} Goto wait
+
+	State enterIndoor {
+		println("[parkservicegui] | [State] enterIndoor | Entry point.")
+		onMsg( inform_in : inform_in(SLOTNUM) ){
+			[# SLOTNUM = payloadArg(0).toInt() #]			
+			println("[parkservicegui] | [State] enterIndoor | Client receives SLOTNUM = $SLOTNUM")
+			
+			if [# SLOTNUM > 0 #] {
+				replyTo req_client_accept_in with rep_client_accept_in : rep_client_accept_in($SLOTNUM)
+			} else {
+				replyTo req_client_accept_in with rep_client_accept_in : rep_client_accept_in(0)
+			}
+			
+		}
+		println("[parkservicegui] | [State] enterIndoor | Exit point.")
+	} Goto wait
+	
+	State carEnter {
+		println("[parkservicegui] | [State] CarEnter | Entry point.")
+		onMsg(req_client_car_enter : req_client_car_enter(SLOTNUM)) {
+			[# SLOTNUM = payloadArg(0).toInt() #]
+		}
+		request businesslogic -m car_enter : car_enter($SLOTNUM)
+		println("[parkservicegui] | [State] CarEnter | Exit point.")
+	} Goto wait
+	
+	State receiveTokenId {
+		println("[parkservicegui] | [State] ReceiveTokenId | Entry point.")
+		onMsg( response_car_enter : response_car_enter(TOKENID)){
+			[# TOKENID = payloadArg(0).toString() #]
+			println("[parkservicegui] | [State] ReceiveTokenId | Client receives TOKENID = $TOKENID ")
+			replyTo req_client_car_enter with rep_client_car_enter : rep_client_car_enter($TOKENID)
+		}
+		println("[parkservicegui] | [State] ReceiveTokenId | Exit point.")
+	} Goto wait
+	
+	State askForPickUpCar {
+		println("[parkservicegui] | [State] askForPickUpCar | Entry point.")
+		onMsg(req_client_accept_out : req_client_accept_out(TOKENID)) {
+			[# TOKENID = payloadArg(0) #]
+		}
+		println("[parkservicegui] | [State] askForPickUpCar | Ok now it's time to pick up my car")
+		request businesslogic -m car_pickup : car_pickup($TOKENID)
+		println("[parkservicegui] | [State] askForPickUpCar | Exit point.")
+	} Goto wait
+	 
+	State pickUpCar {
+		println("[parkservicegui] | [State] pickUpCar | Entry point.")
+		onMsg ( accept_out_success : accept_out_success(X) ){
+			println("[parkservicegui] | [State] pickUpCar | Thank you! Now I'm leaving the outdoor area.. bye")	
+			replyTo req_client_accept_out with rep_client_accept_out_success : rep_client_accept_out_success(X)
+		}
+		println("[parkservicegui] | [State] pickUpCar | Exit point.")
+	} Goto wait
+	
+	State cannotPickUpCar {
+		println("[parkservicegui] | [State] cannotPickUpCar | Entry point.")
+		onMsg ( accept_out_failure : accept_out_failure(X) ){
+			println("[parkservicegui] | [State] cannotPickUpCar | My token is not valid. I'll be back.")
+			replyTo req_client_accept_out with rep_client_accept_out_failure : rep_client_accept_out_failure(X)
+		}
+		println("[parkservicegui] | [State] cannotPickUpCar | Exit point.")
+	} Goto wait
+}

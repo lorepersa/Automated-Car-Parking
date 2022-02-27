@@ -1,0 +1,239 @@
+
+System first_model
+
+Dispatch  physical_fan_on    : physical_fan_on( X )
+Dispatch  physical_fan_off   : physical_fan_off( X )
+Dispatch  automatic_mode     : automatic_mode( X )
+Dispatch  manual_mode        : manual_mode( X )
+Dispatch  logical_fan_on     : logical_fan_on( X )
+Dispatch  logical_fan_off    : logical_fan_off( X )
+Event     state_fan_on       : state_fan_on( X )
+Event     state_fan_off      : state_fan_off( X )
+Event     mode_fan_automatic : mode_fan_automatic( X )
+Event     mode_fan_manual    : mode_fan_manual( X )
+
+Event     temperature_high   : temperature_high( X )
+Event     temperature_low    : temperature_low( X )
+Request   query_state_logical_temperature : query_state_logical_temperature( X )
+Reply     logical_temperature_high : logical_temperature_high( X )
+Reply     logical_temperature_low : logical_temperature_low( X )
+
+
+Context ctxFirstModel  ip [host="localhost" port=8053]
+
+// NOTE: 
+// The logicalthermometer is not defined in this QAK demo file.
+// We want just to show how the interactions discussed in the first 
+// problem analysis about the physical and logical fan could be 
+// modeled with the QAK meta-model.
+
+QActor physicalfan context ctxFirstModel {     
+	
+	[# var is_on = false #]    
+
+	State init initial {	 
+		println("[physicalfan] | [State] init | Entry point.")
+		println("[physicalfan] | [State] init | Exit point.")
+   	} Goto running
+   	
+   	/**
+   	 * Wait for message turn on or turn off
+   	 */
+   	State running {
+   		println("[physicalfan] | [State] running | Entry point.")
+   		println("[physicalfan] | [State] running | Exit point.")
+   	} Transition t0 
+   	whenMsg physical_fan_on  -> turnOnFan
+   	whenMsg physical_fan_off -> turnOffFan
+   	
+   	/**
+   	 * Turn on
+   	 */
+   	State turnOnFan {
+   		println("[physicalfan] | [State] turnOnFan | Entry point.")
+   		onMsg(physical_fan_on : physical_fan_on(X)) {
+   			println("[physicalfan] | [State] turnOnFan | Turn ON.")
+   			[# is_on = true #]
+   		}
+   		println("[fan] | [State] turnOnFan | Exit point.")
+   	} Goto running
+   	   	
+   	/**
+   	 * Turn off
+   	 */
+   	State turnOffFan {
+   		println("[physicalfan] | [State] turnOffFan | Entry point.")
+   		onMsg(physical_fan_off : physical_fan_off(X)) {
+   			println("[physicalfan] | [State] turnOffFan | Turn OFF.")
+   			[# is_on = false #]
+   		}
+   		println("[physicalfan] | [State] turnOffFan | Exit point.")
+   	} Goto running
+}	
+
+
+QActor logicalfan context ctxFirstModel {   
+	
+	[# 
+	var is_automatic_mode = true 
+	var fan_on = false
+	var STATUS_FAN = "off"
+	var MODE_FAN = "automatic"
+	#]
+
+	State init initial {	 
+		println("[logicalfan] | [State] init | Entry point.")
+		[# 
+			is_automatic_mode = true 
+			fan_on = false
+			STATUS_FAN = "off"
+			MODE_FAN = "automatic"
+		#]
+		println("[logicalfan] | [State] init | Exit point.")
+   	} Goto switchToAutomaticMode  
+   	
+   	/**
+   	 * Automatic mode, just wait for incoming messages.
+   	 * 
+   	 * Two ParkServiceStatusGui messages:
+   	 * - automatic_mode(X) : loopback
+   	 * - manual_mode(X) : need to switch to manual mode -> go to waitInputManualMode
+   	 * 
+   	 * Two filter_thermometer events:
+   	 * - temperature_high(X) : need to turn on the fan -> go to turnOnFan
+   	 * - temperature_low(X) : need to turn off the fan -> go to turnOffFan
+   	 */
+   	State waitInputAutomaticMode {
+   		println("[logicalfan] | [State] waitInputAutomaticMode | Entry point.")
+   		println("[logicalfan] | [State] waitInputAutomaticMode | Exit point.")
+   	} Transition t_logicalfan_input_automatic
+   	whenMsg manual_mode ->  switchToManualMode
+   	whenMsg automatic_mode -> waitInputAutomaticMode
+   	whenEvent temperature_high -> turnOnFan
+   	whenEvent temperature_low -> turnOffFan
+   	
+   	/**
+   	 * Manual mode, just wait for incoming messages.
+   	 * 
+   	 * Four ParkServiceStatusGui messages:
+   	 * - manual_mode(X) : loopback
+   	 * - automatic_mode(X) : need to switch to manual mode -> go to waitInputManualMode
+   	 * - logicalfan_on(X) : need to turn on the fan -> go to turnOnFan
+   	 * - logicalfan_off(X) : need to turn off the fan -> go to turnOffFan
+   	 */   	
+   	State waitInputManualMode {
+   		println("[logicalfan] | [State] waitInputManualMode | Entry point.")
+   		println("[logicalfan] | [State] waitInputManualMode | Exit point.")
+   	} Transition t_logicalfan_input_manual
+   	whenMsg manual_mode ->  waitInputManualMode
+   	whenMsg automatic_mode -> switchToAutomaticMode
+   	whenMsg logical_fan_on  -> turnOnFan
+   	whenMsg logical_fan_off -> turnOffFan    
+   	
+   	State switchToManualMode {
+   		println("[logicalfan] | [State] switchToManualMode | Entry point.")
+   		[# is_automatic_mode = false #] 
+   		[# MODE_FAN = "manual" #]
+   		emit mode_fan_manual : mode_fan_manual(X)
+   		println("[logicalfan] | [State] switchToManualMode | Exit point.")
+   	} Goto waitInputManualMode
+   	
+   	State switchToAutomaticMode {
+   		println("[logicalfan] | [State] switchToAutomaticMode | Entry point.")
+   		[# is_automatic_mode = true #] 
+   		[# MODE_FAN = "automatic" #]
+   		emit mode_fan_automatic : mode_fan_automatic(X)
+   		request logicalthermometer -m query_state_logical_temperature : query_state_logical_temperature(X)
+   		println("[logicalfan] | [State] switchToAutomaticMode | Exit point.")
+   	} Transition t0 
+   	whenReply logical_temperature_high -> turnOnFan
+   	whenReply logical_temperature_low -> turnOffFan
+   	
+   	/**
+   	 * Need to turn on the fan.
+   	 * If we are in automatic mode then is expected an event temperature_high.
+   	 * If we are in manual mode then is expected a message logicalfan_on.
+   	 * 
+   	 * Independently from the automatic/manual mode the objective is to send
+   	 * a message to the fan and turn on it.
+   	 */
+   	State turnOnFan {
+   		println("[logicalfan] | [State] turnOnFan | Entry point.")
+   		
+   		[# var received_msg = false #]
+   		
+   		if [# is_automatic_mode #] {
+   			
+   			// Case 1: automatic mode, need to handle the event emitted by the logicalthermometer
+   			
+   			onMsg(temperature_high : temperature_high(X)) {
+   				[# received_msg = true #]
+   			}
+   			// if request-response
+   			onMsg(logical_temperature_high : logical_temperature_high(X)) {
+   				[# received_msg = true #]
+   			}
+   		} else {
+   			
+   			// Case 2: manual mode, need to handle the message sent by the ParkServiceStatusGui
+   			
+   			onMsg(logical_fan_on : logical_fan_on(X)) {
+   				[# received_msg = true #]
+   			}
+   		}
+   		
+   		if [# received_msg #] {
+   			println("[logicalfan] | [State] turnOnFan | Turn ON fan.")
+   			forward physicalfan -m physical_fan_on : physical_fan_on(X)
+   			[# fan_on = true #]
+   			[# STATUS_FAN = "on" #]
+   			emit state_fan_on : state_fan_on(X)
+   		}
+
+   		println("[logicalfan] | [State] turnOnFan | Exit point.")
+   	} Goto waitInputAutomaticMode if [# is_automatic_mode #] else waitInputManualMode 
+   	   	
+   	/**
+   	 * Need to turn off the fan.
+   	 * If we are in automatic mode then is expected an event temperature_low.
+   	 * If we are in manual mode then is expected a message logicalfan_off.
+   	 * 
+   	 * Independently from the automatic/manual mode the objective is to send
+   	 * a message to the fan and turn off it.
+   	 */   	
+   	State turnOffFan {
+   		println("[logicalfan] | [State] turnOffFan | Entry point.")
+   		
+		[# var received_msg = false #]
+   		
+   		if [# is_automatic_mode #] {
+   			   			
+   			// Case 1: automatic mode, need to handle the event emitted by the filter_thermometer
+   			
+   			onMsg(temperature_low : temperature_low(X)) {
+   				[# received_msg = true #]
+   			}
+   			// if request-response
+   			onMsg(logical_temperature_low : logical_temperature_low(X)) {
+   				[# received_msg = true #]
+   			}
+   		} else {
+   			   			
+   			// Case 2: manual mode, need to handle the message sent by the ParkServiceStatusGui
+   			
+   			onMsg(logical_fan_off : logical_fan_off(X)) {
+   				[# received_msg = true #]
+   			}
+   		}
+   		
+   		if [# received_msg #] { 
+   			println("[logicalfan] | [State] turnOffFan | Turn OFF fan.")
+   			forward physicalfan -m physical_fan_off : physical_fan_off(X)
+   			[# fan_on = false #]
+   			[# STATUS_FAN = "off" #]
+   			emit state_fan_off : state_fan_off(X)
+   		}
+   		
+   		println("[logicalfan] | [State] turnOffFan | Exit point.")
+   	} Goto waitInputAutomaticMode if [# is_automatic_mode #] else waitInputManualMode 
+}	

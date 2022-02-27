@@ -1,0 +1,1342 @@
+/**
+ * The purpose of this model is to address the scenario in which a car enter the parking area
+ * and then exit from it.
+ */
+
+System first_model
+
+// weight sensor
+
+Event     weight               : weight( W )
+Event     indoor_area_occupied : indoor_area_occupied( X )
+Event     indoor_area_free     : indoor_area_free( C )
+
+Dispatch  input_weight         : input_weight( W ) // from test to physical weight sensor
+
+// outsonar
+
+Event     distance              : distance( D )
+Event     outdoor_area_occupied : outdoor_area_occupied( X )
+Event     outdoor_area_free     : outdoor_area_free( X )
+
+Dispatch  input_distance        : input_distance( D ) // from test to physical sonar
+
+// thermometer
+
+Event     temperature                     : temperature( C )
+Event     temperature_high                : temperature_high( X )
+Event     temperature_low                 : temperature_low( X )
+Request   query_state_logical_temperature : query_state_logical_temperature( X )
+Reply     logical_temperature_high         : logical_temperature_high( X )
+Reply     logical_temperature_low          : logical_temperature_low( X )
+
+Dispatch  input_temperature               : input_temperature( T ) // from test to physical thermometer
+
+// fan
+
+Dispatch  physical_fan_on    : physical_fan_on( X )
+Dispatch  physical_fan_off   : physical_fan_off( X )
+Dispatch  automatic_mode     : automatic_mode( X )
+Dispatch  manual_mode        : manual_mode( X )
+Dispatch  logical_fan_on     : logical_fan_on( X )
+Dispatch  logical_fan_off    : logical_fan_off( X )
+Event     state_fan_on       : state_fan_on( X )
+Event     state_fan_off      : state_fan_off( X )
+Event     mode_fan_automatic : mode_fan_automatic( X )
+Event     mode_fan_manual    : mode_fan_manual( X )
+
+// transportTrolley
+
+Dispatch  transport_trolley_car_park         : transport_trolley_car_park( SLOTNUM )
+Dispatch  transport_trolley_car_pickup       : transport_trolley_car_pickup( SLOTNUM )
+Dispatch  transport_trolley_go_home          : transport_trolley_go_home( X )
+Dispatch  transport_trolley_start            : transport_trolley_start( X )
+Dispatch  transport_trolley_stop             : transport_trolley_stop( X )
+Event     transport_trolley_position_home    : transport_trolley_position_home( X )
+Event     transport_trolley_position_indoor  : transport_trolley_position_indoor( X )
+Event     transport_trolley_position_outdoor : transport_trolley_position_outdoor( X )
+Event     transport_trolley_position_slotnum : transport_trolley_position_slotnum( SLOTNUM )
+Event     transport_trolley_new_state        : transport_trolley_new_state( STATE )
+
+// business logic and park service gui
+
+Request   parking_car_interest : parking_car_interest( X )
+Reply     inform_in            : inform_in( SLOTNUM )
+Request   car_enter            : car_enter( SLOTNUM )
+Reply     response_car_enter   : response_car_enter( TOKENID )
+Request   car_pickup           : car_pickup( TOKENID )
+Reply     accept_out_success   : accept_out_success( X )
+Reply     accept_out_failure   : accept_out_failure( X )
+
+// business logic and park service status gui
+
+Event    status_parking_slots    : status_parking_slots(P1,P2,P3,P4,P5,P6)
+
+// park service gui and client
+
+Request  req_client_accept_in          : req_client_accept_in( X )
+Reply    rep_client_accept_in          : rep_client_accept_in( SLOTNUM )
+Request  req_client_car_enter          : req_client_car_enter( SLOTNUM )
+Reply    rep_client_car_enter          : rep_client_car_enter( TOKENID )
+Request  req_client_accept_out         : req_client_accept_out( TOKENID )
+Reply    rep_client_accept_out_success : rep_client_accept_out_success( X )
+Reply    rep_client_accept_out_failure : rep_client_accept_out_failure( X )
+
+// park service status gui and manager
+
+Reply    rep_manager_done                         : rep_manager_done(X)
+Request  req_manager_fan_automatic_mode           : req_manager_fan_automatic_mode( X )
+Request  req_manager_fan_manual_mode              : req_manager_fan_manual_mode( X )
+Request  req_manager_fan_on                       : req_manager_fan_on( X )
+Request  req_manager_fan_off                      : req_manager_fan_off( X )
+Event    msg_to_manager_status_fan                : msg_to_manager_fan_on( STATUS )
+Event    msg_to_manager_mode_fan                  : msg_to_manager_fan_automatic_mode( MODE )
+Event    msg_to_manager_status_indoor_area        : msg_to_manager_status_indoor_area( STATUS )
+Event    msg_to_manager_status_outdoor_area       : msg_to_manager_status_outdoor_area( STATUS )
+Event    msg_to_manager_status_parking_slots      : msg_to_manager_status_parking_slots(P1,P2,P3,P4,P5,P6)
+Event    msg_to_manager_status_temperature        : msg_to_manager_temperature( C )
+Event    msg_to_manager_status_transport_trolley  : msg_to_manager_status_transport_trolley( STATUS )
+
+Context ctxFirstModel  ip [host="localhost" port=8053]
+
+QActor physicalweightsensor context ctxFirstModel {
+	State init initial {	 
+		println("[physicalweightsensor] | [State] init | Entry point.")
+		println("[physicalweightsensor] | [State] init | Exit point.")
+   	} Goto wait
+   	
+   	State wait {
+   		println("[physicalweightsensor] | [State] wait | Entry point.")
+   		onMsg(input_weight : input_weight(W)) {
+   			[# val W = payloadArg(0).toFloat() #]
+   			emit weight : weight($W)
+   		}
+   		println("[physicalweightsensor] | [State] wait | Exit point.")
+   	} Transition t0
+   	whenMsg input_weight -> wait
+   	
+}
+
+QActor logicalweightsensor context ctxFirstModel {
+	[#
+		var CAR_WEIGHT_THRESHOLD = 750.0f
+		var th_reached = false
+	#]
+	
+	State init initial {
+		println("[logicalweightsensor] | [State] init | Entry point.")
+		[#
+			CAR_WEIGHT_THRESHOLD = 750.0f
+			th_reached = false
+		#]
+		println("[logicalweightsensor] | [State] init | CAR_WEIGHT_THRESHOLD: $CAR_WEIGHT_THRESHOLD.")
+		println("[logicalweightsensor] | [State] init | Exit point.")
+	} Goto handleWeightEvent
+	
+	/**
+   	 * Each time a weight(W) event is received handle that event.
+   	 * 
+   	 * When a transition from weight lower or equal to CAR_WEIGHT_THRESHOLD to greater than CAR_WEIGHT_THRESHOLD
+   	 * is intercepted then emit an indoor_area_occupied event.
+   	 * 
+   	 * When a transition from weight greater than CAR_WEIGHT_THRESHOLD to lower or equal to CAR_WEIGHT_THRESHOLD
+   	 * is intercepted then emit an indoor_area_free event.
+   	 */
+	State handleWeightEvent {
+		println("[logicalweightsensor] | [State] handleWeightEvent | Entry point.")
+		onMsg(weight : weight(W)) {
+			[# var W = payloadArg(0).toFloat() #] 
+			println("[logicalweightsensor] | [State] handleWeightEvent | Received event weight: $W.")
+			if [# th_reached #] {
+				
+				// Case 1: Previous weight higher than CAR_WEIGHT_THRESHOLD
+				
+				if [# W <= CAR_WEIGHT_THRESHOLD #] {
+					
+					// Case 1.1: Current weight lower or equal CAR_WEIGHT_THRESHOLD. Now emit an indoor_area_free event.
+					
+					println("[logicalweightsensor] | [State] handleWeightEvent | Emit indoor_area_free.")
+					[# th_reached = false #]
+					emit indoor_area_free : indoor_area_free(X)
+				}
+			} else {
+				
+				// Case 2: Previous weight lower or equal to CAR_WEIGHT_THRESHOLD
+				
+				if [# W > CAR_WEIGHT_THRESHOLD #] {
+					
+					// Case 2.1: Current weight greater than CAR_WEIGHT_THRESHOLD. Now emit an indoor_area_occupied event.
+					
+					println("[logicalweightsensor] | [State] handleWeightEvent | Emit indoor_area_occupied.")
+					[# th_reached = true #]
+					emit indoor_area_occupied : indoor_area_occupied(X)
+				}
+			}
+		} // end onMsg
+		
+		println("[logicalweightsensor] | [State] handleWeightEvent | Exit point.")
+	} Transition t_weight_filter
+	whenEvent weight -> handleWeightEvent
+}
+
+QActor physicalsonar context ctxFirstModel {
+	State init initial {	 
+		println("[physicalsonar] | [State] init | Entry point.")
+		println("[physicalsonar] | [State] init | Exit point.")
+   	} Goto wait
+   	
+   	State wait {
+   		println("[physicalsonar] | [State] wait | Entry point.")
+   		onMsg(input_distance : input_distance(D)) {
+   			[# val D = payloadArg(0).toFloat() #]
+   			emit distance : distance($D)
+   		}
+   		println("[physicalsonar] | [State] wait | Exit point.")
+   	} Transition t0
+   	whenMsg input_distance -> wait
+   	
+}
+
+QActor logicalsonar context ctxFirstModel {
+	[#
+		var THRESHOLD = 100.0f
+		var object_detected = false
+	#]
+	
+	State init initial {
+		println("[logicalsonar] | [State] init | Entry point.")
+		[#
+			THRESHOLD = 100.0f
+			object_detected = false
+		#]
+		println("[logicalsonar] | [State] init | THRESHOLD: $THRESHOLD.")
+		println("[logicalsonar] | [State] init | Exit point.")
+	} Goto handleDistanceEvent
+	
+	/**
+   	 * Each time a distance(W) event is received handle that event.
+   	 * 
+   	 * When a transition from distance lower or equal to THRESHOLD to greater than THRESHOLD
+   	 * is intercepted then emit an outdoor_area_occupied event.
+   	 * 
+   	 * When a transition from distance greater than THRESHOLD to lower or equal to THRESHOLD
+   	 * is intercepted then emit an outdoor_area_free event.
+   	 */
+	State handleDistanceEvent {
+		println("[logicalsonar] | [State] handleDistanceEvent | Entry point.")
+		onMsg(distance : distance(D)) {
+			[# var D = payloadArg(0).toFloat() #] 
+			println("[logicalsonar] | [State] handleDistanceEvent | Received event distance: $D.")
+			if [# object_detected #] {
+				
+				// Case 1: Previous distance lower than THRESHOLD
+				
+				if [# D >= THRESHOLD #] {
+					
+					// Case 1.1: Current distance lower or equal THRESHOLD. Now emit an outdoor_area_free event.
+					
+					println("[logicalsonar] | [State] handleDistanceEvent | Emit outdoor_area_free.")
+					[# object_detected = false #]
+					emit outdoor_area_free : outdoor_area_free(X)
+				}
+			} else {
+				
+				// Case 2: Previous distance higher than or equal to THRESHOLD
+				 
+				if [# D < THRESHOLD #] {
+					
+					// Case 2.1: Current distance greater than THRESHOLD. Now emit an outdoor_area_occupied event.
+					
+					println("[logicalsonar] | [State] handleDistanceEvent | Emit outdoor_area_occupied.")
+					[# object_detected = true #]
+					emit outdoor_area_occupied : outdoor_area_occupied(X)
+				}
+			}
+		} // end onMsg
+		
+		println("[logicalsonar] | [State] handleDistanceEvent | Exit point.")
+	} Transition t_distance_filter
+	whenEvent distance -> handleDistanceEvent
+}
+
+QActor physicalthermometer context ctxFirstModel {
+	State init initial {	 
+		println("[physicalthermometer] | [State] init | Entry point.")
+		println("[physicalthermometer] | [State] init | Exit point.")
+   	} Goto wait
+   	
+   	State wait {
+   		println("[physicalthermometer] | [State] wait | Entry point.")
+   		onMsg(input_temperature : input_temperature(T)) {
+   			[# val T = payloadArg(0).toFloat() #]
+   			emit temperature : temperature($T)
+   		}
+   		println("[physicalthermometer] | [State] wait | Exit point.")
+   	} Transition t0
+   	whenMsg input_temperature -> wait
+   	
+}
+
+QActor logicalthermometer context ctxFirstModel {
+	[#
+		var TMAX = 35.0f
+		var T = 0.0f
+		var over_TMAX = false
+	#]
+	
+	State init initial {
+		println("[logicalthermometer] | [State] init | Entry point.")
+		[#
+			TMAX = 35.0f
+			T = 0.0f
+			over_TMAX = false
+		#]
+		println("[logicalthermometer] | [State] init | TMAX: $TMAX.")
+		println("[logicalthermometer] | [State] init | Exit point.")
+	} Goto handleTemperatureEvent
+	
+	/**
+   	 * Each time a temperature(C) event is received handle that event.
+   	 * 
+   	 * When a transition from temperature lower or equal to TMAX to greater than TMAX
+   	 * is intercepted then emit an temperature_high event.
+   	 * 
+   	 * When a transition from temperature greater than TMAX to lower or equal to TMAX
+   	 * is intercepted then emit an temperature_low event.
+   	 */
+	State handleTemperatureEvent {
+		println("[logicalthermometer] | [State] handleTemperatureEvent | Entry point.")
+		onMsg(temperature : temperature(C)) {
+			[# T = payloadArg(0).toFloat() #] 
+			println("[logicalthermometer] | [State] handleTemperatureEvent | Received event temperature: $T.")
+			if [# over_TMAX #] {
+				
+				// Case 1: Previous temperature higher than TMAX
+				
+				if [# T <= TMAX #] {
+					
+					// Case 1.1: Current temperature lower or equal TMAX. Now emit an temperature_low event.
+					
+					println("[logicalthermometer] | [State] handleTemperatureEvent | Emit temperature_low.")
+					[# over_TMAX = false #]
+					emit temperature_low : temperature_low(X)
+				}
+			} else {
+				
+				// Case 2: Previous temperature lower or equal to TMAX
+				
+				if [# T > TMAX #] {
+					
+					// Case 2.1: Current temperature greater than TMAX. Now emit an temperature_high event.
+					
+					println("[logicalthermometer] | [State] handleTemperatureEvent | Emit temperature_high.")
+					[# over_TMAX = true #]
+					emit temperature_high : temperature_high(X)
+				}
+			}
+		} // end onMsg
+		
+		println("[logicalthermometer] | [State] handleTemperatureEvent | Exit point.")
+	} Transition t_temp_filter
+	whenEvent temperature -> handleTemperatureEvent
+	whenRequest query_state_logical_temperature -> sendLogicalTemperature
+	
+	State sendLogicalTemperature {
+		println("[logicalthermometer] | [State] sendLogicalTemperature | Entry point.")
+		onMsg(query_state_logical_temperature : query_state_logical_temperature(X)) {
+			if [# T > TMAX #] {
+				replyTo query_state_logical_temperature with logical_temperature_high : logical_temperature_high(X)
+			} else {
+				replyTo query_state_logical_temperature with logical_temperature_low : logical_temperature_low(X)
+			}
+		}
+		println("[logicalthermometer] | [State] sendLogicalTemperature | Exit point.")
+	} Goto handleTemperatureEvent
+}
+
+
+QActor physicalfan context ctxFirstModel {     
+	
+	[# var is_on = false #]    
+
+	State init initial {	 
+		println("[physicalfan] | [State] init | Entry point.")
+		println("[physicalfan] | [State] init | Exit point.")
+   	} Goto running
+   	
+   	/**
+   	 * Wait for message turn on or turn off
+   	 */
+   	State running {
+   		println("[physicalfan] | [State] running | Entry point.")
+   		println("[physicalfan] | [State] running | Exit point.")
+   	} Transition t0 
+   	whenMsg physical_fan_on  -> turnOnFan
+   	whenMsg physical_fan_off -> turnOffFan
+   	
+   	/**
+   	 * Turn on
+   	 */
+   	State turnOnFan {
+   		println("[physicalfan] | [State] turnOnFan | Entry point.")
+   		onMsg(physical_fan_on : physical_fan_on(X)) {
+   			println("[physicalfan] | [State] turnOnFan | Turn ON.")
+   			[# is_on = true #]
+   		}
+   		println("[fan] | [State] turnOnFan | Exit point.")
+   	} Goto running
+   	   	
+   	/**
+   	 * Turn off
+   	 */
+   	State turnOffFan {
+   		println("[physicalfan] | [State] turnOffFan | Entry point.")
+   		onMsg(physical_fan_off : physical_fan_off(X)) {
+   			println("[physicalfan] | [State] turnOffFan | Turn OFF.")
+   			[# is_on = false #]
+   		}
+   		println("[physicalfan] | [State] turnOffFan | Exit point.")
+   	} Goto running
+}	
+
+
+QActor logicalfan context ctxFirstModel {   
+	
+	[# 
+	var is_automatic_mode = true 
+	var fan_on = false
+	var STATUS_FAN = "off"
+	var MODE_FAN = "automatic"
+	#]
+
+	State init initial {	 
+		println("[logicalfan] | [State] init | Entry point.")
+		[# 
+			is_automatic_mode = true 
+			fan_on = false
+			STATUS_FAN = "off"
+			MODE_FAN = "automatic"
+		#]
+		println("[logicalfan] | [State] init | Exit point.")
+   	} Goto switchToAutomaticMode  
+   	
+   	/**
+   	 * Automatic mode, just wait for incoming messages.
+   	 * 
+   	 * Two ParkServiceStatusGui messages:
+   	 * - automatic_mode(X) : loopback
+   	 * - manual_mode(X) : need to switch to manual mode -> go to waitInputManualMode
+   	 * 
+   	 * Two filter_thermometer events:
+   	 * - temperature_high(X) : need to turn on the fan -> go to turnOnFan
+   	 * - temperature_low(X) : need to turn off the fan -> go to turnOffFan
+   	 */
+   	State waitInputAutomaticMode {
+   		println("[logicalfan] | [State] waitInputAutomaticMode | Entry point.")
+   		println("[logicalfan] | [State] waitInputAutomaticMode | Exit point.")
+   	} Transition t_logicalfan_input_automatic
+   	whenMsg manual_mode ->  switchToManualMode
+   	whenMsg automatic_mode -> waitInputAutomaticMode
+   	whenEvent temperature_high -> turnOnFan
+   	whenEvent temperature_low -> turnOffFan
+   	
+   	/**
+   	 * Manual mode, just wait for incoming messages.
+   	 * 
+   	 * Four ParkServiceStatusGui messages:
+   	 * - manual_mode(X) : loopback
+   	 * - automatic_mode(X) : need to switch to manual mode -> go to waitInputManualMode
+   	 * - logicalfan_on(X) : need to turn on the fan -> go to turnOnFan
+   	 * - logicalfan_off(X) : need to turn off the fan -> go to turnOffFan
+   	 */   	
+   	State waitInputManualMode {
+   		println("[logicalfan] | [State] waitInputManualMode | Entry point.")
+   		println("[logicalfan] | [State] waitInputManualMode | Exit point.")
+   	} Transition t_logicalfan_input_manual
+   	whenMsg manual_mode ->  waitInputManualMode
+   	whenMsg automatic_mode -> switchToAutomaticMode
+   	whenMsg logical_fan_on  -> turnOnFan
+   	whenMsg logical_fan_off -> turnOffFan    
+   	
+   	State switchToManualMode {
+   		println("[logicalfan] | [State] switchToManualMode | Entry point.")
+   		[# is_automatic_mode = false #] 
+   		[# MODE_FAN = "manual" #]
+   		emit mode_fan_manual : mode_fan_manual(X)
+   		println("[logicalfan] | [State] switchToManualMode | Exit point.")
+   	} Goto waitInputManualMode
+   	
+   	State switchToAutomaticMode {
+   		println("[logicalfan] | [State] switchToAutomaticMode | Entry point.")
+   		[# is_automatic_mode = true #] 
+   		[# MODE_FAN = "automatic" #]
+   		emit mode_fan_automatic : mode_fan_automatic(X)
+   		request logicalthermometer -m query_state_logical_temperature : query_state_logical_temperature(X)
+   		println("[logicalfan] | [State] switchToAutomaticMode | Exit point.")
+   	} Transition t0 
+   	whenReply logical_temperature_high -> turnOnFan
+   	whenReply logical_temperature_low -> turnOffFan
+   	
+   	/**
+   	 * Need to turn on the fan.
+   	 * If we are in automatic mode then is expected an event temperature_high.
+   	 * If we are in manual mode then is expected a message logicalfan_on.
+   	 * 
+   	 * Independently from the automatic/manual mode the objective is to send
+   	 * a message to the fan and turn on it.
+   	 */
+   	State turnOnFan {
+   		println("[logicalfan] | [State] turnOnFan | Entry point.")
+   		
+   		[# var received_msg = false #]
+   		
+   		if [# is_automatic_mode #] {
+   			
+   			// Case 1: automatic mode, need to handle the event emitted by the logicalthermometer
+   			
+   			onMsg(temperature_high : temperature_high(X)) {
+   				[# received_msg = true #]
+   			}
+   			// if request-response
+   			onMsg(logical_temperature_high : logical_temperature_high(X)) {
+   				[# received_msg = true #]
+   			}
+   		} else {
+   			
+   			// Case 2: manual mode, need to handle the message sent by the ParkServiceStatusGui
+   			
+   			onMsg(logical_fan_on : logical_fan_on(X)) {
+   				[# received_msg = true #]
+   			}
+   		}
+   		
+   		if [# received_msg #] {
+   			println("[logicalfan] | [State] turnOnFan | Turn ON fan.")
+   			forward physicalfan -m physical_fan_on : physical_fan_on(X)
+   			[# fan_on = true #]
+   			[# STATUS_FAN = "on" #]
+   			emit state_fan_on : state_fan_on(X)
+   		}
+
+   		println("[logicalfan] | [State] turnOnFan | Exit point.")
+   	} Goto waitInputAutomaticMode if [# is_automatic_mode #] else waitInputManualMode 
+   	   	
+   	/**
+   	 * Need to turn off the fan.
+   	 * If we are in automatic mode then is expected an event temperature_low.
+   	 * If we are in manual mode then is expected a message logicalfan_off.
+   	 * 
+   	 * Independently from the automatic/manual mode the objective is to send
+   	 * a message to the fan and turn off it.
+   	 */   	
+   	State turnOffFan {
+   		println("[logicalfan] | [State] turnOffFan | Entry point.")
+   		
+		[# var received_msg = false #]
+   		
+   		if [# is_automatic_mode #] {
+   			   			
+   			// Case 1: automatic mode, need to handle the event emitted by the filter_thermometer
+   			
+   			onMsg(temperature_low : temperature_low(X)) {
+   				[# received_msg = true #]
+   			}
+   			// if request-response
+   			onMsg(logical_temperature_low : logical_temperature_low(X)) {
+   				[# received_msg = true #]
+   			}
+   		} else {
+   			   			
+   			// Case 2: manual mode, need to handle the message sent by the ParkServiceStatusGui
+   			
+   			onMsg(logical_fan_off : logical_fan_off(X)) {
+   				[# received_msg = true #]
+   			}
+   		}
+   		
+   		if [# received_msg #] { 
+   			println("[logicalfan] | [State] turnOffFan | Turn OFF fan.")
+   			forward physicalfan -m physical_fan_off : physical_fan_off(X)
+   			[# fan_on = false #]
+   			[# STATUS_FAN = "off" #]
+   			emit state_fan_off : state_fan_off(X)
+   		}
+   		
+   		println("[logicalfan] | [State] turnOffFan | Exit point.")
+   	} Goto waitInputAutomaticMode if [# is_automatic_mode #] else waitInputManualMode 
+}	
+
+
+QActor logicaltransporttrolley context ctxFirstModel {
+	
+	[# 
+		var SLOTNUM = 0
+		var AT_HOME = false
+		var CURRENT_STATE = "IDLE"
+		var CURRENT_POSITION = "HOME"
+		var CURRENT_JOB = "NONE"
+	#]
+	  
+	State init initial {
+		
+		// as per requirements the transport trolley initially is at HOME location
+		println("[logicaltransporttrolley] | [State] init | Entry point.") 
+		[# 
+			SLOTNUM = 0
+			AT_HOME = true
+			CURRENT_STATE = "IDLE"
+			CURRENT_POSITION = "home"
+			CURRENT_JOB = "NONE"
+		#]
+		println("[logicaltransporttrolley] | [State] init | Exit point.") 
+	} Goto wait
+	
+	State wait {
+		println("[logicaltransporttrolley] | [State] wait | Entry point.") 
+		[# CURRENT_JOB = "NONE" #]
+		println("[logicaltransporttrolley] | [State] wait | Exit point.") 
+	} Transition t0
+	whenMsg transport_trolley_car_park -> carParkTask
+	whenMsg transport_trolley_car_pickup -> carPickupTask
+	whenMsg transport_trolley_go_home -> backToHomeTask 
+	
+	State waitOrGoHome {
+		println("[logicaltransporttrolley] | [State] wait_or_go_home | Entry point.") 
+		[# CURRENT_JOB = "NONE" #]
+		println("[logicaltransporttrolley] | [State] wait_or_go_home | Exit point.") 
+	} Transition t0 whenTime 3000 -> backToHomeTask
+	whenMsg transport_trolley_car_park -> carParkTask
+	whenMsg transport_trolley_car_pickup -> carPickupTask
+	whenMsg transport_trolley_go_home -> backToHomeTask 
+	
+	/*****************************************************************************
+	 * BEGIN TASK GO TO HOME
+	 *****************************************************************************/
+	
+	State backToHomeTask {
+		println("[logicaltransporttrolley] | [State] backToHomeTask | Entry point.")
+		
+		if [# !AT_HOME #] {
+			println("[logicaltransporttrolley] | [State] backToHomeTask | Going to HOME")
+			[# CURRENT_JOB = "BackToHome"#]
+			delay 3000
+			[# AT_HOME = true #]
+			emit transport_trolley_position_home : transport_trolley_position_home( X )
+			println("[logicaltransporttrolley] | [State] backToHomeTask | Reached HOME") 
+			[# CURRENT_STATE = "IDLE" #]
+			[# CURRENT_POSITION = "HOME" #]
+			emit transport_trolley_new_state : transport_trolley_new_state( $CURRENT_STATE )
+			
+			println("[logicaltransporttrolley] | [State] backToHomeTask | Exit point.") 
+		} 
+
+	} Goto wait
+	
+	/*****************************************************************************
+	 * END TASK GO TO HOME
+	 *****************************************************************************/
+	
+	/*****************************************************************************
+	 * BEGIN TASK CAR PARK
+	 *****************************************************************************/
+	
+	State carParkTask {
+		println("[logicaltransporttrolley] | [State] carParkTask | Entry point.") 
+		[# AT_HOME = false #]
+		if [# CURRENT_STATE == "IDLE" #] {
+			[# CURRENT_STATE = "WORKING" #]
+			emit transport_trolley_new_state : transport_trolley_new_state( $CURRENT_STATE )
+		}
+		onMsg(transport_trolley_car_park : transport_trolley_car_park( SLOTNUM )) {
+			[# SLOTNUM = payloadArg(0).toInt() #]
+		}
+		
+		[# CURRENT_JOB = "CarPark"#]
+		
+		println("[logicaltransporttrolley] | [State] carParkTask | Exit point.") 
+	} Goto goToIndoorAndTakeOverTask
+	
+		
+	State goToIndoorAndTakeOverTask {
+		println("[logicaltransporttrolley] | [State] goToIndoorAndTakeOverTask | Entry point.") 
+		println("[logicaltransporttrolley] | [State] goToIndoorAndTakeOverTask | Going to INDOOR")
+		delay 3000
+		println("[logicaltransporttrolley] | [State] goToIndoorAndTakeOverTask | Reached INDOOR") 
+		emit transport_trolley_position_indoor : transport_trolley_position_indoor( X )
+		[# CURRENT_POSITION = "INDOOR"#]
+		println("[logicaltransporttrolley] | [State] goToIndoorAndTakeOverTask | Take over car...") 
+		//delay 1000
+		println("[logicaltransporttrolley] | [State] goToIndoorAndTakeOverTask | Car taked over.") 
+		println("[logicaltransporttrolley] | [State] goToIndoorAndTakeOverTask | Exit point.") 
+	} Goto goToSlotNumAndReleaseTask
+	
+	State goToSlotNumAndReleaseTask {
+		println("[logicaltransporttrolley] | [State] goToSlotNumAndReleaseTask | Entry point.") 
+		println("[logicaltransporttrolley] | [State] goToSlotNumAndReleaseTask | Going to SLOTNUM $SLOTNUM")
+		delay 3000
+		emit transport_trolley_position_slotnum : transport_trolley_position_slotnum( $SLOTNUM )
+		[# CURRENT_POSITION = "$SLOTNUM"#]
+		println("[logicaltransporttrolley] | [State] goToSlotNumAndReleaseTask | Reached SLOTNUM $SLOTNUM") 
+		println("[logicaltransporttrolley] | [State] goToSlotNumAndReleaseTask | Releasing car...") 
+		//delay 1000
+		println("[logicaltransporttrolley] | [State] goToSlotNumAndReleaseTask | Car released.") 
+		println("[logicaltransporttrolley] | [State] goToSlotNumAndReleaseTask | Exit point.") 
+	} Goto waitOrGoHome
+	
+	/*****************************************************************************
+	 * END TASK CAR PARK
+	 *****************************************************************************/
+	 
+	 	
+	/*****************************************************************************
+	 * BEGIN TASK CAR PICKUP
+	 *****************************************************************************/
+	
+	State carPickupTask {
+		println("[logicaltransporttrolley] | [State] carPickupTask | Entry point.") 
+		[# AT_HOME = false #]
+		if [# CURRENT_STATE == "IDLE" #] {
+			[# CURRENT_STATE = "WORKING" #]
+			emit transport_trolley_new_state : transport_trolley_new_state( $CURRENT_STATE )
+		}
+		
+		onMsg(transport_trolley_car_pickup : transport_trolley_car_pickup( SLOTNUM )) {
+			[# SLOTNUM = payloadArg(0).toInt() #]
+		}
+		
+		[# CURRENT_JOB = "CarPickup"#]
+		println("[logicaltransporttrolley] | [State] carPickupTask | Exit point.") 
+	} Goto goToSlotNumAndTakeOverTask
+	
+	State goToSlotNumAndTakeOverTask {
+		println("[logicaltransporttrolley] | [State] goToSlotNumAndTakeOverTask | Entry point.") 
+		println("[logicaltransporttrolley] | [State] goToSlotNumAndTakeOverTask | Going to SLOTNUM $SLOTNUM.")
+		delay 3000
+		emit transport_trolley_position_slotnum : transport_trolley_position_slotnum( $SLOTNUM )
+		[# CURRENT_POSITION = "$SLOTNUM"#]
+		println("[logicaltransporttrolley] | [State] goToSlotNumAndTakeOverTask | Reached SLOTNUM $SLOTNUM.") 
+		println("[logicaltransporttrolley] | [State] goToSlotNumAndTakeOverTask | Take over car...") 
+		//delay 1000
+		println("[logicaltransporttrolley] | [State] goToSlotNumAndTakeOverTask | Car taked over.") 
+		println("[logicaltransporttrolley] | [State] goToSlotNumAndTakeOverTask | Exit point.") 
+	} Goto goToOutdoorAndReleaseTask
+	
+	State goToOutdoorAndReleaseTask {
+		println("[logicaltransporttrolley] | [State] goToOutdoorAndReleaseTask | Entry point.") 
+		println("[logicaltransporttrolley] | [State] goToOutdoorAndReleaseTask | Going to OUTDOOR.")
+		delay 3000
+		emit transport_trolley_position_outdoor : transport_trolley_position_outdoor( X )
+		[# CURRENT_POSITION = "OUTDOOR"#]
+		println("[logicaltransporttrolley] | [State] goToOutdoorAndReleaseTask | Reached OUTDOOR.") 
+		println("[logicaltransporttrolley] | [State] goToOutdoorAndReleaseTask | Releasing car...") 
+		//delay 1000
+		println("[logicaltransporttrolley] | [State] goToOutdoorAndReleaseTask | Car released.") 
+		println("[logicaltransporttrolley] | [State] goToOutdoorAndReleaseTask | Exit point.") 
+	} Goto waitOrGoHome
+	
+	/*****************************************************************************
+	 * END TASK CAR PICKUP
+	 *****************************************************************************/
+	
+}
+
+
+QActor businesslogic context ctxFirstModel {
+	
+	[#
+		var  indoor_area_free = true
+		var  outdoor_area_free = true
+		var parking_slots: java.util.Queue<Int> = java.util.LinkedList<Int>(listOf(1, 2, 3, 4, 5, 6))
+		var STATUS_PARKING_AREA = arrayOf<String>("FREE", "FREE", "FREE", "FREE", "FREE", "FREE")
+		var token_parking_slots = java.util.LinkedList<String>()
+		var SLOTNUM = 0
+		var RESERVED_SLOTNUM_INDOOR_AREA = 0
+		var SLOTNUM_PICKUP = 0
+		var TOKENID = ""
+		var tokenid_valid = false
+		var car_pickup_request = false
+		var car_park_request = false
+	#]
+	
+	State init initial {
+		println("[businesslogic] | [State] init | Entry point.")
+		[#
+			indoor_area_free = true
+			outdoor_area_free = true
+			parking_slots = java.util.LinkedList<Int>(listOf(1, 2, 3, 4, 5, 6))
+			STATUS_PARKING_AREA = arrayOf<String>("FREE", "FREE", "FREE", "FREE", "FREE", "FREE")
+			token_parking_slots = java.util.LinkedList<String>()
+			SLOTNUM = 0
+			RESERVED_SLOTNUM_INDOOR_AREA = 0
+			SLOTNUM_PICKUP = 0
+			TOKENID = ""
+			tokenid_valid = false
+			car_pickup_request = false
+			car_park_request = false
+		#]
+		println("[businesslogic] | [State] init | Exit point.")
+	}Goto running 
+	
+	State running {
+		println("[businesslogic] | [State] running | Entry point.")
+		println("[businesslogic] | [State] running | Exit point.")
+	}
+	Transition t0 whenRequest   parking_car_interest and [# indoor_area_free #] -> checkCarIndoorArea
+				  whenRequest   car_enter and [# !indoor_area_free && !car_park_request #] -> carEnter
+				  whenEvent     transport_trolley_position_indoor and [# car_park_request #] -> sendTokenId
+				  whenEvent     transport_trolley_position_slotnum and [# car_park_request #] -> carParkDone
+				  whenEvent     indoor_area_free -> setFreeIndoorArea
+				  whenEvent     indoor_area_occupied -> setOccupiedIndoorArea
+				  whenRequest   car_pickup and [# outdoor_area_free && !car_pickup_request #] -> checkTokenId
+				  whenEvent     transport_trolley_position_outdoor and [# car_pickup_request #] -> pickUpCarFinished
+				  whenEvent     outdoor_area_free -> setFreeOutdoorArea
+				  whenEvent     outdoor_area_occupied -> setOccupiedOutdoorArea
+				  
+	State sendTransportTrolleyBackHome {
+		println("[businesslogic] | [State] sendTransportTrolleyBackHome | Entry point.")
+		println("[businesslogic] | [State] sendTransportTrolleyBackHome | Sending the transport trolley back home because there are no other requests")
+		forward logicaltransporttrolley -m transport_trolley_go_home : transport_trolley_go_home(ok)	
+		println("[businesslogic] | [State] sendTransportTrolleyBackHome | Exit point.")
+	} Goto running
+	
+	State checkCarIndoorArea {
+		println("[businesslogic] | [State] checkCarIndoorArea | Entry point.")
+		println("[businesslogic] | [State] checkCarIndoorArea | Checking if there is a parking slot free and if there is a car in the indoor area...")
+		println("[businesslogic] | [State] checkCarIndoorArea | Exit point.")
+	} Goto acceptIn if [# !parking_slots.isEmpty() #] else denyAcceptIn
+	
+	State acceptIn {
+		println("[businesslogic] | [State] acceptIn | Entry point.")
+		[# 
+			RESERVED_SLOTNUM_INDOOR_AREA = parking_slots.poll()
+			indoor_area_free = false
+		#]
+		println("[businesslogic] | [State] acceptIn | Car in the indoor area. I'm sending SLOTNUM.")
+		//println("[central_system] | [State] acceptIn | PARKING SLOTS FREE = $parking_slots_free")
+		replyTo parking_car_interest with inform_in : inform_in($RESERVED_SLOTNUM_INDOOR_AREA)
+		println("[businesslogic] | [State] acceptIn | Exit point.")
+	} Goto running
+	
+	State denyAcceptIn {
+		println("[businesslogic] | [State] denyAcceptIn | Entry point.")
+		println("[businesslogic] | [State] denyAcceptIn | Sending failure to client.. ")
+		replyTo parking_car_interest with inform_in : inform_in(0)
+		println("[businesslogic] | [State] denyAcceptIn | Exit point.")
+	} Goto running
+	
+	State carEnter {
+		println("[businesslogic] | [State] carEnter | Entry point.")
+		onMsg( car_enter : car_enter(SLOTNUM) ){
+			[# 
+				val client_SLOTNUM = payloadArg(0).toInt()
+				STATUS_PARKING_AREA[RESERVED_SLOTNUM_INDOOR_AREA - 1] = "OCCUPIED"
+				car_park_request = true
+			#]
+			println("[businesslogic] | [State] carEnter | Received SLOTNUM=$client_SLOTNUM")
+			println("[businesslogic] | [State] carEnter | Sending trolley to Indoor...")
+			forward logicaltransporttrolley -m transport_trolley_car_park : transport_trolley_car_park($RESERVED_SLOTNUM_INDOOR_AREA)
+		}
+		println("[businesslogic] | [State] carEnter | Exit point.")
+	} Goto running 
+	
+	State sendTokenId {
+		println("[businesslogic] | [State] sendTokenId | Entry point.")
+		[#
+			// simplified! need to change in random generation
+			TOKENID = "PMSx$RESERVED_SLOTNUM_INDOOR_AREA" 
+			token_parking_slots.add(TOKENID)
+		#]
+		println("[businesslogic] | [State] carEnter | Created  TOKENID=$TOKENID")
+		replyTo car_enter with response_car_enter : response_car_enter($TOKENID)
+		println("[businesslogic] | [State] sendTokenId | Exit point.")
+	} Goto running
+	
+	State carParkDone {
+		println("[businesslogic] | [State] carParkDone | Entry point.")
+		[# 
+			car_park_request = false 
+			val P1 =  STATUS_PARKING_AREA[0]
+			val P2 =  STATUS_PARKING_AREA[1]
+			val P3 =  STATUS_PARKING_AREA[2]
+			val P4 =  STATUS_PARKING_AREA[3]
+			val P5 =  STATUS_PARKING_AREA[4]
+			val P6 =  STATUS_PARKING_AREA[5]
+		#]
+		emit status_parking_slots : status_parking_slots($P1, $P2, $P3, $P4, $P5, $P6)
+		println("[businesslogic] | [State] carParkDone | Exit point.")
+	} Goto running
+	
+	State setFreeIndoorArea {
+		println("[businesslogic] | [State] setFreeIndoorArea | Entry point.")
+		println("[businesslogic] | [State] setFreeIndoorArea | The weight sensor has notified that the car has left the parking area.")
+		[# indoor_area_free = true #]
+		println("[businesslogic] | [State] setFreeIndoorArea | Exit point.")
+	} Goto running
+	
+	State setOccupiedIndoorArea {
+		println("[businesslogic] | [State] setOccupiedIndoorArea | Entry point.")
+		println("[businesslogic] | [State] setOccupiedIndoorArea | The weight sensor has notified that the car has entered the indoor area.")
+		[# indoor_area_free = false #]
+		println("[businesslogic] | [State] setOccupiedIndoorArea | Exit point.")
+	} Goto running
+	
+	State checkTokenId {
+		println("[businesslogic] | [State] checkTokenId | Entry point.")
+		println("[businesslogic] | [State] checkTokenId | Checking the TokenID...")
+		onMsg( car_pickup : car_pickup(TOKENID) ) {
+		[# 
+			tokenid_valid = false
+			TOKENID = payloadArg(0).toString() 
+			val token_index = token_parking_slots.indexOf(TOKENID)
+		#]
+			if [# token_index >= 0 #] {
+				[# 
+				token_parking_slots.removeAt(token_index)
+				for (c in TOKENID) { #]
+					if [# c.isDigit() #] {
+					[# 
+						tokenid_valid = true
+						SLOTNUM = Character.getNumericValue(c)
+					#]
+					}
+				[# } #]
+			}
+		}
+		println("[businesslogic] | [State] checkTokenId | Exit point.")
+	} Goto pickUpCar if [# tokenid_valid #] else invalidTokenId
+	
+	State invalidTokenId {
+		println("[businesslogic] | [State] invalidTokenId | Entry point.")
+		println("[businesslogic] | [State] invalidTokenId | TOKENID=$TOKENID is invalid. Can't pick up the car.")
+		replyTo car_pickup with accept_out_failure : accept_out_failure(X)
+		println("[businesslogic] | [State] invalidTokenId | Entry point.")
+	} Goto running
+	    
+	State pickUpCar {
+		println("[businesslogic] | [State] pickUpCar | Entry point.")
+		println("[businesslogic] | [State] pickUpCar | Telling the transport trolley to pick up the car at the parking slot n...")
+		forward logicaltransporttrolley -m transport_trolley_car_pickup : transport_trolley_car_pickup($SLOTNUM)
+		[# 
+			STATUS_PARKING_AREA[SLOTNUM - 1] = "FREE"
+			SLOTNUM_PICKUP = SLOTNUM
+			val P1 =  STATUS_PARKING_AREA[0]
+			val P2 =  STATUS_PARKING_AREA[1]
+			val P3 =  STATUS_PARKING_AREA[2]
+			val P4 =  STATUS_PARKING_AREA[3]
+			val P5 =  STATUS_PARKING_AREA[4]
+			val P6 =  STATUS_PARKING_AREA[5]
+			car_pickup_request = true
+		#]
+		emit status_parking_slots : status_parking_slots($P1, $P2, $P3, $P4, $P5, $P6)
+		println("[businesslogic] | [State] pickUpCar | Exit point.")
+	} Goto running
+	
+	State pickUpCarFinished {
+		println("[businesslogic] | [State] pickUpCarFinished | Entry point.")
+		println("[businesslogic] | [State] pickUpCarFinished | Set free the parking slot n. $SLOTNUM_PICKUP")
+		[# 
+			parking_slots.add(SLOTNUM_PICKUP) 
+			outdoor_area_free = false
+			car_pickup_request = false
+		#]
+		println("[businesslogic] | [State] pickUpCarFinished | Telling the client to go away...")
+		replyTo car_pickup with accept_out_success : accept_out_success(X)
+		println("[businesslogic] | [State] pickUpCarFinished | Entry point.")
+	} Goto running
+	
+	State setFreeOutdoorArea {
+		println("[businesslogic] | [State] setFreeOutdoorArea | Entry point.")
+		println("[businesslogic] | [State] setFreeOutdoorArea | The sonar has notified that the car has left the outdoor area.")
+		[# outdoor_area_free = true #]
+		println("[businesslogic] | [State] setFreeOutdoorArea | Exit point.")
+	} Goto running
+		
+	State setOccupiedOutdoorArea {
+		println("[businesslogic] | [State] setOccupiedOutdoorArea | Entry point.")
+		println("[businesslogic] | [State] setOccupiedOutdoorArea | The sonar has notified that the car has entered the outdoor area.")
+		[# outdoor_area_free = false #]
+		println("[businesslogic] | [State] setOccupiedOutdoorArea | Exit point.")
+	} Goto running
+	
+	
+}
+
+
+QActor parkservicegui context ctxFirstModel {
+	
+	[# 
+		var SLOTNUM = 0 
+		var TOKENID = ""
+		var response_car_pickup = ""
+	#]
+	
+	State init initial {
+		println("[parkservicegui] | [State] init | Entry point.")
+		[# 
+			SLOTNUM = 0 
+			TOKENID = ""
+			response_car_pickup = ""
+		#]
+				
+		println("[parkservicegui] | [State] init | Exit point.")
+	} Goto wait
+	
+	State wait {
+		println("[parkservicegui] | [State] wait | Entry point.")
+		println("[parkservicegui] | [State] wait | Exit point.")
+	} Transition t0
+	whenRequest req_client_accept_in -> interestedInParkingCar
+	whenReply   inform_in -> enterIndoor
+	whenRequest req_client_car_enter -> carEnter
+	whenRequest req_client_accept_out -> askForPickUpCar
+	whenReply   response_car_enter -> receiveTokenId
+	whenReply   accept_out_success -> pickUpCar
+	whenReply   accept_out_failure -> cannotPickUpCar
+	
+	State interestedInParkingCar {
+		println("[parkservicegui] | [State] InterestedInParkingCar | Entry point.")
+		onMsg(req_client_accept_in : req_client_accept_in(X)) {
+			
+		}
+		request businesslogic -m parking_car_interest : parking_car_interest(io)
+		println("[parkservicegui] | [State] InterestedInParkingCar | Exit point.")
+	} Goto wait
+
+	State enterIndoor {
+		println("[parkservicegui] | [State] enterIndoor | Entry point.")
+		onMsg( inform_in : inform_in(SLOTNUM) ){
+			[# SLOTNUM = payloadArg(0).toInt() #]			
+			println("[parkservicegui] | [State] enterIndoor | Client receives SLOTNUM = $SLOTNUM")
+			
+			if [# SLOTNUM > 0 #] {
+				replyTo req_client_accept_in with rep_client_accept_in : rep_client_accept_in($SLOTNUM)
+			} else {
+				replyTo req_client_accept_in with rep_client_accept_in : rep_client_accept_in(0)
+			}
+			
+		}
+		println("[parkservicegui] | [State] enterIndoor | Exit point.")
+	} Goto wait
+	
+	State carEnter {
+		println("[parkservicegui] | [State] CarEnter | Entry point.")
+		onMsg(req_client_car_enter : req_client_car_enter(SLOTNUM)) {
+			[# SLOTNUM = payloadArg(0).toInt() #]
+		}
+		request businesslogic -m car_enter : car_enter($SLOTNUM)
+		println("[parkservicegui] | [State] CarEnter | Exit point.")
+	} Goto wait
+	
+	State receiveTokenId {
+		println("[parkservicegui] | [State] ReceiveTokenId | Entry point.")
+		onMsg( response_car_enter : response_car_enter(TOKENID)){
+			[# TOKENID = payloadArg(0).toString() #]
+			println("[parkservicegui] | [State] ReceiveTokenId | Client receives TOKENID = $TOKENID ")
+			replyTo req_client_car_enter with rep_client_car_enter : rep_client_car_enter($TOKENID)
+		}
+		println("[parkservicegui] | [State] ReceiveTokenId | Exit point.")
+	} Goto wait
+	
+	State askForPickUpCar {
+		println("[parkservicegui] | [State] askForPickUpCar | Entry point.")
+		onMsg(req_client_accept_out : req_client_accept_out(TOKENID)) {
+			[# TOKENID = payloadArg(0) #]
+		}
+		println("[parkservicegui] | [State] askForPickUpCar | Ok now it's time to pick up my car")
+		request businesslogic -m car_pickup : car_pickup($TOKENID)
+		println("[parkservicegui] | [State] askForPickUpCar | Exit point.")
+	} Goto wait
+	 
+	State pickUpCar {
+		println("[parkservicegui] | [State] pickUpCar | Entry point.")
+		onMsg ( accept_out_success : accept_out_success(X) ){
+			println("[parkservicegui] | [State] pickUpCar | Thank you! Now I'm leaving the outdoor area.. bye")	
+			replyTo req_client_accept_out with rep_client_accept_out_success : rep_client_accept_out_success(X)
+		}
+		println("[parkservicegui] | [State] pickUpCar | Exit point.")
+	} Goto wait
+	
+	State cannotPickUpCar {
+		println("[parkservicegui] | [State] cannotPickUpCar | Entry point.")
+		onMsg ( accept_out_failure : accept_out_failure(X) ){
+			println("[parkservicegui] | [State] cannotPickUpCar | My token is not valid. I'll be back.")
+			replyTo req_client_accept_out with rep_client_accept_out_failure : rep_client_accept_out_failure(X)
+		}
+		println("[parkservicegui] | [State] cannotPickUpCar | Exit point.")
+	} Goto wait
+}
+
+
+QActor parkservicestatusgui context ctxFirstModel {
+	[# 
+		var TMAX = 35.0f
+		var P1 = "FREE" 
+		var P2 = "FREE" 
+		var P3 = "FREE" 
+		var P4 = "FREE" 
+		var P5 = "FREE" 
+		var P6 = "FREE" 
+		var indoor_area = "FREE"
+		var outdoor_area = "FREE"
+		var transport_trolley_status = "IDLE"
+		var fan_mode = "AUTOMATIC"
+		var fan_status = "OFF"
+		var temperature = 18.0f
+	#]
+	
+	State init initial {	 
+		println("[parkservicestatusgui] | [State] init | Entry point.")
+		[#
+			P1 = "FREE" 
+			P2 = "FREE" 
+			P3 = "FREE" 
+			P4 = "FREE" 
+			P5 = "FREE" 
+			P6 = "FREE" 
+			indoor_area = "FREE"
+			outdoor_area = "FREE"
+			transport_trolley_status = "IDLE"
+			fan_mode = "AUTOMATIC"
+			fan_status = "OFF"
+			temperature = 18.0f
+		#]
+		println("[parkservicestatusgui] | [State] init | Exit point.")
+   	} Goto wait
+   	
+   	State wait {
+   		println("[parkservicestatusgui] | [State] wait | Entry point.")
+   		println("[parkservicestatusgui] | [State] wait | Exit point.")
+   	} Transition t0
+   	whenRequest req_manager_fan_automatic_mode -> handleManagerRequest
+   	whenRequest req_manager_fan_manual_mode -> handleManagerRequest
+   	whenRequest req_manager_fan_on -> handleManagerRequest
+   	whenRequest req_manager_fan_off -> handleManagerRequest
+   	whenEvent   mode_fan_automatic -> handleModeFanUpdate
+   	whenEvent   mode_fan_manual -> handleModeFanUpdate
+   	whenEvent   state_fan_on -> handleStatusFanUpdate
+   	whenEvent   state_fan_off -> handleStatusFanUpdate
+   	whenEvent   indoor_area_free -> handleStatusIndoorArea
+   	whenEvent   indoor_area_occupied -> handleStatusIndoorArea
+   	whenEvent   outdoor_area_free -> handleStatusOutdoorArea
+   	whenEvent   outdoor_area_occupied -> handleStatusOutdoorArea
+   	whenEvent   status_parking_slots -> handleStatusParkingSlots
+   	whenEvent   transport_trolley_new_state -> handleStatusTransportTrolley
+   	whenEvent   temperature -> handleStatusTemperature
+   	
+   	State handleManagerRequest {
+   		println("[parkservicestatusgui] | [State] handleManagerRequest | Entry point.")
+   		onMsg(req_manager_fan_automatic_mode : req_manager_fan_automatic_mode(X)) {
+   			println("[parkservicestatusgui] | [State] handleManagerRequest | Propagate FAN AUTOMATIC MODE message.")
+   			forward logicalfan -m automatic_mode : automatic_mode(X)
+   			replyTo req_manager_fan_automatic_mode with rep_manager_done : rep_manager_done(X)
+   		}
+   		onMsg(req_manager_fan_manual_mode : req_manager_fan_manual_mode(X)) {
+   			println("[parkservicestatusgui] | [State] handleManagerRequest | Propagate FAN MANUAL MODE message.")
+   			forward logicalfan -m manual_mode : manual_mode(X)
+   			replyTo req_manager_fan_manual_mode with rep_manager_done : rep_manager_done(X)
+   		}
+   		onMsg(req_manager_fan_on : req_manager_fan_on(X)) {
+   			println("[parkservicestatusgui] | [State] handleManagerRequest | Propagate FAN ON message.")
+   			forward logicalfan -m logical_fan_on : logical_fan_on(X)
+   			replyTo req_manager_fan_on with rep_manager_done : rep_manager_done(X)
+   		}
+   		onMsg(req_manager_fan_off : req_manager_fan_off(X)) {
+   			println("[parkservicestatusgui] | [State] handleManagerRequest | Propagate FAN OFF message.")
+   			forward logicalfan -m logical_fan_off : logical_fan_off(X)
+   			replyTo req_manager_fan_off with rep_manager_done : rep_manager_done(X)
+   		}
+   		println("[parkservicestatusgui] | [State] handleManagerRequest | Exit point.")
+   	} Goto wait
+   	
+   	State handleModeFanUpdate {
+   		println("[parkservicestatusgui] | [State] handleModeFanUpdate | Entry point.")
+   		onMsg(mode_fan_automatic : mode_fan_automatic(X)) {
+   			println("[parkservicestatusgui] | [State] handleModeFanUpdate | Fan status: ON.")
+   			emit msg_to_manager_status_fan : msg_to_manager_status_fan(ON)
+   			[# fan_mode = "AUTOMATIC" #]
+   		}
+   		onMsg(mode_fan_manual : mode_fan_manual(X)) {
+   			println("[parkservicestatusgui] | [State] handleModeFanUpdate | Fan status: OFF.")
+   			emit msg_to_manager_status_fan : msg_to_manager_status_fan(OFF)
+   			[# fan_mode = "MANUAL" #]
+   		}
+   		println("[parkservicestatusgui] | [State] handleModeFanUpdate | Exit point.")
+   	} Goto wait
+   	
+   	State handleStatusFanUpdate {
+   		println("[parkservicestatusgui] | [State] handleStatusUpdate | Entry point.")
+   		onMsg(state_fan_on : state_fan_on(X)) {
+   			println("[parkservicestatusgui] | [State] handleStatusUpdate | Fan status: ON.")
+   			emit msg_to_manager_status_fan : msg_to_manager_status_fan(ON)
+   			[# fan_status = "ON" #]
+   		}
+   		onMsg(state_fan_off : state_fan_off(X)) {
+   			println("[parkservicestatusgui] | [State] handleStatusUpdate | Fan status: OFF.")
+   			emit msg_to_manager_status_fan : msg_to_manager_status_fan(OFF)
+   			[# fan_status = "OFF" #]
+   		}
+   		println("[parkservicestatusgui] | [State] handleStatusUpdate | Exit point.")
+   	} Goto wait
+   	
+   	State handleStatusTransportTrolley {
+   		println("[parkservicestatusgui] | [State] handleStatusTransportTrolley | Entry point.")
+   		onMsg(transport_trolley_new_state : transport_trolley_new_state( STATE )) {
+   			[# var STATUS = payloadArg(0) #]
+   			println("[parkservicestatusgui] | [State] handleStatusTransportTrolley | TransportTrolley status: $STATUS.")
+   			emit msg_to_manager_status_transport_trolley : msg_to_manager_status_transport_trolley($STATUS)
+   			[# transport_trolley_status = "$STATUS" #]
+   		}
+   		println("[parkservicestatusgui] | [State] handleStatusTransportTrolley | Exit point.")
+   	} Goto wait
+   	
+   	State handleStatusTemperature {
+   		println("[parkservicestatusgui] | [State] handleStatusTemperature | Entry point.")
+   		onMsg(temperature : temperature(C)) {
+   			[# var TEMPERATURE = payloadArg(0).toFloat() #]
+   			println("[parkservicestatusgui] | [State] handleStatusTemperature | Thermometer measured temperature: $TEMPERATURE.")
+			if [# TEMPERATURE > TMAX #] {
+				println("[parkservicestatusgui] | [State] handleStatusTemperature | Temperature GREATER THAN TMAX.")
+			} else {
+				println("[parkservicestatusgui] | [State] handleStatusTemperature | Thermometer LOWER THAN OR EQUAL TO TMAX.")
+			}
+			emit msg_to_manager_status_temperature : msg_to_manager_status_temperature($TEMPERATURE)
+			[# temperature = "$TEMPERATURE".toFloat() #]
+   		}
+   		println("[parkservicestatusgui] | [State] handleStatusTemperature | Exit point.")
+   	} Goto wait
+   	
+   	State handleStatusParkingSlots {
+   		println("[parkservicestatusgui] | [State] handleStatusParkingSlots | Entry point.")
+   		onMsg(status_parking_slots : status_parking_slots(P1,P2,P3,P4,P5,P6)) {
+   			[# 
+   				P1 = payloadArg(0)
+   				P2 = payloadArg(1)
+   				P3 = payloadArg(2)
+   				P4 = payloadArg(3)
+   				P5 = payloadArg(4)
+   				P6 = payloadArg(5)
+   			#]
+   			println("[parkservicestatusgui] | [State] handleStatusParkingSlots | Status parking slots: [$P1,$P2,$P3,$P4,$P5,$P6].")
+   			emit msg_to_manager_status_parking_slots : msg_to_manager_status_parking_slots($P1,$P2,$P3,$P4,$P5,$P6)
+   		}
+   		println("[parkservicestatusgui] | [State] handleStatusParkingSlots | Exit point.")
+   	} Goto wait
+   	
+   	State handleStatusIndoorArea {
+   		println("[parkservicestatusgui] | [State] handleStatusIndoorArea | Entry point.")
+   		onMsg(indoor_area_free : indoor_area_free(X)) {
+   			println("[parkservicestatusgui] | [State] handleStatusIndoorArea | Status indoor area: FREE.")
+   			emit msg_to_manager_status_indoor_area : msg_to_manager_status_indoor_area(FREE)
+   			[# indoor_area = "FREE" #]
+   		}
+   		onMsg(indoor_area_occupied : indoor_area_occupied(X)) {
+   			println("[parkservicestatusgui] | [State] handleStatusIndoorArea | Status indoor area: OCCUPIED.")
+   			emit msg_to_manager_status_indoor_area : msg_to_manager_status_indoor_area(OCCUPIED)
+   			[# indoor_area = "OCCUPIED" #]
+   		}
+   		println("[parkservicestatusgui] | [State] handleStatusIndoorArea | Exit point.")
+   	} Goto wait
+   	
+   	State handleStatusOutdoorArea {
+   		println("[parkservicestatusgui] | [State] handleStatusOutdoorArea | Entry point.")
+   		onMsg(outdoor_area_free : outdoor_area_free(X)) {
+   			println("[parkservicestatusgui] | [State] handleStatusOutdoorArea | Status outdoor area: FREE.")
+   			emit msg_to_manager_status_outdoor_area : msg_to_manager_status_outdoor_area(FREE)
+   			[# outdoor_area = "FREE" #]
+   		}
+   		onMsg(outdoor_area_occupied : outdoor_area_occupied(X)) {
+   			println("[parkservicestatusgui] | [State] handleStatusOutdoorArea | Status outdoor area: OCCUPIED.")
+   			emit msg_to_manager_status_outdoor_area : msg_to_manager_status_outdoor_area(OCCUPIED)
+   			[# outdoor_area = "FREE" #]
+   		}
+   		println("[parkservicestatusgui] | [State] handleStatusOutdoorArea | Exit point.")
+   	} Goto wait
+}    
+
+QActor mastermind context ctxFirstModel {
+	
+	[# 
+		var SLOTNUM = 0 
+		var TOKENID = "" 
+	#]
+	
+	State init initial {
+		println("[mastermind] | [State] init | Entry point.")
+		delay 5000
+		println("[mastermind] | [State] init | Exit point.")
+	} Goto carEnterIndoorArea
+	
+	State carEnterIndoorArea {
+		println("[mastermind] | [State] carEnterIndoorArea | Entry point.")
+		request parkservicegui -m req_client_accept_in : req_client_accept_in(X)
+		println("[mastermind] | [State] carEnterIndoorArea | Exit point.")
+	} Transition t0 whenReply rep_client_accept_in -> receiveSlotnum
+	
+	State receiveSlotnum {
+		println("[mastermind] | [State] receiveSlotnum | Entry point.")
+		onMsg(rep_client_accept_in : rep_client_accept_in(SLOTNUM)) {
+			[# SLOTNUM = payloadArg(0).toInt() #] 
+			println("[mastermind] | [State] receiveSlotnum | SLOTNUM: $SLOTNUM.")
+		}
+		println("[mastermind] | [State] receiveSlotnum | Exit point.")
+	} Transition t0 whenTime 2000 -> carDetectedByWeightSensor
+	
+	State carDetectedByWeightSensor {
+		println("[mastermind] | [State] carDetectedByWeightSensor | Entry point.")
+		[# val W = 800.0f #]
+		forward physicalweightsensor -m input_weight : input_weight($W)
+		println("[mastermind] | [State] carDetectedByWeightSensor | Exit point.")
+	} Transition t0 whenTime 2000 -> pressCarEnterButton
+	
+	State pressCarEnterButton {
+		println("[mastermind] | [State] pressCarEnterButton | Entry point.")
+		request parkservicegui -m req_client_car_enter : req_client_car_enter($SLOTNUM)
+		println("[mastermind] | [State] pressCarEnterButton | Exit point.")
+	} Transition t0 whenReply rep_client_car_enter -> readTokenId
+	
+	State readTokenId {
+		println("[mastermind] | [State] readTokenId | Entry point.")
+		onMsg(rep_client_car_enter : rep_client_car_enter(TOKENID)) {
+			[# TOKENID = payloadArg(0) #]
+			println("[mastermind] | [State] readTokenId | TOKENID: $TOKENID.")
+		}
+		println("[mastermind] | [State] readTokenId | Exit point.")
+	} Goto transportrolleyWithdrawCar
+	
+	State transportrolleyWithdrawCar {
+		println("[mastermind] | [State] transportrolleyWithdrawCar | Entry point.")
+		[# val W = 0.0f #]
+		forward physicalweightsensor -m input_weight : input_weight($W)
+		println("[mastermind] | [State] transportrolleyWithdrawCar | Exit point.")
+	} Goto idleUntilPickupRequest
+	
+	State idleUntilPickupRequest {
+		println("[mastermind] | [State] idleUntilPickupRequest | Entry point.")
+		delay 10000
+		println("[mastermind] | [State] idleUntilPickupRequest | Exit point.")
+	} Goto pickupRequest
+	
+	State pickupRequest {
+		println("[mastermind] | [State] pickupRequest | Entry point.")
+		request parkservicegui -m req_client_accept_out : req_client_accept_out($TOKENID)
+		println("[mastermind] | [State] pickupRequest | Exit point.")
+	} Transition t0 whenReply rep_client_accept_out_success -> carDetectedByOutSonar
+	
+	State carDetectedByOutSonar {
+		println("[mastermind] | [State] carDetectedByOutSonar | Entry point.")
+		[# val  D = 10.0f #]
+		forward physicalsonar -m input_distance : input_distance($D)
+		println("[mastermind] | [State] carDetectedByOutSonar | Exit point.")
+	} Transition t0 whenTime 2000 -> carLeaveOutdoorArea
+	
+	State carLeaveOutdoorArea {
+		println("[mastermind] | [State] carLeaveOutdoorArea | Entry point.")
+		[# val  D = 200.0f #]
+		forward physicalsonar -m input_distance : input_distance($D)
+		println("[mastermind] | [State] carLeaveOutdoorArea | Exit point.")
+	} Transition t0 whenTime 3000 -> end
+	
+	State end {
+		println("[mastermind] | [State] end")
+	}
+}

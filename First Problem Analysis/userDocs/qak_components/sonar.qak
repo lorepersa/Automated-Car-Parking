@@ -1,0 +1,91 @@
+
+System first_model
+
+Event     distance              : distance( D )
+Event     outdoor_area_occupied : outdoor_area_occupied( X )
+Event     outdoor_area_free     : outdoor_area_free( X )
+
+Dispatch  input_distance        : input_distance( D )
+
+Context ctxFirstModel  ip [host="localhost" port=8053]
+
+
+QActor physicalsonar context ctxFirstModel {
+	State init initial {	 
+		println("[physicalsonar] | [State] init | Entry point.")
+		println("[physicalsonar] | [State] init | Exit point.")
+   	} Goto wait
+   	
+   	State wait {
+   		println("[physicalsonar] | [State] wait | Entry point.")
+   		onMsg(input_distance : input_distance(D)) {
+   			[# val D = payloadArg(0).toFloat() #]
+   			emit distance : distance($D)
+   		}
+   		println("[physicalsonar] | [State] wait | Exit point.")
+   	} Transition t0
+   	whenMsg input_distance -> wait
+   	
+}
+
+QActor logicalsonar context ctxFirstModel {
+	[#
+		var THRESHOLD = 100.0f
+		var object_detected = false
+	#]
+	
+	State init initial {
+		println("[logicalsonar] | [State] init | Entry point.")
+		[#
+			THRESHOLD = 100.0f
+			object_detected = false
+		#]
+		println("[logicalsonar] | [State] init | THRESHOLD: $THRESHOLD.")
+		println("[logicalsonar] | [State] init | Exit point.")
+	} Goto handleDistanceEvent
+	
+	/**
+   	 * Each time a distance(W) event is received handle that event.
+   	 * 
+   	 * When a transition from distance lower or equal to THRESHOLD to greater than THRESHOLD
+   	 * is intercepted then emit an outdoor_area_occupied event.
+   	 * 
+   	 * When a transition from distance greater than THRESHOLD to lower or equal to THRESHOLD
+   	 * is intercepted then emit an outdoor_area_free event.
+   	 */
+	State handleDistanceEvent {
+		println("[logicalsonar] | [State] handleDistanceEvent | Entry point.")
+		onMsg(distance : distance(D)) {
+			[# var D = payloadArg(0).toFloat() #] 
+			println("[logicalsonar] | [State] handleDistanceEvent | Received event distance: $D.")
+			if [# object_detected #] {
+				
+				// Case 1: Previous distance lower than THRESHOLD
+				
+				if [# D >= THRESHOLD #] {
+					
+					// Case 1.1: Current distance lower or equal THRESHOLD. Now emit an outdoor_area_free event.
+					
+					println("[logicalsonar] | [State] handleDistanceEvent | Emit outdoor_area_free.")
+					[# object_detected = false #]
+					emit outdoor_area_free : outdoor_area_free(X)
+				}
+			} else {
+				
+				// Case 2: Previous distance higher than or equal to THRESHOLD
+				 
+				if [# D < THRESHOLD #] {
+					
+					// Case 2.1: Current distance greater than THRESHOLD. Now emit an outdoor_area_occupied event.
+					
+					println("[logicalsonar] | [State] handleDistanceEvent | Emit outdoor_area_occupied.")
+					[# object_detected = true #]
+					emit outdoor_area_occupied : outdoor_area_occupied(X)
+				}
+			}
+		} // end onMsg
+		
+		println("[logicalsonar] | [State] handleDistanceEvent | Exit point.")
+	} Transition t_distance_filter
+	whenEvent distance -> handleDistanceEvent
+}

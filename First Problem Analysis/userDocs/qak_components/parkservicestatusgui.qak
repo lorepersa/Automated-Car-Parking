@@ -1,0 +1,218 @@
+
+System first_model
+
+Reply    rep_manager_done                         : rep_manager_done(X)
+Request  req_manager_fan_automatic_mode           : req_manager_fan_automatic_mode( X )
+Request  req_manager_fan_manual_mode              : req_manager_fan_manual_mode( X )
+Request  req_manager_fan_on                       : req_manager_fan_on( X )
+Request  req_manager_fan_off                      : req_manager_fan_off( X )
+Event    msg_to_manager_status_fan                : msg_to_manager_fan_on( STATUS )
+Event    msg_to_manager_mode_fan                  : msg_to_manager_fan_automatic_mode( MODE )
+Event    msg_to_manager_status_indoor_area        : msg_to_manager_status_indoor_area( STATUS )
+Event    msg_to_manager_status_outdoor_area       : msg_to_manager_status_outdoor_area( STATUS )
+Event    msg_to_manager_status_parking_slots      : msg_to_manager_status_parking_slots(P1,P2,P3,P4,P5,P6)
+Event    msg_to_manager_status_temperature        : msg_to_manager_temperature( C )
+Event    msg_to_manager_status_transport_trolley  : msg_to_manager_status_transport_trolley( STATUS )
+
+// status
+Event    outdoor_area_occupied        : outdoor_area_occupied( X )
+Event    outdoor_area_free            : outdoor_area_free( X )
+Event    indoor_area_occupied         : indoor_area_occupied( X )
+Event    indoor_area_free             : indoor_area_free( C )
+Event    state_fan_on                 : state_fan_on( X )
+Event    state_fan_off                : state_fan_off( X )
+Event    mode_fan_automatic           : mode_fan_automatic( X )
+Event    mode_fan_manual              : mode_fan_manual( X )
+Event    temperature                  : temperature( C )
+Event    transport_trolley_new_state  : transport_trolley_new_state( STATE )
+Event    status_parking_slots         : status_parking_slots(P1,P2,P3,P4,P5,P6)
+
+
+Context ctxFirstModel  ip [host="localhost" port=8053]
+
+
+QActor parkservicestatusgui context ctxFirstModel {
+	[# 
+		var TMAX = 35.0f
+		var P1 = "FREE" 
+		var P2 = "FREE" 
+		var P3 = "FREE" 
+		var P4 = "FREE" 
+		var P5 = "FREE" 
+		var P6 = "FREE" 
+		var indoor_area = "FREE"
+		var outdoor_area = "FREE"
+		var transport_trolley_status = "IDLE"
+		var fan_mode = "AUTOMATIC"
+		var fan_status = "OFF"
+		var temperature = 18.0f
+	#]
+	
+	State init initial {	 
+		println("[parkservicestatusgui] | [State] init | Entry point.")
+		[#
+			P1 = "FREE" 
+			P2 = "FREE" 
+			P3 = "FREE" 
+			P4 = "FREE" 
+			P5 = "FREE" 
+			P6 = "FREE" 
+			indoor_area = "FREE"
+			outdoor_area = "FREE"
+			transport_trolley_status = "IDLE"
+			fan_mode = "AUTOMATIC"
+			fan_status = "OFF"
+			temperature = 18.0f
+		#]
+		println("[parkservicestatusgui] | [State] init | Exit point.")
+   	} Goto wait
+   	
+   	State wait {
+   		println("[parkservicestatusgui] | [State] wait | Entry point.")
+   		println("[parkservicestatusgui] | [State] wait | Exit point.")
+   	} Transition t0
+   	whenRequest req_manager_fan_automatic_mode -> handleManagerRequest
+   	whenRequest req_manager_fan_manual_mode -> handleManagerRequest
+   	whenRequest req_manager_fan_on -> handleManagerRequest
+   	whenRequest req_manager_fan_off -> handleManagerRequest
+   	whenEvent   mode_fan_automatic -> handleModeFanUpdate
+   	whenEvent   mode_fan_manual -> handleModeFanUpdate
+   	whenEvent   state_fan_on -> handleStatusFanUpdate
+   	whenEvent   state_fan_off -> handleStatusFanUpdate
+   	whenEvent   indoor_area_free -> handleStatusIndoorArea
+   	whenEvent   indoor_area_occupied -> handleStatusIndoorArea
+   	whenEvent   outdoor_area_free -> handleStatusOutdoorArea
+   	whenEvent   outdoor_area_occupied -> handleStatusOutdoorArea
+   	whenEvent   status_parking_slots -> handleStatusParkingSlots
+   	whenEvent   transport_trolley_new_state -> handleStatusTransportTrolley
+   	whenEvent   temperature -> handleStatusTemperature
+   	
+   	State handleManagerRequest {
+   		println("[parkservicestatusgui] | [State] handleManagerRequest | Entry point.")
+   		onMsg(req_manager_fan_automatic_mode : req_manager_fan_automatic_mode(X)) {
+   			println("[parkservicestatusgui] | [State] handleManagerRequest | Propagate FAN AUTOMATIC MODE message.")
+   			forward logicalfan -m automatic_mode : automatic_mode(X)
+   			replyTo req_manager_fan_automatic_mode with rep_manager_done : rep_manager_done(X)
+   		}
+   		onMsg(req_manager_fan_manual_mode : req_manager_fan_manual_mode(X)) {
+   			println("[parkservicestatusgui] | [State] handleManagerRequest | Propagate FAN MANUAL MODE message.")
+   			forward logicalfan -m manual_mode : manual_mode(X)
+   			replyTo req_manager_fan_manual_mode with rep_manager_done : rep_manager_done(X)
+   		}
+   		onMsg(req_manager_fan_on : req_manager_fan_on(X)) {
+   			println("[parkservicestatusgui] | [State] handleManagerRequest | Propagate FAN ON message.")
+   			forward logicalfan -m logical_fan_on : logical_fan_on(X)
+   			replyTo req_manager_fan_on with rep_manager_done : rep_manager_done(X)
+   		}
+   		onMsg(req_manager_fan_off : req_manager_fan_off(X)) {
+   			println("[parkservicestatusgui] | [State] handleManagerRequest | Propagate FAN OFF message.")
+   			forward logicalfan -m logical_fan_off : logical_fan_off(X)
+   			replyTo req_manager_fan_off with rep_manager_done : rep_manager_done(X)
+   		}
+   		println("[parkservicestatusgui] | [State] handleManagerRequest | Exit point.")
+   	} Goto wait
+   	
+   	State handleModeFanUpdate {
+   		println("[parkservicestatusgui] | [State] handleModeFanUpdate | Entry point.")
+   		onMsg(mode_fan_automatic : mode_fan_automatic(X)) {
+   			println("[parkservicestatusgui] | [State] handleModeFanUpdate | Fan status: ON.")
+   			emit msg_to_manager_status_fan : msg_to_manager_status_fan(ON)
+   			[# fan_mode = "AUTOMATIC" #]
+   		}
+   		onMsg(mode_fan_manual : mode_fan_manual(X)) {
+   			println("[parkservicestatusgui] | [State] handleModeFanUpdate | Fan status: OFF.")
+   			emit msg_to_manager_status_fan : msg_to_manager_status_fan(OFF)
+   			[# fan_mode = "MANUAL" #]
+   		}
+   		println("[parkservicestatusgui] | [State] handleModeFanUpdate | Exit point.")
+   	} Goto wait
+   	
+   	State handleStatusFanUpdate {
+   		println("[parkservicestatusgui] | [State] handleStatusUpdate | Entry point.")
+   		onMsg(state_fan_on : state_fan_on(X)) {
+   			println("[parkservicestatusgui] | [State] handleStatusUpdate | Fan status: ON.")
+   			emit msg_to_manager_status_fan : msg_to_manager_status_fan(ON)
+   			[# fan_status = "ON" #]
+   		}
+   		onMsg(state_fan_off : state_fan_off(X)) {
+   			println("[parkservicestatusgui] | [State] handleStatusUpdate | Fan status: OFF.")
+   			emit msg_to_manager_status_fan : msg_to_manager_status_fan(OFF)
+   			[# fan_status = "OFF" #]
+   		}
+   		println("[parkservicestatusgui] | [State] handleStatusUpdate | Exit point.")
+   	} Goto wait
+   	
+   	State handleStatusTransportTrolley {
+   		println("[parkservicestatusgui] | [State] handleStatusTransportTrolley | Entry point.")
+   		onMsg(transport_trolley_new_state : transport_trolley_new_state( STATE )) {
+   			[# var STATUS = payloadArg(0) #]
+   			println("[parkservicestatusgui] | [State] handleStatusTransportTrolley | TransportTrolley status: $STATUS.")
+   			emit msg_to_manager_status_transport_trolley : msg_to_manager_status_transport_trolley($STATUS)
+   			[# transport_trolley_status = "$STATUS" #]
+   		}
+   		println("[parkservicestatusgui] | [State] handleStatusTransportTrolley | Exit point.")
+   	} Goto wait
+   	
+   	State handleStatusTemperature {
+   		println("[parkservicestatusgui] | [State] handleStatusTemperature | Entry point.")
+   		onMsg(temperature : temperature(C)) {
+   			[# var TEMPERATURE = payloadArg(0).toFloat() #]
+   			println("[parkservicestatusgui] | [State] handleStatusTemperature | Thermometer measured temperature: $TEMPERATURE.")
+			if [# TEMPERATURE > TMAX #] {
+				println("[parkservicestatusgui] | [State] handleStatusTemperature | Temperature GREATER THAN TMAX.")
+			} else {
+				println("[parkservicestatusgui] | [State] handleStatusTemperature | Thermometer LOWER THAN OR EQUAL TO TMAX.")
+			}
+			emit msg_to_manager_status_temperature : msg_to_manager_status_temperature($TEMPERATURE)
+			[# temperature = "$TEMPERATURE".toFloat() #]
+   		}
+   		println("[parkservicestatusgui] | [State] handleStatusTemperature | Exit point.")
+   	} Goto wait
+   	
+   	State handleStatusParkingSlots {
+   		println("[parkservicestatusgui] | [State] handleStatusParkingSlots | Entry point.")
+   		onMsg(status_parking_slots : status_parking_slots(P1,P2,P3,P4,P5,P6)) {
+   			[# 
+   				P1 = payloadArg(0)
+   				P2 = payloadArg(1)
+   				P3 = payloadArg(2)
+   				P4 = payloadArg(3)
+   				P5 = payloadArg(4)
+   				P6 = payloadArg(5)
+   			#]
+   			println("[parkservicestatusgui] | [State] handleStatusParkingSlots | Status parking slots: [$P1,$P2,$P3,$P4,$P5,$P6].")
+   			emit msg_to_manager_status_parking_slots : msg_to_manager_status_parking_slots($P1,$P2,$P3,$P4,$P5,$P6)
+   		}
+   		println("[parkservicestatusgui] | [State] handleStatusParkingSlots | Exit point.")
+   	} Goto wait
+   	
+   	State handleStatusIndoorArea {
+   		println("[parkservicestatusgui] | [State] handleStatusIndoorArea | Entry point.")
+   		onMsg(indoor_area_free : indoor_area_free(X)) {
+   			println("[parkservicestatusgui] | [State] handleStatusIndoorArea | Status indoor area: FREE.")
+   			emit msg_to_manager_status_indoor_area : msg_to_manager_status_indoor_area(FREE)
+   			[# indoor_area = "FREE" #]
+   		}
+   		onMsg(indoor_area_occupied : indoor_area_occupied(X)) {
+   			println("[parkservicestatusgui] | [State] handleStatusIndoorArea | Status indoor area: OCCUPIED.")
+   			emit msg_to_manager_status_indoor_area : msg_to_manager_status_indoor_area(OCCUPIED)
+   			[# indoor_area = "OCCUPIED" #]
+   		}
+   		println("[parkservicestatusgui] | [State] handleStatusIndoorArea | Exit point.")
+   	} Goto wait
+   	
+   	State handleStatusOutdoorArea {
+   		println("[parkservicestatusgui] | [State] handleStatusOutdoorArea | Entry point.")
+   		onMsg(outdoor_area_free : outdoor_area_free(X)) {
+   			println("[parkservicestatusgui] | [State] handleStatusOutdoorArea | Status outdoor area: FREE.")
+   			emit msg_to_manager_status_outdoor_area : msg_to_manager_status_outdoor_area(FREE)
+   			[# outdoor_area = "FREE" #]
+   		}
+   		onMsg(outdoor_area_occupied : outdoor_area_occupied(X)) {
+   			println("[parkservicestatusgui] | [State] handleStatusOutdoorArea | Status outdoor area: OCCUPIED.")
+   			emit msg_to_manager_status_outdoor_area : msg_to_manager_status_outdoor_area(OCCUPIED)
+   			[# outdoor_area = "FREE" #]
+   		}
+   		println("[parkservicestatusgui] | [State] handleStatusOutdoorArea | Exit point.")
+   	} Goto wait
+}    

@@ -1,0 +1,2879 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+    <!--
+<link rel="stylesheet" type="text/css" href="../css/issStyle1.css">
+<script type="text/javascript" src="../css/issStyle.js"></script>
+-->
+
+<head>
+  <link href="style/style.css" rel="stylesheet" type="text/css">
+
+<title>First Problem Analysis</title>
+</head>
+
+<body>
+<div id="top">
+<h1>LABORATORIO DI INGEGNERIA DEI SISTEMI SOFTWARE <font size="5"></font> </h1>
+</div>
+
+<div class="body">
+<h2>Introduction</h2>
+
+
+<h2>Requirements</h2>
+
+
+<div class="remark">
+Customer's requirements are available <a href="https://raw.githubusercontent.com/anatali/issLab2021/main/it.unibo.issLabStart/userDocs/TFBO21ISS.pdf">here</a>.
+</div>
+
+
+
+<h2>Requirement analysis</h2>
+
+<div class="remark">
+Requirements analysis is available <a href="http://htmlpreview.github.io/?https://github.com/lorepersa/Automated-Car-Parking/blob/main/Requirements%20Analysis/Requirements%20analysis.html">here</a>.
+</div>
+
+<h2>First Problem Analysis</h2>
+<div class="remark">
+
+  <div class="technologies_abstraction_gap" id="technologies-abstraction-gap">
+    <h3>Technologies and abstraction gap</h3>
+    <p>
+      An object oriented programming language, as Kotlin or Java, seems the best fit to implement the services of our system. Kotlin would be preferred for its native support for coroutines and actors that would benefit developers by not having to import many libraries and dependencies and, of course, in terms of resources, as coroutines are more lightweight than threads and don't need many expensive context switches.<br>
+      This distributed system, made of several heterogeneous components, would benefit greatly from an actor-based framework with a support for a message-based interaction. For this purpose, the product owner provides us a custom modelling language (DSL) and metamodel, <k>QAK meta-model</k>, that will help us in building a model of the system exploiting actors technology, as a substitute for the usual object technology, to achieve high-level interaction between components, as the actors possess an inward message queue which can be used to communicate with a specific message-based application level protocol, which sits on top of the usual, most used transport and application level protocols (HTTP, WS, TCP, UDP, etc.). In addition the QAK meta-model provides compatibility with other communication protocols such as MQTT and CoAP, equally valid for the interaction between actors.
+      <br><br>
+      Given the popularity of the high level languages (Kotlin and Java), there are many libraries for network communication and the use of actors. This means that apparently the <k>abstraction gap</k> between the system and the available technologies is not so high. Nevertheless, keeping into consideration things like fault tolerance and a possible data persistence makes this gap wider, because it requires the use of low level techniques to solve them. The use of physical sensors also widens this gap.
+      <br><br>
+    </p>
+  </div>
+
+  <div class="general_considerations" id="general-considerations">
+    <h3>General Considerations</h3>
+    <!-- IMAGE -->
+    <div class="interactions__image">
+      <center>
+        <img src="./img/general_considerations_architecture.png" alt="general_considerations_architecture.png"/>
+      </center>
+    </div>
+    <!-- CONSIDERATIONS -->
+    <div>
+      <p>
+        Following the requirements analysis, similarities were found in some components. For this it was considered more appropriate to divide the Park Manager Service (PMS) into three macro-blocks:
+        <!-- A seguito dell'analisi dei requisiti sono state trovate analogie in alcuni componenti per le quali è stato ritenuto opportuno suddividere il Park Manager Service (PMS) in tre macro blocchi: -->
+        <ol>
+          <li>
+            <b>Physical Entities</b>: they represent the components integrated into the system, such as the weight sensor, the out sonar, the thermometer, the fan and the basic robot, in terms of sensors, of material components.
+            <!-- costituiscono i componenti da integrare nel sistema, quali weight sensor, out sonar, thermometer, fan e basic robot, in termini materiali. -->
+          </li>
+          <li>
+            <b>Central System</b>: it is the core of the PMS. It contains all the system logic.
+            <!-- costituisce il core del PMS. Contiene tutta la logica di business. -->
+          </li>
+          <li>
+            <b>Gui</b>: they represent the Park Manager Service I/O.
+            <!-- costituisco l'input/output del sistema. -->
+          </li>
+        </ol>
+        <br>
+        The <b>Physical Entities</b> block includes all the material components of the PMS. The name "Physical" means that the components that belong to this section are all represented in terms of physical sensors or actuators, starting from the weight sensor, which continuosly detects the weight in the indoor area, to the Basic Robot, which just performs basic imposed commands. The behaviour of each individual component will be further explored in a dedicated section.
+        <!-- Il blocco delle <b>Physical Entities</b> comprende tutti i componenti materiali del PMS. L'appellativo "Fisico" vuole significare che i componenti appartenenti a questa sezione sono tutti rappresentati in termini di sensori o attuatori fisici, a partire dal weight sensor che rileva continuamente il peso nell'indoor area, al Basic Robot che si limita ad eseguire i comandi basici che gli vengono imposti. Il comportamento del singolo componente fisico sarà poi approfondito in seguito nella sezione a lui dedicata. -->
+        <br>
+        The <b>Central System</b> block includes all the logic of the system. It is divided into two subsets:
+        <ul>
+          <li><b>Logical Entities</b>, which includes all the logic corresponding to the identified physical entities.</li>
+          <li><b>Business Logic</b>, which includes the logic of the remaining part of the central system.</li>
+        </ul>
+        <!-- Il blocco del <b>Central System</b> comprende tutta la business logic del sistema. Al proprio interno è presente il sottoinsieme delle entità logiche, che comprende tutte le business logiche corrispondenti alle entità fisiche individuate. -->
+
+        The <b> Gui </b> block includes the ParkServiceGui and the ParkServiceStatusGui and represents the way the PMS interfaces to the outside with external users, like possible customers and the system manager. Therefore, given the need to interact with human users, a thing to carefully consider will be the design of the user interfaces.
+        <!-- Il blocco del <b>Gui</b> comprende la ParkServiceGui e la ParkServiceStatusGui e rappresenta il modo con cui il PMS si interfaccia agli utenti all'esterno, ovvero ai possibili clienti e al manager del sistema.<br> -->
+      </p>
+    </div>
+    <h3>
+      Legenda
+    </h3>
+    <div class="interactions__image">
+      <center>
+        <img src="./img/legenda_interactions.png" style="width:30%;" alt="legenda_interactions.png"/>
+      </center>
+    </div>
+  </div>
+
+  <div class="component" id="weight-sensor">
+    <h3>Weight Sensor</h3>
+    <!-- DESCRIPTION -->
+    <h4>Description</h4>
+    <p>
+      Within the system, the weight sensor has the task of detecting the presence of a car within the indoor area.
+      It is therefore necessary to separate the physical entity of the sensor, which deals with measuring the weight inside the indoor area, from the logical entity that deals with processing those data and answer to two different questions:
+      <ol>
+        <li>Is there a car in the indoor area now?</li>
+        <li>Did you notice if a car entered/exited the indoor area?</li>
+      </ol>
+    </p>
+
+    <k>In the document the unit of measurement of the weight is "kilogram (kG)" if not otherwise specified.</k>
+    <!-- PHYSICAL AND LOGICAL ENTITY -->
+    <table class="table_physical_logical">
+      <tr>
+        <th><h4>Physical Entity</h4></th>
+        <th><h4>Logical Entity</h4></th>
+      </tr>
+      <tr>
+        <td>
+          <p>
+            The physical entity is mainly intended as a basic entity able to measure the current weight in the indoor area and we want to keep it as simple as possible; therefore we outline two possible configuration of this entity: <k>active</k> or <k>passive</k>. <br>
+            In <k>active</k> configuration the physical entity is able to constantly measure the weight within the indoor area and to tell it, on its own initiative, to the rest of the system every time a change is measured.
+            In <k>passive</k> configuration the physical entity takes care of measuring the weight only upon request and providing a response, containing the measured weight, to the entity who made that request. <br><br>
+            This entity can be modeled as a <k>QActor</k>.
+          </p>
+        </td>
+        <td>
+          <p>
+            The logical entity processes the data sent by the physical weightSensor. Specifically this entity checks if the weights measured by the physical entity are greater than a (configurable) threshold <k>WMAX</k> and in affermative case the logical entity is able to understand that in the current moment there is a car in the indoor area, in the negative case it means that there is not a car in the indoor area.<br>
+            This entity should be modeled to provide both an <k>active binary information</k> (by events) and/or a <k>passive binary information</k> on request; this two types of informations are not mutually exclusive, so they can coexist, but it is also not mandatory to provide both of them in the final architecture: we may choose in a review only one of those two semantics, or maybe both. <br> <br>
+            <k>passive binary information</k>: Given W the current weight the binary information is [W > WMAX ? TRUE or FALSE].<br>
+            <k>active binary information</k>: state transition from [W <= WMAX to W > WMAX] OR [W > WMAX to W <= WMAX] where W is the current weight.<br><br>
+            This entity can be modeled as a <k>QActor</k>.
+        </p>
+        </td>
+      </tr>
+      </table>
+      <p>The interactions between logical entity and physical entity depends on the active/passive combinations between the two entities, as shown in the following table.</p>
+      <table class="table_active_passive_entities">
+        <tr>
+          <th></th>
+          <th>
+            <p>Physical Entity Active</p>
+          </th>
+          <th>
+            <p>Physical Entity Passive</p>
+          </th>
+        </tr>
+        <tr>
+          <th>
+            <p>Logical Entity only active binary information</p>
+          </th>
+          <td>
+            <p>
+              The physical entity emit continuously the new data measured and the logical entity filters those data and emits to the system the <k>active binary information</k>.
+            </p>
+          </td>
+          <td>
+            <p>
+              The physical entity measure the weight in the indoor area only on request, so the logical entity queries in a polling way the physical entity to know the new weight measured and then processes that data and emits the <k>active binary information</k>.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <p>Logical Entity only passive binary information</p>
+          </th>
+          <td>
+            <p>
+              The physical entity emits continuously the new data measured but the logical entity processes those data only upon request and reply with the <k>passive binary information</k>.
+            </p>
+          </td>
+          <td>
+            <p>
+              The logical entity waits for a request from the system and then asks to the physical entity to measure the weight then processes that data and reply to the entity who made the initial request with the <k>passive binary information</k>.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <p>Logical Entity both active and passive binary information</p>
+          </th>
+          <td>
+            <p>
+              The physical entity emit continuously the new measured data and the logical entity filters those data and emits to the system the <k>active binary information</k>, it also reply with the <k>passive binary information</k> on request.
+            </p>
+          </td>
+          <td>
+            <p>
+              The physical entity measure the weight in the indoor area only on request, so the logical entity queries, in a polling way, the physical entity to know the new measured weight and then processes that data and emits the <k>active binary information</k>. It also reply with the <k>passive binary information</k> on request.
+            </p>
+          </td>
+        </tr>
+      </table>
+    <!-- INTERACTIONS -->
+    <div width="100%" >
+      <h4>Interactions</h4>
+      <!-- interaction image -->
+      <div class="interactions__image">
+        <center>
+          <img src="./img/weight_sensor_interaction.png" alt="weight_sensor_interaction.png"/>
+        </center>
+      </div>
+      <!-- interaction messages -->
+      <table class="table_interactions_messages">
+        <tr>
+          <th>Message</th>
+          <th>Payload</th>
+          <th>Semantic</th>
+          <th>Description</th>
+        </tr>
+        <tr>
+          <td>
+            weight
+          </td>
+          <td>
+            weight
+          </td>
+          <td>
+            event
+          </td>
+          <td>
+            The current weight measured in the indoor area
+          </td>
+        </tr>
+        <tr>
+          <td>
+            query_current_weight
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            request
+          </td>
+          <td>
+            Ask for the current weight measured in the indoor area.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            current_weight
+          </td>
+          <td>
+            weight
+          </td>
+          <td>
+            response
+          </td>
+          <td>
+            Response with the current weight measured in the indoor area.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            indoor_area_free
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            event
+          </td>
+          <td>
+            Detected transition from W > WMAX to W <= WMAX with W the measured weight in the indoor area.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            indoor_area_occupied
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            event
+          </td>
+          <td>
+            Detected transition from W <= WMAX to W > WMAX with W the measured weight in the indoor area.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            query_state_indoor_area
+          </td>
+          <td>
+              X
+          </td>
+          <td>
+            request
+          </td>
+          <td>
+            Ask for the current state [W > WMAX, W <= WMAX] with W the measured weight in the indoor area.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            state_indoor_area
+          </td>
+          <td>
+            state
+          </td>
+          <td>
+            response
+          </td>
+          <td>
+            Response with the current state [W > WMAX, W <= WMAX] with W the measured weight in the indoor area.
+          </td>
+        </tr>
+      </table>
+      <!-- interaction qak example -->
+      <div class="interaction_qak_example">
+        <h4>QAK Model</h4>
+        <p>
+          The following QAK is a mock implementation of what we discussed above. Its intent is to show how the weight sensor could be implemented using the QAK meta-model.
+          However, there are some simplification we have made and they are listed below.
+
+        <ol>
+          <li>
+            The physical weightSensor is implemented only in the <k>active</k> configuration.
+          </li>
+          <li>
+            The logical weightSensor is able to produce only the <k>active binary information</k>.
+          </li>
+          <li>
+            Moreover the physical weightsensor has been simplified about its main functionality: the measurement of the weight in the indoor area. In fact it is not a real weightsensor, so it does not perform any type of real weight measurement, but instead it is programmable via a special dispatch <k>input_weight</k> in which the payload represents the current weight measured in the indoor area.
+          </li>
+        </ol>
+        </p>
+        <a href="./qak_components/weightsensor.qak">
+          <div class="interaction_qak_example_link">
+            weight sensor.qak
+          </div>
+        </a>
+      </div>
+    </div>
+  </div> <!-- end component -->
+
+  <div class="component" id="out-sonar">
+    <h3>Out Sonar</h3>
+    <!-- DESCRIPTION -->
+    <h4>Description</h4>
+    <p>
+      The outSonar within the system has the task of detecting the presence of a car within the outdoor area.
+      It is therefore necessary to separate the physical entity of the system, which deals with measuring the distance between the outSonar itself and a fixed point in the outdoor area, from the logical entity that deals with processing those data and answer to two different questions:
+      <ol>
+        <li>Is there a car in the outdoor area now?</li>
+        <li>Did you notice if a car entered/exited the outdoor area?</li>
+      </ol>
+      <br><br>
+      <k>In the document the unit of measurement of the distance is "centimeter (cm)" if not otherwise specified.</k>
+    </p>
+    <!-- PHYSICAL AND LOGICAL ENTITY -->
+    <table class="table_physical_logical">
+      <tr>
+        <th><h4>Physical Entity</h4></th>
+        <th><h4>Logical Entity</h4></th>
+      </tr>
+      <tr>
+        <td>
+          <p>
+            The physical entity is mainly intended as a basic entity able to check if there is a car in the outdoor area and we want to keep it as simple as possible; therefore we outline two possible configuration for this entity: <k>active</k> or <k>passive</k>. <br>
+            In <k>active</k> configuration the physical entity is able to constantly measure the distance between the outSonar itself and a fixed point in the outdoor area and make it known on its own initiative to the rest of the system every time a change is measured.
+            In <k>passive</k> configuration the physical entity takes care of measuring the weight only upon request and providing a response, containing the measured weight, to the entity who made the request. <br><br>
+            This entity can be modeled as a <k>QActor</k>.
+          </p>
+        </td>
+        <td>
+          <p>
+            The logical entity processes the data sent by the physical outSonar, specifically this entity checks if the distances measured by the physical entity are lower than a (configurable) threshold <k>DMIN</k> and in affermative case the logical entity is able to understand that in the current moment there is a car in the outdoor area, in the negative case it means that there is not a car in the outdoor area.<br>
+            This entity should be modeled to provide both an <k>active binary information</k> (by events) and/or a <k>passive binary information</k> on request; this two types of informations are not mutually exclusive, so they can coexist, but it is also not mandatory to provide both of them in the final architecture: we may choose in a review only one of those two semantics, or maybe both. <br> <br>
+
+            <k>passive binary information</k>: Given D the current distance the binary information is [D < DMIN ? TRUE or FALSE].<br>
+            <k>active binary information</k>: state transition from [D < DMIN to D >= DMIN] OR [D >= DMIN to D < DMIN] where D is the current distance.<br><br>
+            This entity can be modeled as a <k>QActor</k>.
+          </p>
+        </td>
+      </tr>
+      </table>
+      <table class="table_active_passive_entities">
+        <tr>
+          <th></th>
+          <th>
+            <p>Physical Entity Active</p>
+          </th>
+          <th>
+            <p>Physical Entity Passive</p>
+          </th>
+        </tr>
+        <tr>
+          <th>
+            <p>Logical Entity only active binary information</p>
+          </th>
+          <td>
+            <p>
+              The physical entity emits continuously the new data measured and the logical entity filters those data and emits to the system the <k>active binary information</k>.
+            </p>
+          </th>
+          <td>
+            <p>
+              The physical entity measure the distance in the outdoor area only on request, so in a polling fashion the logical entity queries the physical entity to know the new distance measured then processes that data and emits the <k>active binary information</k>.
+            </p>
+          </th>
+        </tr>
+        <tr>
+          <th>
+            <p>Logical Entity only passive binary information</p>
+          </th>
+          <td>
+            <p>
+              The physical entity emits continuously the new data measured but the logical entity processes those data only upon request and reply with the <k>passive binary information</k>.
+            </p>
+          </th>
+          <td>
+            <p>
+              The logical entity wait for a request from the system and then asks to the physical entity to measure the distance then processes that data and reply to the entity who made the initial request with the <k>passive binary information</k>.
+            </p>
+          </th>
+        </tr>
+        <tr>
+          <th>
+            <p>Logical Entity both active and passive binary information</p>
+          </th>
+          <td>
+            <p>
+              The physical entity emits continuously the new data measured and the logical entity filters those data and emits to the system the <k>active binary information</k>; it also reply with the <k>passive binary information</k> on request.
+            </p>
+          </th>
+          <td>
+            <p>
+              The physical entity measure the distance in the outdoor area only on request, so in a polling fashion the logical entity queries the physical entity to know the new distance measured then processes that data and emits the <k>active binary information</k>; it also reply with the <k>passive binary information</k> on request..
+            </p>
+          </th>
+        </tr>
+      </table>
+    <!-- INTERACTIONS -->
+    <div width="100%" >
+      <h4>Interactions</h4>
+      <!-- interaction image -->
+      <div class="interactions__image">
+        <center>
+          <img src="./img/out_sonar_interaction.png" alt="out_sonar_interaction.png"/>
+        </center>
+      </div>
+      <!-- interaction messages -->
+      <table class="table_interactions_messages">
+        <tr>
+          <th>Message</th>
+          <th>Payload</th>
+          <th>Semantic</th>
+          <th>Description</th>
+        </tr>
+        <tr>
+          <td>
+            distance
+          </td>
+          <td>
+            distance
+          </td>
+          <td>
+            event
+          </td>
+          <td>
+            The current distance measured in the outdoor area
+          </td>
+        </tr>
+        <tr>
+          <td>
+            query_current_distance
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            request
+          </td>
+          <td>
+            Ask for the current distance measured in the outdoor area.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            current_distance
+          </td>
+          <td>
+            distance
+          </td>
+          <td>
+            response
+          </td>
+          <td>
+            Response with the current distance measured in the outdoor area.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            outdoor_area_free
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            event
+          </td>
+          <td>
+            Detected transition from D < DMIN to D >= DMIN with D the measured distance in the outdoor area.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            outdoor_area_occupied
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            event
+          </td>
+          <td>
+            Detected transition from D >= DMIN to D < DMIN with D the measured distance in the outdoor area.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            query_state_outdoor_area
+          </td>
+          <td>
+              X
+          </td>
+          <td>
+            request
+          </td>
+          <td>
+            Ask for the current state [D < DMIN, D >= DMIN] with D the measured distance in the outdoor area.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            state_outdoor_area
+          </td>
+          <td>
+            state
+          </td>
+          <td>
+            response
+          </td>
+          <td>
+            Response with the current state [D < DMIN, D >= DMIN] with D the measured distance in the outdoor area.
+          </td>
+        </tr>
+      </table>
+      <!-- interaction qak example -->
+      <div class="interaction_qak_example">
+        <h4>QAK Model</h4>
+        <p>
+          The following QAK is a mock implementation of what we discussed above, its intent is to show how the outSonar could be implemented using the QAK meta-model.However, there are some simplification we made and they are listed below.
+          <ol>
+            <li>
+              The physical outSonar is implemented only in the <k>active</k> configuration.
+            </li>
+            <li>
+              The logical outSonar is able to produce only the <k>active binary information</k>.
+            </li>
+            <li>
+              Moreover the physical sonar has been simplified about its main functionality: the measurement of the distance in the outdoor area. In fact it is not a real sonar, so it does not perform any type of real distance measurement, but instead it is programmable via a special dispatch <k>input_distance</k> in which the payload represents the current distance measured in the outdoor area. However, a real sonar will be considered in the model when we will discuss about the real sonar requirement in a following sprint.
+            </li>
+          </ol>
+        </p>
+        <a href="./qak_components/sonar.qak">
+          <div class="interaction_qak_example_link">
+            out sonar.qak
+          </div>
+        </a>
+      </div>
+    </div>
+  </div> <!-- end component -->
+
+  <div class="component" id="thermometer">
+    <h3>thermometer</h3>
+    <!-- DESCRIPTION -->
+    <h4>Description</h4>
+    <p>
+      The thermometer within the system has the task of measuring the temperature inside the parking area.
+      It is therefore necessary to separate the physical entity of the system, which deals with measuring the temperature in the parking area, from the logical entity that deals with processing those data and answer to two different questions:
+      <ol>
+        <li>Is the current temperature greater than <k>TMAX</k>?</li>
+        <li>Did you notice if there has been a transition from a temperature lower than or equal to TMAX to a temperature greater than TMAX (or vice versa)?</li>
+      </ol>
+
+    <k>In the document the unit of measurement of the temperature is "Celsius (°C)" if not otherwise specified.</k>
+    </p>
+    <!-- PHYSICAL AND LOGICAL ENTITY -->
+    <table class="table_physical_logical">
+      <tr>
+        <th><h4>Physical Entity</h4></th>
+        <th><h4>Logical Entity</h4></th>
+      </tr>
+      <tr>
+        <td>
+          <p>
+            The physical entity is mainly intended as a basic entity able to measure the current temperature and we want to keep it as simple as possible; therefore we outline two possible configuration of this entity: <k>active</k> or <k>passive</k>. <br>
+            In <k>active</k> configuration the physical entity is able to constantly measure the temperature in the parking area and make it known on its own initiative to the rest of the system every time a change is measured. <br>
+            In <k>passive</k> configuration the physical entity takes care of measuring the temperature only upon request and providing a response, containing the measured temperature, to the entity who made the request. <br><br>
+            This entity can be modeled as a <k>QActor</k>.
+          </p>
+        </td>
+        <td>
+          <p>
+            The logical entity processes the data sent by the physical thermometer, specifically this entity checks if the temperatures measured by the physical entity are greater than a (configurable) threshold <k>TMAX</k>.<br>
+            This entity should be modeled to provide both an <k>active binary information</k> (by events) and/or a <k>passive binary information</k> on request; this two types of informations are not mutually exclusive, so they can coexist, but it is also not mandatory to provide both of them in the final architecture: we may choose in a review only one of those two semantics, or maybe both. <br> <br>
+            <k>passive binary information</k>: Given T the current temperature the binary information is [T > TMAX ? TRUE or FALSE].<br>
+            <k>active binary information</k>: state transition from [T <= TMAX to T > TMAX] OR [T > TMAX to T <= TMAX] where T is the current temperature. <br><br>
+            This entity can be modeled as a <k>QActor</k>.
+          </p>
+        </td>
+      </tr>
+      </table>
+      <table class="table_active_passive_entities">
+        <tr>
+          <th></th>
+          <th>
+            <p>Physical Entity Active</p>
+          </th>
+          <th>
+            <p>Physical Entity Passive</p>
+          </th>
+        </tr>
+        <tr>
+          <th>
+            <p>Logical Entity active binary information</p>
+          </th>
+          <td>
+            <p>
+              The physical entity emits continuously the new data measured and the logical entity filters those data and emits to the system the <k>active binary information</k> on its own initiative.
+            </p>
+          </th>
+          <td>
+            <p>
+              The physical entity measure the temperature in the parking area only on request, so in a polling fashion the logical entity queries the physical entity to know the new temperature measured then processes that data and emits the <k>active binary information</k>.
+            </p>
+          </th>
+        </tr>
+        <tr>
+          <th>
+            <p>Logical Entity passive binary information</p>
+          </th>
+          <td>
+            <p>
+              The physical entity emits continuously the new data measured but the logical entity processes those data only upon request and reply with the <k>passive binary information</k>.
+            </p>
+          </th>
+          <td>
+            <p>
+              The logical entity waits for a request from the system and then asks to the physical entity to measure the temperature then processes that data and reply to the entity who made the initial request with the <k>passive binary information</k>.
+            </p>
+          </th>
+        </tr>
+        <tr>
+          <th>
+            <p>Logical Entity both active and passive binary information</p>
+          </th>
+          <td>
+            <p>
+              The physical entity emits continuously the new data measured and the logical entity filters those data and emits to the system the <k>active binary information</k> on its own initiative or the <k>passive binary information</k> on request.
+            </p>
+          </th>
+          <td>
+            <p>
+              The physical entity measure the temperature in the parking area only on request, so in a polling fashion the logical entity queries the physical entity to know the new temperature measured then processes that data and emits the <k>active binary information</k>; it also reply with the <k>passive binary information</k> on request.
+            </p>
+          </th>
+        </tr>
+      </table>
+    <!-- INTERACTIONS -->
+    <div width="100%" >
+      <h4>Interactions</h4>
+      <!-- interaction image -->
+      <div class="interactions__image">
+        <center>
+          <img src="./img/thermometer_interaction.png" alt="thermometer_interaction.png"/>
+        </center>
+      </div>
+      <!-- interaction messages -->
+      <table class="table_interactions_messages">
+        <tr>
+          <th>Message</th>
+          <th>Payload</th>
+          <th>Semantic</th>
+          <th>Description</th>
+        </tr>
+        <tr>
+          <td>
+            temperature
+          </td>
+          <td>
+            temperature
+          </td>
+          <td>
+            event
+          </td>
+          <td>
+            The current temperature measured in the parking area
+          </td>
+        </tr>
+        <tr>
+          <td>
+            query_current_temperature
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            request
+          </td>
+          <td>
+            Ask for the current temperature measured in the parking area.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            current_temperature
+          </td>
+          <td>
+            temperature
+          </td>
+          <td>
+            response
+          </td>
+          <td>
+            Response with the current distance measured in the parking area.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            temperature_high
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            event
+          </td>
+          <td>
+            Detected transition from T <= TMAX to T > TMAX where T is the temperature measured in the parking area.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            temperature_low
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            event
+          </td>
+          <td>
+            Detected transition from T > TMAX to T <= TMAX where T is the temperature measured in the parking area.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            query_state_logical_temperature
+          </td>
+          <td>
+              X
+          </td>
+          <td>
+            request
+          </td>
+          <td>
+            Ask for the current state [T > TMAX, T <= TMAX] of the temperature T in the parking area.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            logical_temperature_high
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            response
+          </td>
+          <td>
+            Response if the current state of the temperature T in the parking area is T > TMAX.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            logical_temperature_low
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            response
+          </td>
+          <td>
+            Response if the current state of the temperature T in the parking area is T <= TMAX.
+          </td>
+        </tr>
+      </table>
+      <!-- interaction qak example -->
+      <div class="interaction_qak_example">
+        <h4>QAK Model</h4>
+        <p>
+          The following QAK is a mock implementation of what we discussed above, its intent is to show how the thermometer could be implemented using the QAK meta-model.
+          However, there are some simplification we made and they are listed below.
+          <ol>
+            <li>
+              The physical thermometer is implemented only in the <k>active</k> configuration.
+            </li>
+            <li>
+              Moreover the physical thermometer has been simplified about its main functionality: the measurement of the temperature in the parking area. In fact it is not a real thermometer, so it does not perform any type of real temperature measurement, but instead it is programmable via a special dispatch <k>input_temperature</k> in which the payload represents the current temperature measured in the parking area.
+            </li>
+          </ol>
+        </p>
+        <a href="./qak_components/thermometer.qak">
+          <div class="interaction_qak_example_link">
+            thermometer.qak
+          </div>
+        </a>
+      </div>
+    </div>
+  </div> <!-- end component -->
+
+  <div class="component" id="fan">
+    <h3>fan</h3>
+    <!-- DESCRIPTION -->
+    <h4>Description</h4>
+    <p>
+      The fan within the system has the task of freshen the air in particular when the temperature inside the parking area is high.
+      Is convenient to separate a physical entity that is the "real" fan in the system, and a logical entity in particular able to handle the "automatic mode" case of the start/stop of the fan as per requirements and able to ask to the following questions:
+      <ol>
+        <li>Is the fan on?</li>
+        <li>Is the fan in automatic mode?</li>
+      </ol>
+
+    </p>
+    <!-- PHYSICAL AND LOGICAL ENTITY -->
+    <table class="table_physical_logical">
+      <tr>
+        <th><h4>Physical Entity</h4></th>
+        <th><h4>Logical Entity</h4></th>
+      </tr>
+      <tr>
+        <td>
+          <p>
+            This entity can be modeled as both an <k>object</k> or a <k>QActor</k>; in order to explain the interactions between the logical fan and the physical fan in this section of the document the physical fan will be considered as a <k>QActor</k>, but note that this is not mandatory and in a review we may choose to model this entity as an <k>object</k>.
+            The physical entity (<k>QActor</k>) can be modeled as a <k>passive</k> entity which therefore is able only to start/stop depending on the asynchronous message received. <br>
+            Note that if the entity will be modeled as an <k>object</k> it is necessary to replace the asynchronous message semantics with method calls that have the same final purpose.<br><br>
+
+          </p>
+        </td>
+        <td>
+          <p>
+            The main task of the logical fan is to maintain the logical state of the physical fan: ON or OFF. <br>
+            So for this purpose is required that the logical fan can work in a <k>passive</k> fashion so it can be queried on the logical state but also the logical fan could work in an <k>active</k> fashion and send an event every time the logical state changes. This two modalities can coexist (but this is <k>not mandatory</k>). <br><br>
+
+            Another task of the logical fan is to switch between the <k>automatic mode</k> and the <k>manual mode</k>.
+            So first of all the logical fan must be able to accept an asynchronous message to switch on the desired modality. <br><br>
+
+            This entity can be modeled as a <k>QActor</k>.
+          </p>
+        </td>
+      </tr>
+    </table>
+    <div class="in-depth-content">
+      <h4>Logical Fan in-depth</h4>
+      <p>
+        <b>AUTOMATIC MODE</b> <br>
+        In automatic mode the logical fan has the task of start/stop the fan each time the logical thermometer says that the temperature is respectively over TMAX or under TMAX. <br>
+        So an interaction between the logical thermometer and the logical fan is required. Note that when a switch from manual mode to automatic mode happens the logical fan could be smart and ask on its own the current logical temperature (HIGH or LOW) to the logical thermometer, in order to align from the beginning the fan in an ON or OFF status according to the current logical temperature.<br>
+        After the initial handshake about the current logical temperature we can design two type of interactions between the logical thermometer and the logical fan: <br>
+        <ul>
+          <li>
+            <b>EVENT BASED INTERACTION (preferred)</b><br> The logical fan waits for the events sent by the logical thermometer: when a <k>temperature_high</k> event is received it starts the physical fan; when a <k>temperature_low</k> event is received it stops the physical fan. <br><br>
+          </li>
+          <li>
+            <b>POLLING INTERACTION</b> <br>
+            The logical fan in a polling fashion queries the logical thermometer for the current (binary, HIGH or LOW) temperature: when the temperature is HIGH it starts the physical fan, when the temperature is LOW it stops the physical fan. <br>
+          </li>
+        </ul>
+
+        <br>
+        <b>MANUAL MODE</b> <br>
+        In manual mode the logical fan waits for the messages in order to turn ON or turn OFF the physical fan. Note that is not required to start/stop the fan only if the current temperature is HIGH or LOW, there could be cases when the possibility of start the fan also when the temperature is LOW could be needed, so in manual mode the advice is to not check the current temperature and simply trust and pursue the intention of who wants to start/stop the fan. <br><br>
+      </p>
+    </div>
+    <!-- INTERACTIONS -->
+    <div width="100%" >
+      <h4>Interactions</h4>
+
+
+        <p>The interaction between the logical thermometer and the logical fan are those listed on the <a href="#thermometer">thermometer section</a>, so they are not reported here but they are included in the image below.</p>
+
+      <!-- interaction image -->
+      <div class="interactions__image">
+        <center>
+          <img src="./img/fan_interaction.png" alt="fan_interaction.png"/>
+        </center>
+      </div>
+      <!-- interaction messages -->
+      <table class="table_interactions_messages">
+        <tr>
+          <th>Message</th>
+          <th>Payload</th>
+          <th>Semantic</th>
+          <th>Description</th>
+        </tr>
+        <tr>
+          <td>
+            physical_fan_on
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            dispatch
+          </td>
+          <td>
+            Start the physical fan.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            physical_fan_off
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            dispatch
+          </td>
+          <td>
+            Stop the physical fan.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            logical_fan_on
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            dispatch
+          </td>
+          <td>
+            Start the logical fan.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            logical_fan_off
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            dispatch
+          </td>
+          <td>
+            Stop the logical fan.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            state_fan_on
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            event
+          </td>
+          <td>
+            Now the fan is in modality ON.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            state_fan_off
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            event
+          </td>
+          <td>
+            Now the fan is in modality OFF.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            mode_fan_automatic
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            event
+          </td>
+          <td>
+            Now the fan is in modality AUTOMATIC.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            mode_fan_manual
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            event
+          </td>
+          <td>
+            Now the fan is in modality MANUAL.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            query_state_fan
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            request
+          </td>
+          <td>
+            Ask for the current binary state [ON or OFF] of the fan.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            state_fan
+          </td>
+          <td>
+            binary
+          </td>
+          <td>
+            response
+          </td>
+          <td>
+            Answer with the current binary state of the fan [ON or OFF].
+          </td>
+        </tr>
+        <tr>
+          <td>
+            query_mode_fan
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            request
+          </td>
+          <td>
+            Ask for the current binary mode [AUTOMATIC or MANUAL] of the logical fan.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            mode_fan
+          </td>
+          <td>
+            binary
+          </td>
+          <td>
+            response
+          </td>
+          <td>
+            Answer with the current binary mode of the logical fan [AUTOMATIC or MANUAL].
+          </td>
+        </tr>
+        <tr>
+          <td>
+            automatic_mode
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            dispatch
+          </td>
+          <td>
+            Set the logical fan in automatic mode.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            manual_mode
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            dispatch
+          </td>
+          <td>
+            Set the logical fan in manual mode.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            temperature_high
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            event
+          </td>
+          <td>
+            Detected transition from T <= TMAX to T > TMAX where T is the temperature measured in the parking area.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            temperature_low
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            event
+          </td>
+          <td>
+            Detected transition from T > TMAX to T <= TMAX where T is the temperature measured in the parking area.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            query_state_logical_temperature
+          </td>
+          <td>
+              X
+          </td>
+          <td>
+            request
+          </td>
+          <td>
+            Ask for the current state [T > TMAX, T <= TMAX] of the temperature T in the parking area.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            state_logical_temperature
+          </td>
+          <td>
+            state
+          </td>
+          <td>
+            response
+          </td>
+          <td>
+            Response with the current state [T > TMAX, T <= TMAX] of the temperature T in the parking area.
+          </td>
+        </tr>
+      </table>
+      <!-- interaction qak example -->
+      <div class="interaction_qak_example">
+        <h4>QAK Model</h4>
+        <p>
+          The following QAK is a mock implementation of what we discussed above, its intent is to show how the fan could be implemented using the QAK meta-model.
+          However, there are some simplification we made and they are listed below.
+
+          <ol>
+            <li>
+              About the automatic mode of the logical fan is implemented only the event based interaction with the logical thermometer. The request-response interaction is used only for the initial handshake.
+            </li>
+            <li>
+              Moreover, the physical fan is a mock actor that simply receives in input the ON or OFF messages and doing nothing of interesting: it is not connected to a real fan.
+            </li>
+          </ol>
+
+        </p>
+        <a href="./qak_components/fan.qak">
+          <div class="interaction_qak_example_link">
+            fan.qak
+          </div>
+        </a>
+      </div>
+    </div>
+  </div> <!-- end component -->
+
+  <div class="component" id="transport-trolley">
+    <h3>transportTrolley</h3>
+    <!-- DESCRIPTION -->
+    <h4>Description</h4>
+    <p>
+      The transportTrolley is an entity able to move around the map and park or pick up the cars depending on the input it receives.
+      In a first analysis we can structure the transportTrolley in two layers: physical and logical.
+      <br><br>
+      Within the system the transportTrolley should be able to accomplish with three main tasks:
+      <ol>
+        <li>
+          Take a car from the indoor area and park it in the SLOTNUM parking-slot.
+        </li>
+        <li>
+          Take a car from the parking-slot n. SLOTNUM and release it in the outdoor area.
+        </li>
+        <li>
+          Return to the HOME position.
+        </li>
+      </ol>
+      <br><br>
+      Moreover there is a requirement on <k>start/stop</k> the transportTrolley.
+      So the transportTrolley must be able to stop (i.e. enter in "pause" mode) also when it is serving some request. At each time the transportTrolley can be in only one of the following three states:
+      <ol>
+        <li>
+          <k>IDLE</k>: the transportTrolley is NOT STOPPED and is in HOME position.
+        </li>
+        <li>
+          <k>WORKING</k>: the transportTrolley is NOT STOPPED and is NOT in HOME position.
+        </li>
+        <li>
+          <k>STOPPED</k>: the transportTrolley is STOPPED.
+        </li>
+      </ol>
+    </p>
+    <!-- PHYSICAL AND LOGICAL ENTITY -->
+    <table class="table_physical_logical">
+      <tr>
+        <th><h4>Physical Entity</h4></th>
+        <th><h4>Logical Entity</h4></th>
+      </tr>
+      <tr>
+        <td>
+          <p>
+            The physical entity, called basicRobot, is an abstraction of a DDR Robot and is able to accept commands like move forward, move backward, turn left and turn right and reply with the success or failure of these commands. Note that, as pointed out in the requirement analysis, this componenent is given by the customer. However here we intend to show an high level view of how this component could be modeled.<br><br>
+            The basicRobot within the system is a <k>QActor</k>.
+          </p>
+        </td>
+        <td>
+          <p>
+            The logical entity is an abstraction of the transportTrolley itself within the system. <br>
+            So this logical entity is able to receive an input with the job that should be done (like take a car from the indoor area and park it at SLOTNUM) and then move the underlying basicRobot step-by-step within the map. At each checkpoint in the map (i.e. HOME, SLOTNUM, INDOOR, OUTDOOR) the logical transportTrolley emits an event in order to allow other entities to process this information if needed. Note that this event may used by other entities to know when the transportTrolley finished a task. Moreover the transportTrolley state (IDLE, WORKING or STOPPED) should be observable at any time, so as like other entities the transportTrolley could be able to response with the state information on request and/or give this information with an event at every change.
+            <br><br>
+            The logical transportTrolley must be smart and able to return at home when the message queue, where the job messages are queued, is empty from some time. In other words the transportTrolley returns at home, without external input, when there aren't pending requests. However, we want to keep the transportTrolley able to return at home also on request.
+            <br><br>
+            The logical transportTrolley when receive a stop command must not propagate any command to the underlying basicRobot in order to simply wait in its position until it is restarted. Note that if the transportTrolley was not serving any request at the moment it has been stopped it will continue to not serve any request until it receives a new command after the restart.
+            <br><br>
+            Note that here is not discussed how the logical transportTrolley moves the basic robot around the map in order to reach some destination. The customer gives us a <a href="https://github.com/anatali/issLab2021/tree/main/webspring.demo/src/main/kotlin/features/PathExecutor.kt">software</a> able to move the basic robot from a point A to a point B in the map that we can use as a good starting point when we will analyze how to model this logic of the transportTrolley.
+            <br><br>
+            This entity can be modeled as <k>QActor</k>.
+          </p>
+        </td>
+      </tr>
+      </table>
+    <!-- INTERACTIONS -->
+    <div width="100%" >
+      <h4>Interactions</h4>
+      <!-- interaction image -->
+      <div class="interactions__image">
+        <center>
+          <img src="./img/transport_trolley_interaction.png" alt="transport_trolley_interaction.png"/>
+        </center>
+      </div>
+      <!-- interaction messages -->
+      <table class="table_interactions_messages">
+        <tr>
+          <th>Message</th>
+          <th>Payload</th>
+          <th>Semantic</th>
+          <th>Description</th>
+        </tr>
+        <tr>
+          <td>
+            transport_trolley_car_park
+          </td>
+          <td>
+            SLOTNUM
+          </td>
+          <td>
+            dispatch
+          </td>
+          <td>
+            The transportTrolley must take a car from the INDOOR AREA and park it at SLOTNUM.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            transport_trolley_car_pickup
+          </td>
+          <td>
+            SLOTNUM
+          </td>
+          <td>
+            dispatch
+          </td>
+          <td>
+            The transportTrolley must take a car at SLOTNUM and release it in the OUTDOOR AREA.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            transport_trolley_go_home
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            dispatch
+          </td>
+          <td>
+            The transportTrolley must return at HOME position.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            transport_trolley_position_home
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            event
+          </td>
+          <td>
+            The transportTrolley is at HOME position.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            transport_trolley_position_indoor
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            event
+          </td>
+          <td>
+            The transportTrolley is at INDOOR position.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            transport_trolley_position_outdoor
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            event
+          </td>
+          <td>
+            The transportTrolley is at OUTDOOR position.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            transport_trolley_position_slotnum
+          </td>
+          <td>
+            SLOTNUM
+          </td>
+          <td>
+            event
+          </td>
+          <td>
+            The transportTrolley is at SLOTNUM position. The SLOTNUM is given by the payload of the event.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            transport_trolley_start
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            dispatch
+          </td>
+          <td>
+            Start the transportTrolley.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            transport_trolley_stop
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            dispatch
+          </td>
+          <td>
+            Stop the transportTrolley.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            transport_trolley_new_state
+          </td>
+          <td>
+            STATE
+          </td>
+          <td>
+            event
+          </td>
+          <td>
+            The new state of the transportTrolley: IDLE, WORKING or STOPPED.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            query_transport_trolley_state
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            request
+          </td>
+          <td>
+            Ask for the current state of the transportTrolley.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            transport_trolley_state
+          </td>
+          <td>
+            STATE
+          </td>
+          <td>
+            response
+          </td>
+          <td>
+            The current state of the transportTrolley: IDLE, WORKING or STOPPED.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            move_forward
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            request
+          </td>
+          <td>
+            Move the basicRobot forward.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            move_backward
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            request
+          </td>
+          <td>
+            Move the basicRobot backward.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            turn_left
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            request
+          </td>
+          <td>
+            Turn the basicRobot left.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            turn_right
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            request
+          </td>
+          <td>
+            Turn the basicRobot right.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            done
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            response
+          </td>
+          <td>
+            Move completed with success.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            fail
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            response
+          </td>
+          <td>
+            Move failed.
+          </td>
+        </tr>
+      </table>
+      <!-- interaction qak example -->
+      <div class="interaction_qak_example">
+        <h4>QAK Model</h4>
+        <p>
+          The following QAK is a mock implementation of what we discussed above, its intent is to show how the transportTrolley could be implemented using the QAK meta-model.
+          However, there are some simplification we made and they are listed below.
+
+          <ol>
+            <li>
+              The interaction between the basicRobot and the logical transportTrolley is not shown.
+            </li>
+            <li>
+              The logical transportTrolley is able to give information about its current state only via events</k>.
+            </li>
+            <li>
+              The logical transportTrolley cannot be stopped.
+            </li>
+          </ol>
+        </p>
+        <a href="./qak_components/transporttrolley.qak">
+          <div class="interaction_qak_example_link">
+            transport trolley.qak
+          </div>
+        </a>
+      </div>
+    </div>
+  </div> <!-- end component -->
+
+  <div class="component" id="park-service-gui">
+    <h3>Park Service GUI</h3>
+    <!-- DESCRIPTION -->
+    <h4>Description</h4>
+    <p>
+      The ParkServiceGUI is the interface provided by the ParkManagerService that is the basis of the interaction with every possible park service client.
+      It allows the customer to notify to the ParkManagerService the interest in parking and, consequently, picking up the car.
+      <br><br>
+    </p>
+
+    <!-- INTERACTIONS -->
+    <div width="100%" >
+      <h4>Interactions</h4>
+      <!-- interaction image -->
+      <div class="interactions_gui__image">
+        <center>
+          <img src="./img/park_service_gui_interaction.png" alt="park_service_gui_interaction.png"/>
+        </center>
+      </div>
+      <!-- interaction messages -->
+      <table class="table_interactions_messages">
+        <tr>
+          <th>Message</th>
+          <th>Payload</th>
+          <th>Semantic</th>
+          <th>Description</th>
+        </tr>
+        <tr>
+          <td>
+            parking_car_interest
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            request
+          </td>
+          <td>
+            The client has notified to the ParkManagerService the interest in parking his car. The ParkServiceGUI forward this request to the central system.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            inform_in
+          </td>
+          <td>
+            SLOTNUM
+          </td>
+          <td>
+            response
+          </td>
+          <td>
+            The central system, after checking if the indoor-area is free and there are free parking slots, accepts the client request sending to the GUI, and therefore to the client, the SLOTNUM.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            car_enter
+          </td>
+          <td>
+            SLOTNUM
+          </td>
+          <td>
+            request
+          </td>
+          <td>
+            The client has moved his car in front to the INDOOR and pressed the CARENTER button on the ParkServiceGUI. The GUI forward the request to the central system, sending also the SLOTNUM of the client
+          </td>
+        </tr>
+        <tr>
+          <td>
+            response_car_enter
+          </td>
+          <td>
+            TOKENID
+          </td>
+          <td>
+            response
+          </td>
+          <td>
+            The central system has sent the transportTrolley to take over the car from the indoor and move it to the correct parking slot. Meanwhile the central system send to the client, through the GUI, a receipt that includes a unique TOKENID, to be used in the car pick up phase.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            car_pickup
+          </td>
+          <td>
+            TOKENID
+          </td>
+          <td>
+            request
+          </td>
+          <td>
+            The client wants to pick up his car, so he submits a request by sending, via the ParkServiceGUI, the TOKENID previously received. The Gui forward the request to the central system.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            accept_out_success
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            response
+          </td>
+          <td>
+             The given TOKENID is valid, so the central system tells the transportTrolley to pick up the right car. When the pick up phase is over, the central system tells the ParkServiceGUI that the car is ready.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            accept_out_failure
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            response
+          </td>
+          <td>
+            The given TOKENID is invalid, so the central system tells the ParkServiceGUI that the car cannot be picked up.
+          </td>
+        </tr>
+      </table>
+      <!-- interaction qak example -->
+      <div class="interaction_qak_example">
+        <h4>QAK Model</h4>
+        <p>
+          The following QAK is a mock implementation of what we discussed above, its intent is to show how the ParkServiceGUI could be implemented using the QAK meta-model.
+          However, there are some simplification on the interactions between the client and the GUI, they are listed below.
+          <ol>
+            <li>
+              The input to the ParkServiceGUI from the client is given by some requests that we added to simulate the "click" on the button of the GUI.
+            </li>
+            <li>
+              The output from the ParkServiceGUI to the client is given by the reply to a request done by the client that simulate the "view refresh" and consequent visual output for the client.
+            </li>
+          </ol>
+        </p>
+        <a href="./qak_components/parkservicegui.qak">
+          <div class="interaction_qak_example_link">
+            park service GUI.qak
+          </div>
+        </a>
+      </div>
+    </div>
+  </div> <!-- end component -->
+
+  <div class="component" id="park-service-status-gui">
+    <h3>ParkServiceStatusGUI</h3>
+    <!-- DESCRIPTION -->
+    <h4>Description</h4>
+    <p>
+      The ParkServiceStatusGUI is used by the parking manager to administer the ParkManagerService. In particular, the ParkManagerService must be able to inform the parking-manager, through the ParkServiceStatusGUI, regarding the status of some components within the parking-area.
+      Furthermore, the manager, using the ParkServiceStatusGUI, must be able to perform operations such as turning the fan on/off, setting the fan in automatic/manual mode, turning the transportTrolley on/off. <br>
+      The status of the ParkManagerService should be sent by the central system every time a change in the status is detected. Otherwise the ParkServiceStatusGUI could be interact with the central system via a request-response polling mechanism but does not seem convenient here.
+    </p>
+    <!-- INTERACTIONS -->
+    <div width="100%" >
+      <h4>Interactions</h4>
+      <!-- interaction image -->
+      <div class="interactions_gui__image">
+        <center>
+          <img width="60%" src="./img/park_service_status_gui_interaction.png" alt="park_service_status_gui_interaction.png"/>
+        </center>
+      </div>
+      <!-- interaction messages -->
+      <table class="table_interactions_messages">
+        <tr>
+          <th>Message</th>
+          <th>Payload</th>
+          <th>Semantic</th>
+          <th>Description</th>
+        </tr>
+        <tr>
+          <td>
+            status
+          </td>
+          <td>
+            status
+          </td>
+          <td>
+            event
+          </td>
+          <td>
+            All the status informations regarding the ParkManagerService. This may not be a single event but in general represents a group of events received from the central system.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            fan_on
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            dispatch
+          </td>
+          <td>
+            The parking-manager wants to turn on the fan.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            fan_off
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            dispatch
+          </td>
+          <td>
+            The parking-manager wants to turn off the fan.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            automatic_mode
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            dispatch
+          </td>
+          <td>
+            The parking-manager wants to set the fan in automatic mode.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            manual_mode
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            dispatch
+          </td>
+          <td>
+            The parking-manager wants to set the fan in manual mode.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            transport_trolley_start
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            dispatch
+          </td>
+          <td>
+            The parking-manager wants to start the transportTrolley.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            transport_trolley_stop
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            dispatch
+          </td>
+          <td>
+            The parking-manager wants to stop the transportTrolley.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            alarm
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            event
+          </td>
+          <td>
+            An alarm has been propagated by the central system due to the DTFREE time limit reached.
+          </td>
+        </tr>
+      </table>
+      <!-- interaction qak example -->
+      <div class="interaction_qak_example">
+        <h4>QAK Model</h4>
+        <p>
+          The following QAK is a mock implementation of what we discussed above, its intent is to show how the ParkServiceStatusGUI could be implemented using the QAK meta-model.
+          However, there are some simplification on the interactions between the client and the GUI, they are listed below.
+          <ol>
+            <li>
+              The input to the ParkServiceStatusGUI from the manager is given by some requests that we added to simulate the "click" on the button of the GUI.
+            </li>
+            <li>
+              The output from the ParkServiceStatusGUI to the client is given by the reply to a request (or by an event) that simulate the "view refresh" and consequent visual output for the manager.
+            </li>
+          </ol>
+        </p>
+        <a href="./qak_components/parkservicestatusgui.qak">
+          <div class="interaction_qak_example_link">
+            park service status GUI.qak
+          </div>
+        </a>
+      </div>
+    </div>
+  </div> <!-- end component -->
+
+  <div class="component" id="business-logic">
+    <h3>Business Logic</h3>
+    <!-- DESCRIPTION -->
+    <h4>Description</h4>
+    <p>
+      As already said in the <a href="#general-considerations">General Considerations section</a>, the business logic is a central system's subset and contains the logic of a big piece of the system, such as the indoor/outdoor logic. Furthermore, it might be a level of indirection between the GUIs and the Logical Entities.
+      <br><br>
+      For the indoor/outdoor logic, the business logic can receive the inputs from the GUIs, process them and decide what to do and in which order. It can emit or forward the events about the status of the parking area (free and occupied parking slots, status of the transport trolley, etc.), and it has, also, the control of the transport trolley.
+      <br><br>
+      About the <k>TOKENID</k> (generated and validated by the Business Logic) we highlight that it is required some attempt to randomize its generation in order to avoid malicious users that want to steal a car. We want also to highlight that the randomization itself is not a full safe method to counteract malicious user but at least it reduces significantly the possibility of success of a malicious user. <br>
+      Moreover the TOKENID must follow this additional two requirements: it must be <k>unique</k> in the parking area in a given moment; it must be simple to insert for the user in the pick up phase.
+      <br>
+      In order to follow the requirements and the thought discussed above we design the TOKENID as a short string of <k>5 characters</k> in which only one character (selected randomly) can be a number and this number coincides with the SLOTNUM assigned to the car and the four other characters are randomly selected in the alphabet of uppercase and lowercase letters.
+      <br><br>
+      About the requirement on the DTFREE alarm generation we postpone it discussion to a following in-depth sprint.
+      <br><br>
+      The interactions between the Business Logic and the other entities in the system have already been described in the sections above as input/output of the other entities and for that reason are not listed below.
+      <br><br>
+      It could be modeled as a collection of actors. However, the design is postponed to a in-depth sprint.
+    </p>
+    <!-- interaction qak example -->
+    <div class="interaction_qak_example">
+      <h4>QAK Model</h4>
+      <p>
+        The following QAK is a mock implementation of what we discussed above, its intent is to show how the Business Logic could be implemented using the QAK meta-model.
+        However, there are some simplification we made and they are listed below.
+        <ol>
+          <li>
+            The TOKENID is not generated randomly, it always appends the SLOTNUM at a fixed prefix.
+          </li>
+        </ol>
+      </p>
+      <a href="./qak_components/businesslogic.qak">
+        <div class="interaction_qak_example_link">
+          business logic.qak
+        </div>
+      </a>
+    </div>
+  </div> <!-- end component -->
+
+  <div class="problems_and_relevant_aspects" id="problems-relevant-aspects">
+    <h3>Possible problems and relevant aspects</h3>
+    <p>
+      During this analysis, some problematic aspects have been noticed:
+      <ul>
+        <li>the clients of the parking-area may do something unpredictable and dangerous that may have negative effects on the system's behaviour. An example of this is the client that brings his car to the indoor-area but does not press the car enter button. For this specific situation a timer between the informIn and the carEnter phases may be useful. Another example is the client that stays in the car while the transport trolley moves it inside the parking-area. Such situations are not noticeable by the system, at least not with the current sensors made available by the customer.</li>
+        <li>Make the system components "technology independent". Since we are working in a virtual environment and with virtual components, this should be done with a fair amount of abstraction that insures that the replacement of simulated components with the real ones does not affect the business logic.</li>
+        <li>In case of faults, some of the data kept by the business logic, in general the state of the system, must survive if the system is restarted. How to make this information persistent should be considered in the following sprints. Also, faults in one of the components may render the system unusable.</li>
+      </ul>
+    </p>
+  </div><!--  end problems and relevant aspects -->
+
+  <div class="logical_architecture" id="logical_architecture">
+    <h3>Logical Architecture</h3>
+    <div class="interactions__image">
+      <center>
+        <img src="./img/general_considerations_architecture_interactions.png" alt="general_considerations_architecture_interactions.png"/>
+      </center>
+    </div>
+    <div class="interaction_qak_example" style="width:90%;">
+      <h4>QAK Model</h4>
+      <p>
+        The purpose of this model is to group together all the QAKs shown above and to show how the system works when a car parking request is received and when then the client wants to pick up its car.
+      </p>
+      <a href="#">
+        <div class="interaction_qak_example_link">
+          first executable model.qak
+        </div>
+      </a>
+    </div>
+  </div>
+
+</div>  <!-- End Problem Analysis class remark -->
+
+<h2>Test Plan</h2>
+<div class="remark">
+  <p>
+    Below are listed some possible tests for a subset of the system's functionalities. In order to simplify the implementation of the tests a special <a href="TODO inserisci il link al testable_model.qak !">QAK model</a> has been defined in which the QActors are able to update the associated CoAP resource in order to make the internal status observable by the test itself. Note that this addition to the QActors is not changing anything about the logic of the entities discussed above in this document.
+    <br>
+    Moreover, few helper classes have been defined to simplify the tests development: <a href="TODO inserisci il link!">CoapQAK.kt</a>,
+    <a href="TODO inserisci il link!">Message.kt</a>.
+  </p>
+  <h4>TestSuccessAcceptIn</h4>
+  <ul>
+    <li>
+      <b>Description</b>: The client asks to enter in the indoor area and receives a valid SLOTNUM.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          Empty indoor area.
+        </li>
+        <li>
+          At least one free parking-slot.
+        </li>
+        <li>
+          The transportTrolley is not stopped.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Expectations</b>:
+      <ol>
+        <li>
+          The ParkServiceGUI shows a SLOTNUM with a value > 0.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested requirements</b>: F1, F2, F3
+    </li>
+  </ul>
+  <h4>TestFullParkingArea</h4>
+  <ul>
+    <li>
+      <b>Description</b>: The client asks to enter in the indoor area but he is refused and receives a SLOTNUM = 0.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          No free parking-slots available.
+        </li>
+        <li>
+          The transportTrolley is not stopped.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Expectations</b>:
+      <ol>
+        <li>
+          The ParkServiceGUI shows a SLOTNUM with a value = 0.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested requirements</b>: F1, F2, F3
+    </li>
+  </ul>
+  <h4>TestTripOneCar</h4>
+  <ul>
+    <li>
+      <b>Description</b>: A car enter in the parking-area and then exit from the parking-area.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          Empty indoor-area
+        </li>
+        <li>
+          At least one parking-slot free.
+        </li>
+        <li>
+          Empty outdoor-area.
+        </li>
+        <li>
+          The transportTrolley is not stopped.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Expectations</b>:
+      <ol>
+        <li>
+          The car enter in the parking-area.
+        </li>
+        <li>
+          On pick up phase the TOKENID is valid and the car exits from the parking-area.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested requirements</b>: F1, F2, F3, F4, F5, F6, F7, F8, F9, F16, F17, F20, F21
+    </li>
+  </ul>
+  <h4>TestInvalidTokenId</h4>
+  <ul>
+    <li>
+      <b>Description</b>: The client when asks to pick up the car receives an error due to an invalid TOKENID has been inserted.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          The client has previously parked a car in the parking-area. However it is not strictly necessary to test a refusal of an invalid token.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Expectations</b>:
+      <ol>
+        <li>
+          The TOKENID inserted by the client is not valid. The ParkServiceGUI shows to the client an error.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested requirements</b>: F6, F7, F8, F9
+    </li>
+  </ul>
+  <h4>TestOccupiedIndoorArea</h4>
+  <ul>
+    <li>
+      <b>Description</b>: The client waits for a reasonable amount of time a response from the ParkServiceGUI in order to enter the indoor area. This response does not arrive.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          The indoor area is occupied.
+        </li>
+        <li>
+          The transportTrolley is not stopped.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Expectations</b>:
+      <ol>
+        <li>
+          The client does not receive a response in 15 seconds.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested requirements</b>: F1, F2, F16
+    </li>
+  </ul>
+  <h4>TestOccupiedOutdoorArea</h4>
+  <ul>
+    <li>
+      <b>Description</b>: The client waits for a reasonable amount of time a response from the ParkServiceGUI in order to pick up the car. This response does not arrive.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          The outdoor area is occupied.
+        </li>
+        <li>
+          The transportTrolley is not stopped.
+        </li>
+        <li>
+          The transportTrolley is not serving other requests.
+        </li>
+        <li>
+          DTFREE alarm and car removal from the outdoor area requirement, as done in the other tests, is disabled for this test.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Expectations</b>:
+      <ol>
+        <li>
+          The client does not receive a response in 15 seconds.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested requirements</b>: F6, F7, F17
+    </li>
+  </ul>
+  <h4>TestTransportTrolleyBackToHome</h4>
+  <ul>
+    <li>
+      <b>Description</b>: The transportTrolley comes back to HOME some time after it has handled a parking/pick up car request.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          The transportTrolley is not stopped.
+        </li>
+        <li>
+          The transportTrolley is handling a parking/pick up car request.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Expectations</b>:
+      <ol>
+        <li>
+          By observing the logical transportTrolley position is noticed that it comes back to HOME.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested requirements</b>: F22
+    </li>
+  </ul>
+  <h4>TestWeightSensorDetectCar</h4>
+  <ul>
+    <li>
+      <b>Description</b>: The weightSensor is able to detect when a car enter the indoor area.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          The indoor area is free.
+        </li>
+        <li>
+          The weightSensor is not detecting a car in the indoor area.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Expectations</b>:
+      <ol>
+        <li>
+          By observing the logical weightSensor is noticed that it is detecting a car.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested requirements</b>: F16
+    </li>
+  </ul>
+  <h4>TestWeightSensorCarNotDetected</h4>
+  <ul>
+    <li>
+      <b>Description</b>: The weightSensor is able to detect when a car exits the indoor area.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          The indoor area is occupied.
+        </li>
+        <li>
+          The weightSensor is detecting a car in the indoor area.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Expectations</b>:
+      <ol>
+        <li>
+          By observing the logical weightSensor is noticed that it is not detecting a car.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested requirements</b>: F16
+    </li>
+  </ul>
+  <h4>TestSonarDetectCar</h4>
+  <ul>
+    <li>
+      <b>Description</b>: The outSonar is able to detect when a car enter the outdoor area.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          The outdoor area is free.
+        </li>
+        <li>
+          The outSonar is not detecting a car in the indoor area.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Expectations</b>:
+      <ol>
+        <li>
+          By observing the logical sonar is noticed that it is detecting a car.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested requirements</b>: F17
+    </li>
+  </ul>
+  <h4>TestSonarCarNotDetected</h4>
+  <ul>
+    <li>
+      <b>Description</b>: The outSonar is able to detect when a car exits the outdoor area.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          The outdoor area is occupied.
+        </li>
+        <li>
+          The outSonar is detecting a car in the indoor area.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Expectations</b>:
+      <ol>
+        <li>
+          By observing the logical sonar is noticed that it is not detecting a car.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested requirements</b>: F17
+    </li>
+  </ul>
+  <h4>TestThermometerTemperatureHigh</h4>
+  <ul>
+    <li>
+      <b>Description</b>: The logical thermometer is able to switch the logical temperature state from LOW to HIGH when the temperature becomes greater than TMAX.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          The temperature measured by the physical thermometer is lower than or equal to TMAX.
+        </li>
+        <li>
+          The logical temperature measured by the logical thermometer is LOW.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Expectations</b>:
+      <ol>
+        <li>
+          By observing the logical thermometer is noticed that it recognizes a logical temperature HIGH.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested requirements</b>: F19
+    </li>
+  </ul>
+  <h4>TestThermometerTemperatureLow</h4>
+  <ul>
+    <li>
+      <b>Description</b>: The logical thermometer is able to switch the logical temperature state from HIGH to LOW when the temperature becomes lower than or equal to TMAX.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          The temperature measured by the physical thermometer is greater than TMAX.
+        </li>
+        <li>
+          The logical temperature measured by the logical temperature is HIGH.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Expectations</b>:
+      <ol>
+        <li>
+          By observing the logical thermometer is noticed that it recognizes a logical temperature LOW.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested requirements</b>: F19
+    </li>
+  </ul>
+  <h4>TestParkServiceStatusGuiSetFanManualMode</h4>
+  <ul>
+    <li>
+      <b>Description</b>: After setting the fan in manual mode the manager starts and stops the fan.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          The fan is in automatic mode.
+        </li>
+        <li>
+          The fan is OFF.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Expectations</b>:
+      <ol>
+        <li>
+          By observing the ParkServiceStatusGUI and the logical fan is noticed that the fan switches to manual mode after the manager's input.
+        </li>
+        <li>
+          By observing the ParkServiceStatusGUI and the logical fan is noticed that the fan switches to ON status after the manager's input.
+        </li>
+        <li>
+          By observing the ParkServiceStatusGUI and the logical fan is noticed that the fan switches to OFF status after the manager's input.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested requirements</b>: F10, F12, F13
+    </li>
+  </ul>
+  <h4>TestParkServiceStatusGuiSetFanAutomaticMode</h4>
+  <ul>
+    <li>
+      <b>Description</b>: After setting the fan in automatic mode the fan switch its status between ON and OFF depending on the logical temperature measured by the thermometer in the parking-area.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          The fan is in manual mode.
+        </li>
+        <li>
+          The fan is OFF.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Expectations</b>:
+      <ol>
+        <li>
+          By observing the ParkServiceStatusGUI and the logical fan is noticed that the fan switches to automatic mode after the manager's input.
+        </li>
+        <li>
+          By observing the ParkServiceStatusGUI and the logical fan is noticed that the fan switches to ON status after the temperature becomes greater than TMAX.
+        </li>
+        <li>
+          By observing the ParkServiceStatusGUI and the logical fan is noticed that the fan switches to OFF status after the temperature becomes lower than or equal to TMAX.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested requirements</b>: F10, F12, F13
+    </li>
+  </ul>
+
+  <h4>Test files</h4>
+  <table width="100%" style="border:none;">
+    <tr>
+      <td width="50%" style="border:none;">
+        <div class="interaction_qak_example" style="width:90%;">
+          <h4>QAK Model</h4>
+          <p></p>
+          <a href="TODO inserisci link!">
+            <div class="interaction_qak_example_link">
+              testable model.qak
+            </div>
+          </a>
+        </div>
+      </td>
+      <td style="border:none;">
+        <div class="interaction_qak_example" style="width:90%;">
+          <h4>App Test</h4>
+          <p></p>
+          <a href="TODO inserisci link!">
+            <div class="interaction_qak_example_link">
+              Test Plan.kt
+            </div>
+          </a>
+        </div>
+      </td>
+    </tr>
+  </table>
+
+</div><!-- End Test Plan class remark -->
+
+
+<h2>Workplan</h2>
+<div class="remark workplan">
+  <p>
+    Based on what was discussed in this initial phase, we concluded that there will be needed 5 sprints to finish this application.
+  </p>
+  <h3><b>Sprint 1 - TransportTrolley</b> (24 hours)</h3>
+  <table>
+    <tr>
+      <th></th>
+      <th>
+        Sprint backlog
+      </th>
+      <th>
+        Requirements
+      </th>
+      <th>
+        Working time
+      </th>
+    </tr>
+    <tr>
+      <td>
+        Planner
+      </td>
+      <td>
+        The transportTrolley, given a task, is able to reach the right cell in the parking-area and perform its job.
+      </td>
+      <td>
+        F20, F21, F22, F23, NF2
+      </td>
+      <td>
+        12h
+      </td>
+    </tr>
+    <tr>
+      <td>
+        Start & Stop
+      </td>
+      <td>
+        The transportTrolley can be started/stopped with a command.
+      </td>
+      <td>
+        F11 (only start and stop)
+      </td>
+      <td>
+        6h
+      </td>
+    </tr>
+    <tr>
+      <td>
+        Persistence
+      </td>
+      <td>
+        The status of the transportTrolley must survive after a system reboot.
+      </td>
+      <td>
+        NF3
+      </td>
+      <td>
+        3h
+      </td>
+    </tr>
+    <tr>
+      <td>
+        Monitoring
+      </td>
+      <td>
+        Should be possible to analyze the behaviour of the transportTrolley.
+      </td>
+      <td>
+        NF4
+      </td>
+      <td>
+        3h
+      </td>
+    </tr>
+  </table>
+  <h3><b>Sprint 2 - Car Parking</b> (38 hours)</h3>
+  <table>
+    <tr>
+      <th></th>
+      <th>
+        Sprint backlog
+      </th>
+      <th>
+        Requirements
+      </th>
+      <th>
+        Working time
+      </th>
+    </tr>
+    <tr>
+      <td>
+        WeightSensor
+      </td>
+      <td>
+        The weightSensor is able to detect the presence of a car in the indoor area.
+      </td>
+      <td>
+        F16, NF2
+      </td>
+      <td>
+        4h
+      </td>
+    </tr>
+    <tr>
+      <td>
+        Parking car phase
+      </td>
+      <td>
+        The system is able to manage a parking car request.
+      </td>
+      <td>
+        F1, F2, F3, F4, F5, NF1
+      </td>
+      <td>
+        14h
+      </td>
+    </tr>
+    <tr>
+      <td>
+        ParkServiceGUI
+      </td>
+      <td>
+        The system provides the ParkServiceGUI to handle the client's car parking requests.
+      </td>
+      <td>
+        F1, F4, F5
+      </td>
+      <td>
+        10h
+      </td>
+    </tr>
+    <tr>
+      <td>
+        Persistence
+      </td>
+      <td>
+        The status of the system must survive after a system reboot.
+      </td>
+      <td>
+        NF3
+      </td>
+      <td>
+        5h
+      </td>
+    </tr>
+    <tr>
+      <td>
+        Monitoring
+      </td>
+      <td>
+        Should be possible to analyze the behaviour of the system.
+      </td>
+      <td>
+        NF4
+      </td>
+      <td>
+        5h
+      </td>
+    </tr>
+  </table>
+  <h3><b>Sprint 3 - Car Pick up</b> (40 hours)</h3>
+  <table>
+    <tr>
+      <th></th>
+      <th>
+        Sprint backlog
+      </th>
+      <th>
+        Requirements
+      </th>
+      <th>
+        Working time
+      </th>
+    </tr>
+    <tr>
+      <td>
+        OutSonar
+      </td>
+      <td>
+        The outSonar is able to detect the presence of a car in the outdoor area.
+      </td>
+      <td>
+        F17, NF2
+      </td>
+      <td>
+        4h
+      </td>
+    </tr>
+    <tr>
+      <td>
+        Pick up car phase
+      </td>
+      <td>
+        The system is able to manage a pick up car request.
+      </td>
+      <td>
+        F6, F7, F8, F9
+      </td>
+      <td>
+        14h
+      </td>
+    </tr>
+    <tr>
+      <td>
+        DTFREE
+      </td>
+      <td>
+        The system is able to notify about the DTFREE time limit in the outdoor area.
+      </td>
+      <td>
+        F15 (partially)
+      </td>
+      <td>
+        2h
+      </td>
+    </tr>
+    <tr>
+      <td>
+        ParkServiceGUI
+      </td>
+      <td>
+        The system provides the ParkServiceGUI to handle the client's car pick up requests.
+      </td>
+      <td>
+        F6, F9
+      </td>
+      <td>
+        10h
+      </td>
+    </tr>
+    <tr>
+      <td>
+        Persistence
+      </td>
+      <td>
+        The status of the system must survive after a system reboot.
+      </td>
+      <td>
+        NF3
+      </td>
+      <td>
+        5h
+      </td>
+    </tr>
+    <tr>
+      <td>
+        Monitoring
+      </td>
+      <td>
+        Should be possible to analyze the behaviour of the system.
+      </td>
+      <td>
+        NF4
+      </td>
+      <td>
+        5h
+      </td>
+    </tr>
+  </table>
+  <h3><b>Sprint 4 - Parking Manager</b> (44 hours)</h3>
+  <table>
+    <tr>
+      <th></th>
+      <th>
+        Sprint backlog
+      </th>
+      <th>
+        Requirements
+      </th>
+      <th>
+        Working time
+      </th>
+    </tr>
+    <tr>
+      <td>
+        Thermometer
+      </td>
+      <td>
+        The thermometer is able to measure the temperature inside the parking area.
+      </td>
+      <td>
+        F19, NF2
+      </td>
+      <td>
+        4h
+      </td>
+    </tr>
+    <tr>
+      <td>
+        Fan
+      </td>
+      <td>
+        The system is able to manage the fan.
+      </td>
+      <td>
+        F12 (partially), F13 (partially), F14, NF2
+      </td>
+      <td>
+        6h
+      </td>
+    </tr>
+    <tr>
+      <td>
+        Parking area status
+      </td>
+      <td>
+        The parking area status is observable by the manager.
+      </td>
+      <td>
+        F10 (partially)
+      </td>
+      <td>
+        8h
+      </td>
+    </tr>
+    <tr>
+      <td>
+        ParkServiceStatusGUI
+      </td>
+      <td>
+        The system provides the ParkServiceStatusGUI to the parking manager.
+      </td>
+      <td>
+        F10, F11, F12, F13, F15
+      </td>
+      <td>
+        14h
+      </td>
+    </tr>
+    <tr>
+      <td>
+        Persistence
+      </td>
+      <td>
+        The status of the system must survive after a system reboot.
+      </td>
+      <td>
+        NF3
+      </td>
+      <td>
+        6h
+      </td>
+    </tr>
+    <tr>
+      <td>
+        Monitoring
+      </td>
+      <td>
+        Should be possible to analyze the behaviour of the system.
+      </td>
+      <td>
+        NF4
+      </td>
+      <td>
+        6h
+      </td>
+    </tr>
+  </table>
+  <h3><b>Sprint 5 - Real Deployment </b> (16 hours)</h3>
+  <table>
+    <tr>
+      <th></th>
+      <th>
+        Sprint backlog
+      </th>
+      <th>
+        Requirements
+      </th>
+      <th>
+        Working time
+      </th>
+    </tr>
+    <tr>
+      <td>
+        OutSonar - real device
+      </td>
+      <td>
+        A real device is used for the OutSonar.
+      </td>
+      <td>
+        F18, NF2
+      </td>
+      <td>
+        6h
+      </td>
+    </tr>
+    <tr>
+      <td>
+        Distributed System
+      </td>
+      <td>
+        The system is deployed in a distributed environment.
+      </td>
+      <td>
+        NF5
+      </td>
+      <td>
+        10h
+      </td>
+    </tr>
+  </table>
+  <p>Our goal is to deliver the product to the customer by <k>April 15th</k>.</p>
+</div>
+
+
+<div class="contact-us" id="contact-us">
+  <table>
+    <tr>
+      <td colspan="2"><h3>By:</h3></td>
+    </tr>
+    <tr>
+      <td>
+        <div class="student__image">
+          <center>
+            <img src="./img/students/lorenzo_persampieri.jpg" alt="lorenzo_persampieri.jpg"/>
+          </center>
+        </div>
+      </td>
+      <td>
+        <div class="student__image">
+          <center>
+            <img src="./img/students/gianluca_soavi.jpg" alt="gianluca_soavi.jpg"/>
+          </center>
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <th>Lorenzo Persampieri</th>
+      <th>Gianluca Soavi</th>
+    </tr>
+    <tr style="padding-bottom: 10px;">
+      <td>lorenzo.persampieri@studio.unibo.it</td>
+      <td>gianluca.soavi@studio.unibo.it</td>
+    </tr>
+    <tr>
+      <th colspan="2" style="border-top: 1px solid black; padding-top: 10px;">Github Repository</th>
+    </tr>
+    <tr>
+      <td colspan="2"><a href="https://github.com/lorepersa/Automated-Car-Parking">https://github.com/lorepersa/Automated-Car-Parking</a></td>
+    </tr>
+  </table>
+</div><!-- End Contact Us class remark -->
+
+
+</body>
+</html>
