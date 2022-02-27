@@ -52,7 +52,7 @@ top {
 
 
 #i {
-    color: #ff1010;
+    color: #fF910;
 }
 tt{
 	font-family: "Arial";
@@ -72,7 +72,7 @@ bc{
 	font-size: 90%;
 	font-weight: bold;
     color: #990000;
-	background-color: #fcf8c7;
+	background-color: #fcF7c7;
 }
 ks{
 	font-family: "Arial";
@@ -205,12 +205,115 @@ div.imagedesc{
   height:auto;
 }
 
+.component .table_physical_logical {
+  width: 100%;
+  border: none;
+  margin-bottom: 20px;
+}
+.component .table_physical_logical td:nth-child(odd), .component .table_physical_logical th:nth-child(odd){
+  padding-right: 10px;
+  border: none;
+}
+.component .table_physical_logical td:nth-child(even), .component .table_physical_logical th:nth-child(even){
+  padding-left: 10px;
+  border: none;
+}
+.component .table_physical_logical td{
+  text-align: justify;
+}
+.component .table_active_passive_entities {
+  margin-left:auto;
+  margin-right:auto;
+  margin-bottom: 40px;
+}
+.component .table_active_passive_entities td, .component .table_active_passive_entities th{
+  padding-left:5px;
+  padding-right:5px;
+}
+.component .table_interactions_messages{
+  margin-bottom:30px;
+  margin-left:auto;
+  margin-right:auto;
+  table-layout:fixed;
+  width:100%;
+}
+.component .table_interactions_messages td {
+  padding-left:5px;
+  padding-right:5px;
+  text-align: center;
+}
+.component .interaction_qak_example {
+  border: 1px solid black;
+  border-radius: 25px;
+  margin-bottom: 40px;
+  margin-right: auto;
+  margin-left: auto;
+  padding-top: 15px;
+  padding-bottom: 15px;
+  padding-left: 15px;
+  padding-right: 15px;
+  text-align: center;
+  width:60%;
+}
+.component .interaction_qak_example .interaction_qak_example_link {
+  background-color:pink;
+  border-radius:25px;
+  margin-left:auto;
+  margin-right:auto;
+  padding-top:20px;
+  padding-bottom:20px;
+  text-align:center;
+  width:40%;
+}
+/*---------------------------------------
+FUNCTIONAL/NOT FUNCTIONAL REQUIREMENTS
+-----------------------------------------*/
+.requirements_suddivision table{
+  width:100%;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+.requirements_suddivision td{
+  padding: 8px;
+  /*border-left: none;*/
+}
+.requirements_suddivision th{
+  width: 5%;
+  /*border-right: none;*/
+}
+/*---------------------------------------
+STUDENT IMAGES
+-----------------------------------------*/
+.contact-us {
+  width: 60%;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 40px;
+  background-color: #E3F2FD;
+  border-radius: 25px;
+  padding: 15px;
+}
+.contact-us table {
+  text-align: center;
+  border:none;
+  margin-left: auto;
+  margin-right: auto;
+}
+.contact-us td, .contact-us th{
+  width: 50%;
+  border:none;
+  padding-bottom: 5px;
+}
+.student__image img{
+  width: auto;
+  height: 200px;
+}
 
 </style>
 
 <head>
 
-<title>TemplateToFill</title></head>
+<title>Requirements Analysis</title></head>
 
 <body>
 <div id="top">
@@ -369,7 +472,12 @@ Customer's requirements are available <a href="https://raw.githubusercontent.com
     </div>
 
     <h3>Additional requirements given by the customer</h4>
-      <li>The orientation of the TransportTrolley has not rilevance when loading the car on itself.</li>
+    <div class="remark">
+      <ul>
+        <li>The orientation of the TransportTrolley has not rilevance when loading the car on itself.</li>
+        <li>The TransportTrolley can carry one car at time.</li>
+      </ul>
+    </div>
 
     <h3>Provided hardware and software</h3>
     <div class="remark">
@@ -382,9 +490,12 @@ Customer's requirements are available <a href="https://raw.githubusercontent.com
         </table>
         <p></p>
 
+      The parking-area includes 6 parking slots, one indoor and one outdoor, with their respective indoor-area and outdoor-area. <br>
       A version of the map with the cells coordinates is available at this link: <a href="./img/emptyMapWithCells.png">emptyMapWithCellCoordinates.png</a> <br>
       The code to realize the virtual map has been provided by the customer: <a href="https://github.com/anatali/issLab2021/tree/main/it.unibo.kotlinSupports/app/src/main/kotlin/mapRoomKotlin">it.unibo.kotlinSupports/mapRoomKotlin</a>.<br>
       The state of the parking-area (i.e. parking-slot available, indoor or outdoor area free) should be observable.
+      <br><br>
+      <k>Note</k>: the term <k>"observable"</k> is used to express the need of accessing some information without waiting for or stopping the observed entity.
 
       <h4>Transport Trolley</h4>
       The virtual environment (with virtual robot) <a href="http://htmlpreview.github.io/?https://github.com/anatali/issLab2021/blob/main/it.unibo.virtualRobot2020/userDocs/VirtualRobot2021.html">WEnv</a>  has been provided to us by the customer. So we will perform all tests on this virtual environment.<br>
@@ -402,7 +513,7 @@ Customer's requirements are available <a href="https://raw.githubusercontent.com
       The customer doesn't provide code for the fan. We should simulate this sensor with a mock-object or mock-actor. It should be modeled as passive component. The state of the sensor should be observable.
     </div>
 
-    <h3>Interactions</h3>
+    <h3>Use Cases - Interactions</h3>
     <div class="remark">
       This section summarizes the interactions between the entities of the most interesting use cases of the application. The management of corner cases is postponed to the analysis of the problem, so the following use cases are valid only if each assumption (precondition) is verified.
 
@@ -706,7 +817,172 @@ Customer's requirements are available <a href="https://raw.githubusercontent.com
       </tr>
     </table>
   </div><!--  Interactions div.class="remark"-->
+
+<div class="requirements_suddivision">
+  <h3>Functional Requirements</h3>
+  <table>
+    <tr id="F1">
+      <th>F1</th>
+      <td>The client must have the possibility to notify his interest to park his car through the ParkServiceGUI.</td>
+    </tr>
+    <tr id="F2">
+      <th>F2</th>
+      <td>The system must accept a new client parking-car request only when there is at least a free parking slot, the robot is not stopped and if the indoor area is free at the request time. Otherwise the client should wait or the system should notify the client to wait.</td>
+    </tr>
+    <tr id="F3">
+      <th>F3</th>
+      <td>The system must send to the client an id (SLOTNUM) of the parking slot if there are available slots, otherwise the client should receive 0.</td>
+    </tr>
+    <tr id="F4">
+      <th>F4</th>
+      <td>The client must have the possibility to press the CARENTER button in the ParkServiceGUI when he has left his car in the indoor area.</td>
+    </tr>
+    <tr id="F5">
+      <th>F5</th>
+      <td>When the TransporTrolley is parking the client's car, our system must be able to produce a unique identifier (TOKENID) and send it to the client through the ParkServiceGUI in order to identify that car and the parking slot in which it has been parked.</td>
+    </tr>
+    <tr id="F6">
+      <th>F6</th>
+      <td>The client must have the possibility to pick up his car by providing to the system through the ParkServiceGUI the TOKENID acquired during the parking phase.</td>
+    </tr>
+    <tr id="F7">
+      <th>F7</th>
+      <td>The system must be able to validate the TOKENID provided by the client. If it is valid, the system must continue the pick up phase, otherwise the system should be able to send a proper notification to the client.</td>
+    </tr>
+    <tr id="F8">
+      <th>F8</th>
+      <td>The system must be able to infer the correct parking slot of the car to pick up from the corresponding TOKENID.</td>
+    </tr>
+    <tr id="F9">
+      <th>F9</th>
+      <td>The system must accept a client pick up request only when the TOKENID submitted is valid, the outdoor is free and the TranportTrolley is not stopped. Otherwise the client should wait or the system should notify the client to wait.</td>
+    </tr>
+    <tr id="F10">
+      <th>F10</th>
+      <td>The parking manager, through the ParkServiceStatusGUI, must have the possibility to watch the current status of the parking area, including the sensors (WeightSensor, OutSonar and Thermometer), the Fan (on/off, manual/automatic) and the TransportTrolley (idle, working, stopped).</td>
+    </tr>
+    <tr id="F11">
+      <th>F11</th>
+      <td>The parking manager, through the ParkServiceStatusGUI, must have the possibility to stop the TransportTrolley and then, to re-start it.</td>
+    </tr>
+    <tr id="F12">
+      <th>F12</th>
+      <td>The parking manager, through the ParkServiceStatusGUI, must have the possibility to set the fan mode to "manual" or "automatic".</td>
+    </tr>
+    <tr id="F13">
+      <th>F13</th>
+      <td>The parking manager, through the ParkServiceStatusGUI, must have the possibility to start the fan when TA > TMAX and stop it when TA <= TMAX, when the fan mode is set to "manual".</td>
+    </tr>
+    <tr id="F14">
+      <th>F14</th>
+      <td>The system must be able to autonomously start the fan when TA > TMAX and stop it when TA <= TMAX, when the fan mode is set to "automatic".</td>
+    </tr>
+    <tr id="F15">
+      <th>F15</th>
+      <td>The system must be able to notify to the parking manager, through the ParkServiceStatusGUI, when the outdoor-area has not been cleaned within DTFREE time interval.</td>
+    </tr>
+    <tr id="F16">
+      <th>F16</th>
+      <td>The WeightSensor must be able to measure the weight within the indoor-area and to notify to the system if the indoor-area is occupied by a car or not.</td>
+    </tr>
+    <tr id="F17">
+      <th>F17</th>
+      <td>The OutSonar must be able to detect the presence of a car inside the outdoor-area and to notify to the system if the outdoor-area is occupied by a car or not.</td>
+    </tr>
+    <tr id="F18">
+      <th>F18</th>
+      <td>The OutSonar must be a real device in the final deployment.</td>
+    </tr>
+    <tr id="F19">
+      <th>F19</th>
+      <td>The Thermometer must be able to measure the temperature inside the parking area and to notify to the system if the temperature is greater or lower than a specific threshold TMAX.</td>
+    </tr>
+    <tr id="F20">
+      <th>F20</th>
+      <td>The TransportTrolley must be able to take a car from the indoor and park it. (parking phase)</td>
+    </tr>
+    <tr id="F21">
+      <th>F21</th>
+      <td>The TransportTrolley must be able to take a car from its parking slot and release it when it is in the outdoor. (pick up phase)</td>
+    </tr>
+    <tr id="F22">
+      <th>F22</th>
+      <td>The TransportTrolley must be able to go back home when there are no more requests available.</td>
+    </tr>
+    <tr id="F23">
+      <th>F23</th>
+      <td>The TransportTrolley must not walk over parking-slots or obstacles.</td>
+    </tr>
+
+  </table>
+
+  <h3>Non Functional Requirements</h3>
+  <table>
+    <tr id="NF1">
+      <th>NF1</th>
+      <td>The TOKENID generated should be easy to remember and difficult to guess.</td>
+    </tr>
+    <tr id="NF2">
+      <th>NF2</th>
+      <td>It should be possible to swap easily between real sensors/actuators and simulated mock-objects or mock-actors.</td>
+    </tr>
+    <tr id="NF3">
+      <th>NF3</th>
+      <td>The system should remember the state of the system after a crash or a simple restart.</td>
+    </tr>
+    <tr id="NF4">
+      <th>NF4</th>
+      <td>The system should have a proper way to analyze the behavior of the system itself.</td>
+    </tr>
+    <tr id="NF5">
+      <th>NF5</th>
+      <td>The system should be modeled to work also as a distributed system.</td>
+    </tr>
+
+  </table>
+</div>
+
+
 </div><!--  Requirements analysis div.class="remark"-->
+
+<div class="contact-us" id="contact-us">
+  <table>
+    <tr>
+      <td colspan="2"><h3>By</h3></td>
+    </tr>
+    <tr>
+      <td>
+        <div class="student__image">
+          <center>
+            <img src="./img/students/lorenzo_persampieri.jpg" alt="lorenzo_persampieri.jpg"/>
+          </center>
+        </div>
+      </td>
+      <td>
+        <div class="student__image">
+          <center>
+            <img src="./img/students/gianluca_soavi.jpg" alt="gianluca_soavi.jpg"/>
+          </center>
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <th>Lorenzo Persampieri</th>
+      <th>Gianluca Soavi</th>
+    </tr>
+    <tr style="padding-bottom: 10px;">
+      <td>lorenzo.persampieri@studio.unibo.it</td>
+      <td>gianluca.soavi@studio.unibo.it</td>
+    </tr>
+    <tr>
+      <th colspan="2" style="border-top: 1px solid black; padding-top: 10px;">Github Repository</th>
+    </tr>
+    <tr>
+      <td colspan="2"><a href="https://github.com/lorepersa/Automated-Car-Parking">https://github.com/lorepersa/Automated-Car-Parking</a></td>
+    </tr>
+  </table>
+</div><!-- End Contact Us class remark -->
+
 
 </body>
 </html>
