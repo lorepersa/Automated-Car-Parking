@@ -59,16 +59,13 @@ class Businesslogic ( name: String, scope: CoroutineScope  ) : ActorBasicFsm( na
 					}))
 					transition(edgeName="t027",targetState="carEnter",cond=whenRequestGuarded("car_enter",{ !indoor_area_free && !car_park_request  
 					}))
-					transition(edgeName="t028",targetState="sendTokenId",cond=whenEventGuarded("transport_trolley_position_indoor",{ car_park_request  
-					}))
-					transition(edgeName="t029",targetState="carParkDone",cond=whenEventGuarded("transport_trolley_position_slotnum",{ car_park_request  
-					}))
+					transition(edgeName="t028",targetState="sendTokenId",cond=whenDispatch("transport_trolley_at_indoor"))
+					transition(edgeName="t029",targetState="carParkDone",cond=whenReply("transport_trolley_car_park_done"))
 					transition(edgeName="t030",targetState="setFreeIndoorArea",cond=whenEvent("indoor_area_free"))
 					transition(edgeName="t031",targetState="setOccupiedIndoorArea",cond=whenEvent("indoor_area_occupied"))
 					transition(edgeName="t032",targetState="checkTokenId",cond=whenRequestGuarded("car_pickup",{ outdoor_area_free && !car_pickup_request  
 					}))
-					transition(edgeName="t033",targetState="pickUpCarFinished",cond=whenEventGuarded("transport_trolley_position_outdoor",{ car_pickup_request  
-					}))
+					transition(edgeName="t033",targetState="pickUpCarFinished",cond=whenReply("transport_trolley_car_pickup_done"))
 					transition(edgeName="t034",targetState="setFreeOutdoorArea",cond=whenEvent("outdoor_area_free"))
 					transition(edgeName="t035",targetState="setOccupiedOutdoorArea",cond=whenEvent("outdoor_area_occupied"))
 				}	 
@@ -124,7 +121,7 @@ class Businesslogic ( name: String, scope: CoroutineScope  ) : ActorBasicFsm( na
 												car_park_request = true
 								println("[businesslogic] | [State] carEnter | Received SLOTNUM=$client_SLOTNUM")
 								println("[businesslogic] | [State] carEnter | Sending trolley to Indoor...")
-								forward("transport_trolley_car_park", "transport_trolley_car_park($RESERVED_SLOTNUM_INDOOR_AREA)" ,"logicaltransporttrolley" ) 
+								request("transport_trolley_car_park", "transport_trolley_car_park($RESERVED_SLOTNUM_INDOOR_AREA)" ,"logicaltransporttrolley" )  
 						}
 						println("[businesslogic] | [State] carEnter | Exit point.")
 					}
@@ -219,7 +216,7 @@ class Businesslogic ( name: String, scope: CoroutineScope  ) : ActorBasicFsm( na
 					action { //it:State
 						println("[businesslogic] | [State] pickUpCar | Entry point.")
 						println("[businesslogic] | [State] pickUpCar | Telling the transport trolley to pick up the car at the parking slot n...")
-						forward("transport_trolley_car_pickup", "transport_trolley_car_pickup($SLOTNUM)" ,"logicaltransporttrolley" ) 
+						request("transport_trolley_car_pickup", "transport_trolley_car_pickup($SLOTNUM)" ,"logicaltransporttrolley" )  
 						 
 									STATUS_PARKING_AREA[SLOTNUM - 1] = "FREE"
 									SLOTNUM_PICKUP = SLOTNUM

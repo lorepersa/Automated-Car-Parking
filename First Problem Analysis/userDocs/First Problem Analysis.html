@@ -1245,13 +1245,15 @@ Requirements analysis is available <a href="http://htmlpreview.github.io/?https:
         <td>
           <p>
             The logical entity is an abstraction of the transportTrolley itself within the system. <br>
-            So this logical entity is able to receive an input with the job that should be done (like take a car from the indoor area and park it at SLOTNUM) and then move the underlying basicRobot step-by-step within the map. At each checkpoint in the map (i.e. HOME, SLOTNUM, INDOOR, OUTDOOR) the logical transportTrolley emits an event in order to allow other entities to process this information if needed. Note that this event may used by other entities to know when the transportTrolley finished a task. Moreover the transportTrolley state (IDLE, WORKING or STOPPED) should be observable at any time, so as like other entities the transportTrolley could be able to response with the state information on request and/or give this information with an event at every change.
+            So this logical entity is able to receive an input with the job that should be done (like take a car from the indoor area and park it at SLOTNUM) and then move the underlying basicRobot step-by-step within the map. In particular, the business logic tells to the transport trolley only the SLOTNUM where it should park a car or pick up a car and then the logical transport trolley must be able to infer the correct sequences of path to finish the task and at the end response to the business logic to make it aware that the job is done. Note that for each task some example of path that the transportTrolley should follow is illustrated through intutitive images in the requirement analysis.
             <br><br>
-            The logical transportTrolley must be smart and able to return at home when the message queue, where the job messages are queued, is empty from some time. In other words the transportTrolley returns at home, without external input, when there aren't pending requests. However, we want to keep the transportTrolley able to return at home also on request.
+            The logical transportTrolley must be smart and able to return at home when the message queue, where the job messages are queued, is empty from some time. In other words the transportTrolley returns at home, without external input, when there aren't pending requests. However, we want to keep the transportTrolley able to return at home also on specific command; in that case the interaction happens via a <k>dispatch</k>.
+            <br><br>
+            Moreover the transportTrolley state (IDLE, WORKING or STOPPED) should be observable at any time, so as like other entities the transportTrolley could be able to response with the state information on request and/or give this information with an event at every change.
             <br><br>
             The logical transportTrolley when receive a stop command must not propagate any command to the underlying basicRobot in order to simply wait in its position until it is restarted. Note that if the transportTrolley was not serving any request at the moment it has been stopped it will continue to not serve any request until it receives a new command after the restart.
             <br><br>
-            Note that here is not discussed how the logical transportTrolley moves the basic robot around the map in order to reach some destination. The customer gives us a <a href="https://github.com/anatali/issLab2021/tree/main/webspring.demo/src/main/kotlin/features/PathExecutor.kt">software</a> able to move the basic robot from a point A to a point B in the map that we can use as a good starting point when we will analyze how to model this logic of the transportTrolley.
+            Note that here is not discussed how the logical transportTrolley moves the basic robot around the map in order to reach some destination. The customer gives us a <a href="https://github.com/anatali/issLab2021/tree/main/it.unibo.qakDemo/support//pathexecutil.kt">software</a> able to move the basic robot from a point A to a point B in the map that we can use as a good starting point when we will analyze how to model this logic of the transportTrolley.
             <br><br>
             This entity can be modeled as <k>QActor</k>.
           </p>
@@ -1283,10 +1285,24 @@ Requirements analysis is available <a href="http://htmlpreview.github.io/?https:
             SLOTNUM
           </td>
           <td>
-            dispatch
+            request
           </td>
           <td>
             The transportTrolley must take a car from the INDOOR AREA and park it at SLOTNUM.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            transport_trolley_car_park_done
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            response
+          </td>
+          <td>
+            The transportTrolley finished the car park task.
           </td>
         </tr>
         <tr>
@@ -1297,10 +1313,24 @@ Requirements analysis is available <a href="http://htmlpreview.github.io/?https:
             SLOTNUM
           </td>
           <td>
-            dispatch
+            request
           </td>
           <td>
             The transportTrolley must take a car at SLOTNUM and release it in the OUTDOOR AREA.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            transport_trolley_car_pickup_done
+          </td>
+          <td>
+            X
+          </td>
+          <td>
+            response
+          </td>
+          <td>
+            The transportTrolley finished the car pick up task.
           </td>
         </tr>
         <tr>
@@ -1319,58 +1349,16 @@ Requirements analysis is available <a href="http://htmlpreview.github.io/?https:
         </tr>
         <tr>
           <td>
-            transport_trolley_position_home
+            transport_trolley_at_indoor
           </td>
           <td>
             X
           </td>
           <td>
-            event
+            dispatch
           </td>
           <td>
-            The transportTrolley is at HOME position.
-          </td>
-        </tr>
-        <tr>
-          <td>
-            transport_trolley_position_indoor
-          </td>
-          <td>
-            X
-          </td>
-          <td>
-            event
-          </td>
-          <td>
-            The transportTrolley is at INDOOR position.
-          </td>
-        </tr>
-        <tr>
-          <td>
-            transport_trolley_position_outdoor
-          </td>
-          <td>
-            X
-          </td>
-          <td>
-            event
-          </td>
-          <td>
-            The transportTrolley is at OUTDOOR position.
-          </td>
-        </tr>
-        <tr>
-          <td>
-            transport_trolley_position_slotnum
-          </td>
-          <td>
-            SLOTNUM
-          </td>
-          <td>
-            event
-          </td>
-          <td>
-            The transportTrolley is at SLOTNUM position. The SLOTNUM is given by the payload of the event.
+            The transportTrolley informs the business logic that it arrived at the indoor during a car park task.
           </td>
         </tr>
         <tr>
@@ -2154,7 +2142,7 @@ Requirements analysis is available <a href="http://htmlpreview.github.io/?https:
       <b>Expectations</b>:
       <ol>
         <li>
-          By observing the logical transportTrolley position is noticed that it comes back to HOME.
+          By observing the logical transportTrolley status is noticed that it becomes IDLE.
         </li>
       </ol>
     </li>

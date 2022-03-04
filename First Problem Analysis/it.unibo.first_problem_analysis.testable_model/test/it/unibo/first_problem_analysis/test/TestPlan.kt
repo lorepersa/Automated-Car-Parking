@@ -101,7 +101,7 @@ class AppTest {
 		coapQakParkServiceGUI.setup()
 		Thread.sleep(1000)
 		coapQakParkServiceStatusGUI.setup()
-		Thread.sleep(6000)
+		Thread.sleep(10000)
 		println("END SETUP")
 	}
 
@@ -149,7 +149,7 @@ class AppTest {
 	@Test fun TestTripOneCar() {
 		val testName = "TestTripOneCar"
 		val tokenid = normalCarEnterParkingArea(testName)
-		Thread.sleep(10000)
+		Thread.sleep(15000)
 		
 		val ok = normalCarExitParkingArea(testName, tokenid)
 		assertTrue(ok)
@@ -231,7 +231,7 @@ class AppTest {
 					delay(1000)
 					val resource = coapQakLogicalTransportTrolley.readResource()
 					//println(resource)
-					at_home = resource.split("-").get(0).substringAfter("(").substringBefore(")").equals("home", true)
+					at_home = resource.split("-").get(1).substringAfter("(").substringBefore(")").equals("idle", true)
 				} while(!at_home)
 				
 				watchdog.cancel()

@@ -42,8 +42,8 @@ class Logicaltransporttrolley ( name: String, scope: CoroutineScope  ) : ActorBa
 						 CURRENT_JOB = "NONE"  
 						println("[logicaltransporttrolley] | [State] wait | Exit point.")
 					}
-					 transition(edgeName="t019",targetState="carParkTask",cond=whenDispatch("transport_trolley_car_park"))
-					transition(edgeName="t020",targetState="carPickupTask",cond=whenDispatch("transport_trolley_car_pickup"))
+					 transition(edgeName="t019",targetState="carParkTask",cond=whenRequest("transport_trolley_car_park"))
+					transition(edgeName="t020",targetState="carPickupTask",cond=whenRequest("transport_trolley_car_pickup"))
 					transition(edgeName="t021",targetState="backToHomeTask",cond=whenDispatch("transport_trolley_go_home"))
 				}	 
 				state("waitOrGoHome") { //this:State
@@ -55,8 +55,8 @@ class Logicaltransporttrolley ( name: String, scope: CoroutineScope  ) : ActorBa
 							scope, context!!, "local_tout_logicaltransporttrolley_waitOrGoHome", 3000.toLong() )
 					}
 					 transition(edgeName="t022",targetState="backToHomeTask",cond=whenTimeout("local_tout_logicaltransporttrolley_waitOrGoHome"))   
-					transition(edgeName="t023",targetState="carParkTask",cond=whenDispatch("transport_trolley_car_park"))
-					transition(edgeName="t024",targetState="carPickupTask",cond=whenDispatch("transport_trolley_car_pickup"))
+					transition(edgeName="t023",targetState="carParkTask",cond=whenRequest("transport_trolley_car_park"))
+					transition(edgeName="t024",targetState="carPickupTask",cond=whenRequest("transport_trolley_car_pickup"))
 					transition(edgeName="t025",targetState="backToHomeTask",cond=whenDispatch("transport_trolley_go_home"))
 				}	 
 				state("backToHomeTask") { //this:State
@@ -67,7 +67,6 @@ class Logicaltransporttrolley ( name: String, scope: CoroutineScope  ) : ActorBa
 						 CURRENT_JOB = "BackToHome" 
 						delay(3000) 
 						 AT_HOME = true  
-						emit("transport_trolley_position_home", "transport_trolley_position_home(X)" ) 
 						println("[logicaltransporttrolley] | [State] backToHomeTask | Reached HOME")
 						 CURRENT_STATE = "IDLE"  
 						 CURRENT_POSITION = "HOME"  
@@ -100,7 +99,7 @@ class Logicaltransporttrolley ( name: String, scope: CoroutineScope  ) : ActorBa
 						println("[logicaltransporttrolley] | [State] goToIndoorAndTakeOverTask | Going to INDOOR")
 						delay(3000) 
 						println("[logicaltransporttrolley] | [State] goToIndoorAndTakeOverTask | Reached INDOOR")
-						emit("transport_trolley_position_indoor", "transport_trolley_position_indoor(X)" ) 
+						forward("transport_trolley_at_indoor", "transport_trolley_at_indoor(X)" ,"businesslogic" ) 
 						 CURRENT_POSITION = "INDOOR" 
 						println("[logicaltransporttrolley] | [State] goToIndoorAndTakeOverTask | Take over car...")
 						println("[logicaltransporttrolley] | [State] goToIndoorAndTakeOverTask | Car taked over.")
@@ -113,11 +112,11 @@ class Logicaltransporttrolley ( name: String, scope: CoroutineScope  ) : ActorBa
 						println("[logicaltransporttrolley] | [State] goToSlotNumAndReleaseTask | Entry point.")
 						println("[logicaltransporttrolley] | [State] goToSlotNumAndReleaseTask | Going to SLOTNUM $SLOTNUM")
 						delay(3000) 
-						emit("transport_trolley_position_slotnum", "transport_trolley_position_slotnum($SLOTNUM)" ) 
 						 CURRENT_POSITION = "$SLOTNUM" 
 						println("[logicaltransporttrolley] | [State] goToSlotNumAndReleaseTask | Reached SLOTNUM $SLOTNUM")
 						println("[logicaltransporttrolley] | [State] goToSlotNumAndReleaseTask | Releasing car...")
 						println("[logicaltransporttrolley] | [State] goToSlotNumAndReleaseTask | Car released.")
+						answer("transport_trolley_car_park", "transport_trolley_car_park_done", "transport_trolley_car_park_done(X)"   )  
 						println("[logicaltransporttrolley] | [State] goToSlotNumAndReleaseTask | Exit point.")
 					}
 					 transition( edgeName="goto",targetState="waitOrGoHome", cond=doswitch() )
@@ -144,7 +143,6 @@ class Logicaltransporttrolley ( name: String, scope: CoroutineScope  ) : ActorBa
 						println("[logicaltransporttrolley] | [State] goToSlotNumAndTakeOverTask | Entry point.")
 						println("[logicaltransporttrolley] | [State] goToSlotNumAndTakeOverTask | Going to SLOTNUM $SLOTNUM.")
 						delay(3000) 
-						emit("transport_trolley_position_slotnum", "transport_trolley_position_slotnum($SLOTNUM)" ) 
 						 CURRENT_POSITION = "$SLOTNUM" 
 						println("[logicaltransporttrolley] | [State] goToSlotNumAndTakeOverTask | Reached SLOTNUM $SLOTNUM.")
 						println("[logicaltransporttrolley] | [State] goToSlotNumAndTakeOverTask | Take over car...")
@@ -158,11 +156,11 @@ class Logicaltransporttrolley ( name: String, scope: CoroutineScope  ) : ActorBa
 						println("[logicaltransporttrolley] | [State] goToOutdoorAndReleaseTask | Entry point.")
 						println("[logicaltransporttrolley] | [State] goToOutdoorAndReleaseTask | Going to OUTDOOR.")
 						delay(3000) 
-						emit("transport_trolley_position_outdoor", "transport_trolley_position_outdoor(X)" ) 
 						 CURRENT_POSITION = "OUTDOOR" 
 						println("[logicaltransporttrolley] | [State] goToOutdoorAndReleaseTask | Reached OUTDOOR.")
 						println("[logicaltransporttrolley] | [State] goToOutdoorAndReleaseTask | Releasing car...")
 						println("[logicaltransporttrolley] | [State] goToOutdoorAndReleaseTask | Car released.")
+						answer("transport_trolley_car_pickup", "transport_trolley_car_pickup_done", "transport_trolley_car_pickup_done(X)"   )  
 						println("[logicaltransporttrolley] | [State] goToOutdoorAndReleaseTask | Exit point.")
 					}
 					 transition( edgeName="goto",targetState="waitOrGoHome", cond=doswitch() )

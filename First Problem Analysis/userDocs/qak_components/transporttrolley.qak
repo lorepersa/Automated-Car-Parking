@@ -1,15 +1,15 @@
 
 System first_model
 
-Dispatch  transport_trolley_car_park         : transport_trolley_car_park( SLOTNUM )
-Dispatch  transport_trolley_car_pickup       : transport_trolley_car_pickup( SLOTNUM )
+Request   transport_trolley_car_park         : transport_trolley_car_park( SLOTNUM )
+Reply     transport_trolley_car_park_done    : transport_trolley_car_park_done( X )
+Request   transport_trolley_car_pickup       : transport_trolley_car_pickup( SLOTNUM )
+Reply     transport_trolley_car_pickup_done  : transport_trolley_car_pickup_done( X )
 Dispatch  transport_trolley_go_home          : transport_trolley_go_home( X )
 Dispatch  transport_trolley_start            : transport_trolley_start( X )
 Dispatch  transport_trolley_stop             : transport_trolley_stop( X )
-Event     transport_trolley_position_home    : transport_trolley_position_home( X )
-Event     transport_trolley_position_indoor  : transport_trolley_position_indoor( X )
-Event     transport_trolley_position_outdoor : transport_trolley_position_outdoor( X )
-Event     transport_trolley_position_slotnum : transport_trolley_position_slotnum( SLOTNUM )
+
+Dispatch  transport_trolley_at_indoor        : transport_trolley_at_indoor(X)
 Event     transport_trolley_new_state        : transport_trolley_new_state( STATE )
 
 Context ctxFirstModel  ip [host="localhost" port=8053]
@@ -44,18 +44,18 @@ QActor logicaltransporttrolley context ctxFirstModel {
 		[# CURRENT_JOB = "NONE" #]
 		println("[logicaltransporttrolley] | [State] wait | Exit point.") 
 	} Transition t0
-	whenMsg transport_trolley_car_park -> carParkTask
-	whenMsg transport_trolley_car_pickup -> carPickupTask
-	whenMsg transport_trolley_go_home -> backToHomeTask 
+	whenRequest transport_trolley_car_park -> carParkTask
+	whenRequest transport_trolley_car_pickup -> carPickupTask
+	whenMsg     transport_trolley_go_home -> backToHomeTask 
 	
 	State waitOrGoHome {
 		println("[logicaltransporttrolley] | [State] wait_or_go_home | Entry point.") 
 		[# CURRENT_JOB = "NONE" #]
 		println("[logicaltransporttrolley] | [State] wait_or_go_home | Exit point.") 
 	} Transition t0 whenTime 3000 -> backToHomeTask
-	whenMsg transport_trolley_car_park -> carParkTask
-	whenMsg transport_trolley_car_pickup -> carPickupTask
-	whenMsg transport_trolley_go_home -> backToHomeTask 
+	whenRequest transport_trolley_car_park -> carParkTask
+	whenRequest transport_trolley_car_pickup -> carPickupTask
+	whenMsg     transport_trolley_go_home -> backToHomeTask 
 	
 	/*****************************************************************************
 	 * BEGIN TASK GO TO HOME
@@ -69,7 +69,6 @@ QActor logicaltransporttrolley context ctxFirstModel {
 			[# CURRENT_JOB = "BackToHome"#]
 			delay 3000
 			[# AT_HOME = true #]
-			emit transport_trolley_position_home : transport_trolley_position_home( X )
 			println("[logicaltransporttrolley] | [State] backToHomeTask | Reached HOME") 
 			[# CURRENT_STATE = "IDLE" #]
 			[# CURRENT_POSITION = "HOME" #]
@@ -110,7 +109,7 @@ QActor logicaltransporttrolley context ctxFirstModel {
 		println("[logicaltransporttrolley] | [State] goToIndoorAndTakeOverTask | Going to INDOOR")
 		delay 3000
 		println("[logicaltransporttrolley] | [State] goToIndoorAndTakeOverTask | Reached INDOOR") 
-		emit transport_trolley_position_indoor : transport_trolley_position_indoor( X )
+		forward businesslogic -m transport_trolley_at_indoor : transport_trolley_at_indoor(X)
 		[# CURRENT_POSITION = "INDOOR"#]
 		println("[logicaltransporttrolley] | [State] goToIndoorAndTakeOverTask | Take over car...") 
 		//delay 1000
@@ -122,12 +121,14 @@ QActor logicaltransporttrolley context ctxFirstModel {
 		println("[logicaltransporttrolley] | [State] goToSlotNumAndReleaseTask | Entry point.") 
 		println("[logicaltransporttrolley] | [State] goToSlotNumAndReleaseTask | Going to SLOTNUM $SLOTNUM")
 		delay 3000
-		emit transport_trolley_position_slotnum : transport_trolley_position_slotnum( $SLOTNUM )
 		[# CURRENT_POSITION = "$SLOTNUM"#]
 		println("[logicaltransporttrolley] | [State] goToSlotNumAndReleaseTask | Reached SLOTNUM $SLOTNUM") 
 		println("[logicaltransporttrolley] | [State] goToSlotNumAndReleaseTask | Releasing car...") 
 		//delay 1000
-		println("[logicaltransporttrolley] | [State] goToSlotNumAndReleaseTask | Car released.") 
+		println("[logicaltransporttrolley] | [State] goToSlotNumAndReleaseTask | Car released.")
+		
+		replyTo transport_trolley_car_park with transport_trolley_car_park_done : transport_trolley_car_park_done(X)
+		 
 		println("[logicaltransporttrolley] | [State] goToSlotNumAndReleaseTask | Exit point.") 
 	} Goto waitOrGoHome
 	
@@ -160,7 +161,6 @@ QActor logicaltransporttrolley context ctxFirstModel {
 		println("[logicaltransporttrolley] | [State] goToSlotNumAndTakeOverTask | Entry point.") 
 		println("[logicaltransporttrolley] | [State] goToSlotNumAndTakeOverTask | Going to SLOTNUM $SLOTNUM.")
 		delay 3000
-		emit transport_trolley_position_slotnum : transport_trolley_position_slotnum( $SLOTNUM )
 		[# CURRENT_POSITION = "$SLOTNUM"#]
 		println("[logicaltransporttrolley] | [State] goToSlotNumAndTakeOverTask | Reached SLOTNUM $SLOTNUM.") 
 		println("[logicaltransporttrolley] | [State] goToSlotNumAndTakeOverTask | Take over car...") 
@@ -173,12 +173,14 @@ QActor logicaltransporttrolley context ctxFirstModel {
 		println("[logicaltransporttrolley] | [State] goToOutdoorAndReleaseTask | Entry point.") 
 		println("[logicaltransporttrolley] | [State] goToOutdoorAndReleaseTask | Going to OUTDOOR.")
 		delay 3000
-		emit transport_trolley_position_outdoor : transport_trolley_position_outdoor( X )
 		[# CURRENT_POSITION = "OUTDOOR"#]
 		println("[logicaltransporttrolley] | [State] goToOutdoorAndReleaseTask | Reached OUTDOOR.") 
 		println("[logicaltransporttrolley] | [State] goToOutdoorAndReleaseTask | Releasing car...") 
 		//delay 1000
 		println("[logicaltransporttrolley] | [State] goToOutdoorAndReleaseTask | Car released.") 
+		
+		replyTo transport_trolley_car_pickup with transport_trolley_car_pickup_done : transport_trolley_car_pickup_done(X)
+		
 		println("[logicaltransporttrolley] | [State] goToOutdoorAndReleaseTask | Exit point.") 
 	} Goto waitOrGoHome
 	
