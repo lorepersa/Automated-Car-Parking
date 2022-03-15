@@ -12,14 +12,15 @@ class Message {
 	private var payload : String = ""
 	
 	constructor(coapResponse : CoapResponse?) {
-		if (coapResponse != null) {
-			response = coapResponse!!
-			val fields = coapResponse!!.responseText.substringAfter("(").substringBefore("(").split(",")
+		
+		coapResponse?.let {
+			response = coapResponse
+			val fields = coapResponse.responseText.substringAfter("(").substringBefore("(").split(",")
 			messageName = fields.get(0)
 			type = fields.get(1)
 			sender = fields.get(2)
 			receiver = fields.get(3)
-			payload = coapResponse!!.responseText.substringAfter("(").substringAfter("(").substringBefore(")")
+			payload = coapResponse.responseText.substringAfter("(").substringAfter("(").substringBefore(")")
 		}
 	}
 	

@@ -1,0 +1,37 @@
+version: '3'
+services:
+  weightsensor:
+    build: ./it.unibo.first_problem_analysis.weightsensor
+    image: firstexecutablemodel/weightsensor
+    ports:
+      - 8060:8060/tcp
+      - 8060:8060/udp
+  outsonar:
+    build: ./it.unibo.first_problem_analysis.outsonar
+    image: firstexecutablemodel/outsonar
+    ports:
+      - 8061:8061/tcp
+      - 8061:8061/udp
+  thermometer:
+    build: ./it.unibo.first_problem_analysis.thermometer
+    image: firstexecutablemodel/thermometer
+    ports:
+      - 8062:8062/tcp
+      - 8062:8062/udp
+  fan:
+    build: ./it.unibo.first_problem_analysis.fan
+    image: firstexecutablemodel/fan
+    ports:
+      - 8063:8063/tcp
+      - 8063:8063/udp
+  businesslogic:
+    build: ./it.unibo.first_problem_analysis.businesslogic
+    image: firstexecutablemodel/businesslogic
+    ports:
+      - 8065:8065/tcp
+      - 8065:8065/udp
+    depends_on:
+      - weightsensor
+      - outsonar
+      - thermometer
+      - fan

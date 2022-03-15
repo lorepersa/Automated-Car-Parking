@@ -244,24 +244,24 @@ IN_DEPTH CONTENT
 /*---------------------------------------
 ACTIVE/PASSIVE ENTITIES
 -----------------------------------------*/
-.component .table_active_passive_entities {
-  margin-left:auto;
-  margin-right:auto;
-  margin-bottom: 40px;
+.thermometer_table {
+  width: 50%;
+  margin-left: 25%;
+  margin-right: 25%;
+  margin-top: 40px;
+  border: none;
 }
-.component .table_active_passive_entities td, .component .table_active_passive_entities th{
-  padding-left:8px;
-  padding-right:8px;
+.thermometer_table td, .thermometer_table th {
+  text-align: center;
+  padding: 5px;
 }
-.component .table_active_passive_entities td {
-  text-align: justify;
-  vertical-align: baseline;
+.thermometer_table th:nth-child(1) {
+  border-left: none;
+  border-top: none;
+  width: 25%;
 }
-.component .table_active_passive_entities th:nth-child(1){
-  width:16%;
-}
-.component .table_active_passive_entities th:nth-child(2){
-  width:42%;
+.thermometer_table th:nth-child(2) {
+  width: 35%;
 }
 /*---------------------------------------
 INTERACTIONS

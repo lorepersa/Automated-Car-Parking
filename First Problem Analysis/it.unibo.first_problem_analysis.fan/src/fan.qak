@@ -1,0 +1,51 @@
+/**
+ * Example of a fan component implementation.
+ */
+System systemfan
+
+Request   fan_on                                   : fan_on(X)
+Request   fan_off                                  : fan_off(X)
+Reply     fan_done                                 : fan_done(X)
+Reply     fan_fail                                 : fan_fail(REASON)
+
+Context ctxfan                   ip [host="localhost" port=8063]
+
+
+QActor fan context ctxfan {   
+	
+	[# 
+		var fan_on = false
+	#]
+
+	State init initial {	 
+		println("[fan] | [State] init | Entry point.")
+		println("[fan] | [State] init | Exit point.")
+   	} Goto wait  
+   	
+   	State wait {
+   		println("[fan] | [State] wait | Entry point.")
+   		// if someone wants to observe directly the status of the fan...
+   		if [# fan_on #] {
+   			updateResource [# "fan(ON)" #]
+   		} else {
+   			updateResource [# "fan(OFF)" #]
+   		}
+   		println("[fan] | [State] wait | Exit point.")
+   	} Transition t0
+   	whenRequest   fan_on ->  turnOnFan
+   	whenRequest   fan_off ->  turnOffFan
+   	
+   	State turnOnFan {
+   		println("[fan] | [State] turnOnFan | Entry point.")
+   		[# fan_on = true #]
+   		replyTo fan_on with fan_done : fan_done(X)
+   		println("[fan] | [State] turnOnFan | Exit point.")
+   	} Goto wait
+   	   		
+   	State turnOffFan {
+   		println("[fan] | [State] turnOffFan | Entry point.")
+   		[# fan_on = false #]
+   		replyTo fan_off with fan_done : fan_done(X)
+   		println("[fan] | [State] turnOffFan | Exit point.")
+   	} Goto wait
+}	

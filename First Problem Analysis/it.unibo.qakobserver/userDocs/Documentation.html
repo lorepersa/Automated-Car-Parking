@@ -1,0 +1,240 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+    <!--
+<link rel="stylesheet" type="text/css" href="../css/issStyle1.css">
+<script type="text/javascript" src="../css/issStyle.js"></script>
+-->
+
+<head>
+  <link href="style/style.css" rel="stylesheet" type="text/css">
+
+<title>Documentation QAKObserver Framework</title>
+</head>
+
+<body>
+<div id="top">
+<h1>QAK OBSERVER FRAMEWORK - DOCUMENTATION <font size="5"></font> </h1>
+</div>
+
+<div class="body">
+
+<h2>User Documentation</h2>
+<div class="remark">
+  <p>
+    The QAK meta-model, given by the customer, associates to each QActor one CoAP Resource and permits to update this resource via the keyword <b>updateResource</b> in the QAK language. What is not natively provided by the QAK meta-model is the possibility to <b>observe</b>, as a QActor, the CoAP Resource of other QActors and stay informed when changes occur. <br>
+    For this reason we developed a little framework that permits to observe both remote (using <b>CoapClient</b>) and local (using simple method calls) QActors, with which every time an observed resource changes, an update (via [configurable] <b>autoMsg</b>) is raised to the observer QActor. <br><br>
+    The framework is implemented in kotlin and has not yet been ported with keywords in the QAK language. You have to use it by means of kotlin code blocks inside the QAK file. However don't be scared, this is limited to an object creation and a method call to start to observe a resource or notify the observers.
+  </p>
+  <h3>FactoryQakObserver</h3>
+  <table class="table-no-border">
+    <tr>
+      <th>Package</th>
+      <td>itunibo.qakobserver</td>
+    </tr>
+    <tr>
+      <th>Description</th>
+      <td>Create an instance of IQakObserver. Used by the <b>observer</b>.</td>
+    </tr>
+  </table>
+  <table class="table-method">
+    <tr>
+      <th>method</th>
+      <th>output</th>
+      <th>input</th>
+      <th>description</th>
+    </tr>
+    <tr>
+      <td>create( )</td>
+      <td>An instance of <k>IQakObserver<k></td>
+      <td>
+        <ul>
+          <li><b>owner</b>: The QActor that calls the method (myself).</li>
+          <li><b>observableName</b>: The name of the QActor to observe.</li>
+          <li><b><i>messageBuilder</i></b>: An instance of IMessageBuilder to use when an update is received. Default to DefaultMessageBuilder. [OPTIONAL]</li>
+        </ul>
+      </td>
+      <td>Create an instance of IQakObserver.</td>
+    </tr>
+  </table>
+
+  <h3>IQakObserver</h3>
+  <table class="table-no-border">
+    <tr>
+      <th>Package</th>
+      <td>itunibo.qakobserver</td>
+    </tr>
+    <tr>
+      <th>Description</th>
+      <td>Interface. Provides utility to observe another QActor (both remote or local) only when needed. Note that the remote resource could be a QActor that doesn't know anything about this framework, it will only have to update its CoAP resource as usual. Used by the <b>observer</b>.</td>
+    </tr>
+  </table>
+  <table class="table-method">
+    <tr>
+      <th>method</th>
+      <th>output</th>
+      <th>input</th>
+      <th>description</th>
+    </tr>
+    <tr>
+      <td>observe( )</td>
+      <td style="text-align: center;"> - </td>
+      <td style="text-align: center;"> - </td>
+      <td>Start the observe relation and get the updates via <b>autoMsg</b>. Internally uses IMessageBuilder.</td>
+    </tr>
+    <tr>
+      <td>cancel( )</td>
+      <td style="text-align: center;"> - </td>
+      <td style="text-align: center;"> - </td>
+      <td>Stop the observe relation.</td>
+    </tr>
+  </table>
+
+  <h3>IMessageBuilder</h3>
+  <table class="table-no-border">
+    <tr>
+      <th>Package</th>
+      <td>itunibo.qakobserver</td>
+    </tr>
+    <tr>
+      <th>Description</th>
+      <td>Interface. Implements this inferface if you want to process the input resource received by the observable QAK. Used by the <b>observer</b>.</td>
+    </tr>
+  </table>
+  <table class="table-method">
+    <tr>
+      <th>method</th>
+      <th>output</th>
+      <th>input</th>
+      <th>description</th>
+    </tr>
+    <tr>
+      <td>buildMessage( )</td>
+      <td>ApplMessage if you want to get an <b>autoMsg</b> through the observer for the given input resource, otherwise <b>null</b>.</td>
+      <td>
+        <ul>
+          <li><b>input</b>: The input resource received by the observable QActor.</li>
+          <li><b>observerName</b>: The name of the observer QActor. Useful in order to build a correct ApplMessage with MsgUtil.</li>
+        </ul>
+      </td>
+      <td>Build a message.</td>
+    </tr>
+  </table>
+
+  <h3>DefaultMessageBuilder</h3>
+  <table class="table-no-border">
+    <tr>
+      <th>Package</th>
+      <td>itunibo.qakobserver</td>
+    </tr>
+    <tr>
+      <th>Description</th>
+      <td>Default implementation for IMessageBuilder. Used by the <b>observer</b>.</td>
+    </tr>
+  </table>
+  <table class="table-method">
+    <tr>
+      <th>method</th>
+      <th>output</th>
+      <th>input</th>
+      <th>description</th>
+    </tr>
+    <tr>
+      <td>buildMessage( )</td>
+      <td>Return always a <b>dispatch autoMsg</b> with msgId=<b>update</b> and payload=<b>update($input)</b></td>
+      <td>See IMessageBuilder documentation</td>
+      <td>Build a message.</td>
+    </tr>
+  </table>
+
+  <h3>FactoryQakResource</h3>
+  <table class="table-no-border">
+    <tr>
+      <th>Package</th>
+      <td>itunibo.qakobserver</td>
+    </tr>
+    <tr>
+      <th>Description</th>
+      <td>Create an instance of IQakResource. Used by the <b>observable</b>.</td>
+    </tr>
+  </table>
+  <table class="table-method">
+    <tr>
+      <th>method</th>
+      <th>output</th>
+      <th>input</th>
+      <th>description</th>
+    </tr>
+    <tr>
+      <td>create( )</td>
+      <td>An instance of IQakResource.</td>
+      <td>
+        <ul>
+          <li><b>owner</b>: The QActor that calls the method (myself).</li>
+        </ul>
+      </td>
+      <td>Create an instance of IQakResource.</td>
+    </tr>
+  </table>
+  <h3>IQakResource</h3>
+  <table class="table-no-border">
+    <tr>
+      <th>Package</th>
+      <td>itunibo.qakobserver</td>
+    </tr>
+    <tr>
+      <th>Description</th>
+      <td>Interface. Provides an utility to notify all the remote observers and the local ones registered within the framework (to notify the remote observers internally uses <b>updateResourceRep</b>). Note that if you want to send the updates also to <b>local observers</b> you must use the method <b>notify</b>, otherwise the local observers will not be updated by the framework. Differently if you want to updates only remote observers (or you have not local observers in your context) you can simply use the <b>updateResource</b> as usual (but in the future you have to remember about this choice if you will have the need of local observers). Used by the <b>observable</b>.</td>
+    </tr>
+  </table>
+  <table class="table-method">
+    <tr>
+      <th>method</th>
+      <th>output</th>
+      <th>input</th>
+      <th>description</th>
+    </tr>
+    <tr>
+      <td>notify( )</td>
+      <td style="text-align: center;"> - </td>
+      <td>
+        <ul>
+          <li><b>input</b>: The new resource.</li>
+        </ul>
+      </td>
+      <td>Update the observers, both the remote and the local ones.</td>
+    </tr>
+  </table>
+</div>
+
+<h2>Framework Developer Documentation</h2>
+<div class="remark">
+
+  <h3>How internally works</h3>
+
+  <!-- interaction image -->
+  <div class="interactions__image">
+    <center>
+      <img src="./img/qak_observer_framework.png" alt="qak_observer_framework.png"/>
+    </center>
+  </div>
+
+  <p style="text-align: justify; padding-left: 10px; padding-right: 10px;">
+    As observer the user calls the <b>create( )</b> method of the <b>FactoryQakObserver</b>. Internally the <b>FactoryQakObserver</b> creates an instance of <b>QakObserver</b> through the <b>getQakResourceForObserver( )</b> method of <b>QakResourceManager</b>: note that if the wanted <b>QakResource</b> does not yet exists internally, the <b>QakResourceManager</b> will create a <b>LocalQakResource</b> or a <b>ProxyQakResource</b> respectively if the wanted resource is local or remote (only in that case accessed using <b>CoapClient</b>). <br><br>
+
+    As observable the user calls the <b>create( )</b> method of the <b>FactoryQakResource</b>. Internally the <b>FactoryQakResource</b> creates an instance of <b>QakResource</b> (in that case, can be only a <b>LocalQakResource</b>) through the <b>getQakResourceForObservable( )</b> method of <b>QakResourceManager</b>. <br><br>
+
+    The interface <b>IQakObserverInternal</b> (implemented by <b>QakObserver</b>) is used by the <b>QakResource</b> in order to update the observer registered to this resource. <br>
+    The interface <b>IQakResourceInternal</b> (implemented by <b>QakResource</b>) is used by the <b>QakObserver</b> in order to register/deregister this observer in the set of the locally registered observers maintained by the <b>QakResource</b>. <br>
+    Each time the <b>QakResource</b> is updated, the <b>QakResource</b> itself will update both the local observers (registered in its local set) and the remote observers through the <b>notify( )</b> method. In particular for the remote observers will be used the QActor owner method: <b>updateResourceRep( )</b>. <br><br>
+
+    Note that for each local QakResource, different proxy QakResource may exist, one for each external context in which there is at least one actor interested in observing that resource.
+    The local QakResource is placed in the context of the observable QActor, while the proxy QakResource is located in the context of the remote observer QActors.
+    These proxy QakResources save some bandwidth and avoid unnecessary multiple remote updates; this choice also has the same implication in the upload case. <br>
+    Note also that the framework is smart enough to automatically deregister the proxy QakResource from the remote QakResource in case there are no observer in the proxy QakResource set (and also to re-register the proxy QakResource to the remote QakResource in case a QActor decides to observe it).
+  </p>
+
+
+</div>
+
+</body>
+</html>

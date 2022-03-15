@@ -1,0 +1,676 @@
+/**
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN INDOOR AREA
+ * ==================================
+ * client using parkservicegui        | request parking_car_interest(X) to businesslogic
+ * businesslogic                      | when INDOOR AREA is FREE do
+ *                                    |      if PARKING AREA is FULL then
+ *                                    |         replyTo parking_car_interest with inform_in(0)
+ *                                    |      else
+ *                                    |         -- reserve the access to the INDOOR AREA for the current client --
+ *                                    |         -- extract a free SLOTNUM, rename it as RESERVED_SLOTNUM_INDOOR_AREA --
+ *                                    |         replyTo parking_car_interest with inform_in(RESERVED_SLOTNUM_INDOOR_AREA)
+ *                                    |         forward start_watchdog(X) to dtoccupiedwatchdog
+ *                                    |         -- set dtoccupiedwatchog RUNNING --
+ * 
+ * ==================================
+ * ================================== | CAR ENTER IN THE INDOOR AREA
+ * ==================================
+ * businesslogic                      | -- set the INDOOR AREA as OCCUPIED --
+ *                                    | if dtoccupiedwatchdog is RUNNING then
+ *                                    |      forward stop_watchdog(X) to dtoccupiedwatchdog
+ *                                    |
+ * 
+ * 
+ * ==================================
+ * ================================== | DTOCCUPIED TIMEOUT
+ * ==================================
+ * dtoccupiedwatchdog                 | emit local_timeout(X)
+ * businesslogic                      | -- do not consider anymore the indoor area as "reserved" --
+ *                                    | -- set dtoccupiedwatchog NOT RUNNING --
+ * 
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN THE PARKING AREA (CAR ENTER)
+ * ==================================
+ * client using parkservicegui        | request car_enter(SLOTNUM) to businesslogic
+ * businesslogic                      | when INDOOR AREA is OCCUPIED and transport trolley IS NOT STOPPED do
+ *                                    |      if SLOTNUM != 0 AND SLOTNUM == RESERVED_SLOTNUM_INDOOR_AREA then
+ *                                    |         -- rename RESERVED_SLOTNUM_INDOOR_AREA into RESERVED_SLOTNUM_CAR_PARK
+ *                                    |         -- move the transport trolley at the INDOOR --
+ *                                    |         -- generate a random TOKENID --
+ *                                    |         -- insert the TOKENID into the listOfTokenIds --
+ *                                    |         replyTo car_enter with response_car_enter(TOKENID)
+ *                                    |         -- take over the car on the transport trolley and park it at RESERVED_SLOTNUM_CAR_PARK --
+ *                                    |         -- set SLOTNUM as OCCUPIED --
+ *                                    |         -- transport trolley back to home (just for first model simplicity)
+ *                                    |      else
+ *                                    |         replyTo car_enter with response_car_enter(INVALID)
+ * 
+ * ==================================
+ * ================================== | CAR EXIT FROM THE INDOOR AREA
+ * ==================================
+ * businesslogic                      | -- set the INDOOR AREA as FREE --
+ * 
+ * ==================================
+ * ================================== | CLIENT ASKS TO PICK UP THE CAR
+ * ==================================
+ * client using parkservicegui        | request car_pickup(TOKENID) to businesslogic
+ * businesslogic                      | when OUTDOOR AREA is FREE AND transport trolley IS NOT STOPPED do
+ *                                    |      if listOfTokenIds CONTAINS TOKENID then
+ *                                    |         -- infer the SLOTNUM from the TOKENID --
+ *                                    |         -- move the transport trolley at SLOTNUM --
+ *                                    |         -- take over the car and release it at OUTDOOR --
+ *                                    |         -- set SLOTNUM as FREE --
+ *                                    |         replyTo car_pickup with accept_out_success(X)
+ *                                    |         forward start_watchdog(X) to dtfreewatchdog
+ *                                    |         -- set dtfreewatchog RUNNING --
+ *                                    |      else
+ *                                    |         replyTo car_pickup with accept_out_failure(X)
+ * 
+ * ==================================
+ * ================================== | CAR EXIT FROM THE OUTDOOR AREA
+ * ==================================
+ * businesslogic                      | -- set the OUTDOOR AREA as FREE --
+ *                                    | if dtfreewatchdog is RUNNING then
+ *                                    |      forward stop_watchdog(X) to dtfreewatchdog
+ *                                    |      -- set dtfreewatchdog NOT RUNNING --
+ * 
+ * 
+ * ==================================
+ * ================================== | DTFREE TIMEOUT
+ * ==================================
+ * dtoccupiedwatchdog                 | emit local_timeout(X)
+ * businesslogic                      | -- inform manager about DTFREE alarm (via observable status update) --
+ *                                    | -- do not consider the dtoccupiedwatchdog as "running"
+ * 
+ * ==================================
+ * ================================== | MANAGER STARTS TRANSPORT TROLLEY
+ * ==================================
+ * manager using parkservicestatusgui | forward manager_transport_trolley_start(X) to businesslogic
+ * businesslogic                      | -- resume the transport trolley --
+ * 
+ * ==================================
+ * ================================== | MANAGER STOPS TRANSPORT TROLLEY
+ * ==================================
+ * manager using parkservicestatusgui | forward manager_transport_trolley_stop(X) to businesslogic
+ * businesslogic                      | -- stop the transport trolley --
+ * 
+ * ==================================
+ * ================================== | MANAGER SET FAN MANUAL MODE
+ * ==================================
+ * manager using parkservicestatusgui | request manager_fan_manual_mode(X) to businesslogic
+ * businesslogic                      | -- set fan to manual mode --
+ * 
+ * ==================================
+ * ================================== | MANAGER SET FAN AUTOMATIC MODE
+ * ==================================
+ * manager using parkservicestatusgui | request manager_fan_automatic_mode(X) to businesslogic
+ * businesslogic                      | -- set fan to automatic mode --
+ *                                    | if LOGICAL_TEMPERATURE IS LOW AND fan IS ON then
+ *                                         request fan_off(X) to fan
+ * fan                                |    replyTo fan_off with fan_done(X)/fan_fail(REASON)
+ * businesslogic                      | else if LOGICAL_TEMPERATURE IS HIGH AND fan IS OFF then
+ *                                    |    request fan_on(X) to fan
+ * fan                                |    replyTo fan_on with fan_done(X)/fan_fail(REASON)
+ * 
+ * ================================== | -- when logical temperature switches from LOW to HIGH --
+ * businesslogic                      | request fan_on(X) to fan
+ * fan                                | replyTo fan_on with fan_done(X)/fan_fail(REASON)
+ * 
+ * ================================== | -- when logical temperature switches from HIGH to LOW --
+ * businesslogic                      | request fan_off(X) to fan
+ * fan                                | replyTo fan_off with fan_done(X)/fan_fail(REASON)
+ * 
+ * ==================================
+ * ================================== | MANAGER STARTS THE FAN
+ * ==================================
+ * manager using parkservicestatusgui | request manager_fan_on(X) to businesslogic
+ * businesslogic                      | request fan_on(X) to fan
+ * fan                                | replyTo fan_on with fan_done(X)/fan_fail(REASON)
+ * businesslogic                      | replyTo manager_fan_on with fan_done(X)/fan_fail(REASON)
+ * 
+ * ==================================
+ * ================================== | MANAGER STOPS THE FAN
+ * ==================================
+ * manager using parkservicestatusgui | request manager_fan_off(X) to businesslogic
+ * businesslogic                      | request fan_off(X) to fan
+ * fan                                | replyTo fan_off with fan_done(X)/fan_fail(REASON)
+ * businesslogic                      | replyTo manager_fan_on with fan_done(X)/fan_fail(REASON)
+ * 
+ */
+System systembusinesslogic
+
+// business logic and park service gui
+
+Request   parking_car_interest : parking_car_interest( X )
+Reply     inform_in            : inform_in(SLOTNUM)
+Request   car_enter            : car_enter(SLOTNUM)
+Reply     response_car_enter   : response_car_enter(TOKENID)
+Request   car_pickup           : car_pickup(TOKENID)
+Reply     accept_out_success   : accept_out_success(X)
+Reply     accept_out_failure   : accept_out_failure(X)
+
+// fan   
+Dispatch  manager_fan_automatic_mode  : manager_fan_automatic_mode(X)
+Dispatch  manager_fan_manual_mode     : manager_fan_manual_mode(X)
+Request   manager_fan_on              : manager_fan_on(X)
+Request   manager_fan_off             : manager_fan_off(X)
+Request   fan_on                      : fan_on(X)
+Request   fan_off                     : fan_off(X)
+Reply     fan_done                    : fan_done(X)
+Reply     fan_fail                    : fan_fail(REASON)
+
+// transportTrolley
+Dispatch  manager_transport_trolley_start  : manager_transport_trolley_start(X)
+Dispatch  manager_transport_trolley_stop   : manager_transport_trolley_stop(X)
+
+// watchdog
+Dispatch  start_watchdog : start_watchdog(X)
+Dispatch  stop_watchdog  : stop_watchdog(X)
+Event     local_timeout  : local_timeout(X)
+
+Dispatch  update         : update(SENSOR_STATUS)
+
+
+
+Context ctxbusinesslogic         ip [host="localhost" port=8065]
+
+Context ctxweightsensor          ip [host="weightsensor" port=8060]
+Context ctxoutsonar              ip [host="outsonar" port=8061]
+Context ctxthermometer           ip [host="thermometer" port=8062]
+Context ctxfan                   ip [host="fan" port=8063]
+//Context ctxbasicrobot          ip [host="127.0.0.1" port=8090]
+//ExternalQActor basicrobot      context ctxbasicrobot
+
+ExternalQActor weightsensor      context ctxweightsensor
+ExternalQActor outsonar          context ctxoutsonar
+ExternalQActor thermometer       context ctxthermometer
+ExternalQActor fan               context ctxfan
+
+  
+QActor businesslogic context ctxbusinesslogic {
+	
+	[#
+		val WMAX = 500
+		var indoor_area_weight = 0
+		var indoor_area_free = true
+		var dtoccupied_watchdog_running = false
+		
+		val DMIN = 100
+		var outdoor_area_distance = 200
+		var outdoor_area_free = true
+		var outdoor_alarm_on = false
+		var dtfree_watchdog_running = false
+		
+		val TMAX = 35
+		var temperature = 22
+		var temperature_high = false
+		
+		var fan_on = false
+		var fan_automatic = false
+		var wait_for_fan_on = false
+		var wait_for_fan_off = false
+		
+		var transport_trolley_stopped = false
+		var transport_trolley_working = false
+		
+		var parking_slots = mutableListOf(1, 2, 3, 4, 5, 6)
+		var parking_slots_status = arrayOf<String>("FREE", "FREE", "FREE", "FREE", "FREE", "FREE")
+		var token_parking_slots = java.util.LinkedList<String>()
+		var RESERVED_SLOTNUM_INDOOR_AREA = 0
+		var RESERVED_SLOTNUM_CAR_PARK = 0
+		var RESERVED_SLOTNUM_CAR_PICK_UP = 0
+		var wait_for_client_enter_indoor_area = false
+		var wait_for_client_exit_outdoor_area = false   
+		var car_pickup_request = false 
+		var car_park_request = false  
+		
+		val weightsensorObserver = itunibo.qakobserver.FactoryQakObserver.create(myself, "weightsensor")
+		val outsonarObserver = itunibo.qakobserver.FactoryQakObserver.create(myself, "outsonar")
+		val thermometerObserver = itunibo.qakobserver.FactoryQakObserver.create(myself, "thermometer")
+		
+		fun buildStatus() : String {
+			
+			// TODO optimize with something similar to StringBuilder...
+			
+			var status = "parkingareastatus("
+
+			var logical_indoor_area : String
+			if (indoor_area_free) logical_indoor_area = "FREE"
+			else                  logical_indoor_area = "OCCUPIED"
+			status += "indoor_area($indoor_area_weight,$logical_indoor_area)|"
+			
+			var logical_outdoor_area : String
+			if (outdoor_area_free) logical_outdoor_area = "FREE"
+			else                   logical_outdoor_area = "OCCUPIED"
+			status += "outdoor_area($outdoor_area_distance,$logical_outdoor_area)|"
+			
+			var logical_temperature : String
+			if (temperature_high) logical_temperature = "HIGH"
+			else                  logical_temperature = "LOW"
+			status += "temperature($temperature,$logical_temperature)|"
+			
+			var fan_status : String
+			if (fan_on) fan_status = "ON"
+			else        fan_status = "OFF"
+			var fan_mode : String
+			if (fan_automatic) fan_mode = "AUTOMATIC"
+			else               fan_mode = "MANUAL"
+			status += "fan($fan_mode,$fan_status)|"
+			
+			var transport_trolley_status : String
+			if (transport_trolley_stopped)      transport_trolley_status = "STOPPED"
+			else if (transport_trolley_working) transport_trolley_status = "WORKING"
+			else                                transport_trolley_status = "IDLE"
+			status += "transporttrolley($transport_trolley_status)|"
+			
+			val P1 = parking_slots_status[0]
+			val P2 = parking_slots_status[1]
+			val P3 = parking_slots_status[2]
+			val P4 = parking_slots_status[3]
+			val P5 = parking_slots_status[4]
+			val P6 = parking_slots_status[5]
+			status += "parkingslots($P1,$P2,$P3,$P4,$P5,$P6)|"
+			
+			var outdoor_alarm : String
+			if (outdoor_alarm_on) outdoor_alarm = "ON"
+			else                  outdoor_alarm = "OFF"
+			status += "outdooralarm($outdoor_alarm)"
+			
+			return status + ")"
+		}
+	#]  
+	
+	State init initial {
+		println("[businesslogic] | [State] init | Entry point.")
+		[#
+			weightsensorObserver.observe()
+			outsonarObserver.observe()
+			thermometerObserver.observe()
+		#]
+		println("[businesslogic] | [State] init | Exit point.")
+	} Goto running 
+	
+	State running {
+		println("[businesslogic] | [State] running | Entry point.")
+		println("[businesslogic] | [State] running | Exit point.")
+	}
+	Transition t0 whenRequest   parking_car_interest and [# indoor_area_free && !wait_for_client_enter_indoor_area #] -> acceptIn
+				  whenRequest   car_enter and [# !transport_trolley_stopped && !indoor_area_free && !car_park_request #] -> carEnter
+				  whenRequest   car_pickup and [# !transport_trolley_stopped && outdoor_area_free && !wait_for_client_exit_outdoor_area && !car_pickup_request  #] -> acceptOut
+				  whenEvent     local_timeout -> handleTimeout
+				  whenMsg       manager_fan_automatic_mode -> handleManagerMsg
+				  whenMsg       manager_fan_manual_mode -> handleManagerMsg
+				  whenRequest   manager_fan_on -> handleManagerMsg
+				  whenRequest   manager_fan_off -> handleManagerMsg
+				  whenMsg       manager_transport_trolley_start -> handleManagerMsg
+				  whenMsg       manager_transport_trolley_stop -> handleManagerMsg
+				  whenReply     fan_done -> handleFanReply
+				  whenReply     fan_fail -> handleFanReply
+				  whenMsg       update -> updateSensorStatus
+				  
+	State handleManagerMsg {
+		println("[businesslogic] | [State] handleManagerMsg | Entry point.")
+		onMsg(manager_fan_automatic_mode : manager_fan_automatic_mode(X)) {
+			[# fan_automatic = true #]
+			if [# temperature > TMAX && !fan_on #] {
+				request fan -m fan_on : fan_on(X)
+				[# fan_on = true #]
+			}
+			if [# temperature <= TMAX && fan_on #] {
+				request fan -m fan_off : fan_off(X)
+				[# fan_on = false #]
+			}
+		}
+		onMsg(manager_fan_manual_mode : manager_fan_manual_mode(X)) {
+			[# fan_automatic = false #]
+		}
+		
+		// TODO need to check also if temperature > OR <= TMAX before start/stop fan and transport trolley ?
+		
+		if [# !fan_automatic #] {
+			onMsg(manager_fan_on : manager_fan_on(X)) {
+				[# wait_for_fan_on = true #]
+				request fan -m fan_on : fan_on(X)
+			}
+			onMsg(manager_fan_off : manager_fan_off(X)) {
+				[# wait_for_fan_off = true #]
+				request fan -m fan_off : fan_off(X)
+			}
+		}
+
+		onMsg(manager_transport_trolley_start : manager_transport_trolley_start(X)) {
+			[# transport_trolley_stopped = false #]
+		}
+		onMsg(manager_transport_trolley_stop : manager_transport_trolley_stop(X)) {
+			[# transport_trolley_stopped = true #]
+		}
+		
+		updateResource [# buildStatus() #]
+		
+		println("[businesslogic] | [State] handleManagerMsg | Exit point.")
+	} Goto running
+	
+	State updateSensorStatus {
+		println("[businesslogic] | [State] updateSensorStatus | Entry point.")
+		
+		printCurrentMessage
+		
+		onMsg(update : update(SENSOR_STATUS)) {
+			[# val msg = payloadArg(0) #]
+			if [# msg.contains("weightsensor") #] {
+				[# indoor_area_weight = msg.substringAfter("(").substringBefore(")").toInt() #]
+			
+				if [# indoor_area_weight > WMAX #] {
+					[# wait_for_client_enter_indoor_area = false #]
+					[# indoor_area_free = false #]
+					if [# dtoccupied_watchdog_running #] {
+						forward dtoccupiedwatchdog -m stop_watchdog : stop_watchdog(X)
+						[# dtoccupied_watchdog_running = false #]
+					}
+				} else {
+					[# indoor_area_free = true #]
+				}
+			}
+			if [# msg.contains("outsonar") #] {
+				[# outdoor_area_distance = msg.substringAfter("(").substringBefore(")").toInt() #]
+			
+				if [# outdoor_area_distance < DMIN #] {
+					[# outdoor_area_free = false #]
+				} else {
+					[# wait_for_client_exit_outdoor_area = false #]
+					[# outdoor_area_free = true #]
+					if [# dtfree_watchdog_running #] {
+						forward dtfreewatchdog -m stop_watchdog : stop_watchdog(X)
+						[# dtfree_watchdog_running = false #]
+					}
+					if [# outdoor_alarm_on #] {
+						[# outdoor_alarm_on = false #]
+					}
+				}
+			}
+			if [# msg.contains("thermometer") #] {  
+				[# temperature = msg.substringAfter("(").substringBefore(")").toInt() #]
+
+				if [# temperature > TMAX #] {
+					[# temperature_high = true #]
+					if [# fan_automatic && !fan_on #] {
+						[# wait_for_fan_on = true #]
+						request fan -m fan_on : fan_on(X)
+					}
+				} else {
+					[# temperature_high = false #]
+					if [# fan_automatic && fan_on #] {
+						[# wait_for_fan_off = true #]
+						request fan -m fan_off : fan_off(X)
+					}
+				}
+			}
+		}
+		
+		updateResource [# buildStatus() #]
+		
+		println("[businesslogic] | [State] updateSensorStatus | Exit point.")
+	} Goto running
+	
+	State handleFanReply {
+		println("[businesslogic] | [State] handleFanReply | Entry point.")
+		onMsg(fan_done : fan_done(X)) {
+			if [# wait_for_fan_on #] {
+				[# wait_for_fan_on = false #]
+				[# fan_on = true #]
+				if [# !fan_automatic #] { replyTo manager_fan_on with fan_done : fan_done(X) }
+			}
+			if [# wait_for_fan_off #] {
+				[# wait_for_fan_off = false #]
+				[# fan_on = false #]
+				if [# !fan_automatic #] { replyTo manager_fan_off with fan_done : fan_done(X) }
+			}
+		}
+		onMsg(fan_fail : fan_fail(REASON)) {
+			[# val REASON = payloadArg(0) #]
+			println("[businesslogic] | [State] handleFanReply | Fan fail, REASON: $REASON.")
+			if [# wait_for_fan_on #] {
+				[# wait_for_fan_on = false #]
+				if [# !fan_automatic #] { replyTo manager_fan_on with fan_fail : fan_fail($REASON) }
+			}
+			if [# wait_for_fan_off #] {
+				[# wait_for_fan_off = false #]
+				if [# !fan_automatic #] { replyTo manager_fan_off with fan_fail : fan_fail($REASON) }
+			}
+		}
+		
+		updateResource [# buildStatus() #]
+		
+		println("[businesslogic] | [State] handleFanReply | Exit point.")
+	} Goto running
+	
+	State handleTimeout {
+		println("[businesslogic] | [State] handleTimeout | Entry point.")
+		
+		onMsg(local_timeout : local_timeout(X)) {
+			if [# currentMsg.msgSender().equals("dtoccupiedwatchdog") #] {
+				[# dtoccupied_watchdog_running = false #]
+				[# wait_for_client_enter_indoor_area = false #]
+				[# RESERVED_SLOTNUM_INDOOR_AREA = 0 #]
+			}
+			if [# currentMsg.msgSender().equals("dtfreewatchdog") #] {
+				[# dtfree_watchdog_running = false #]
+				[# outdoor_alarm_on = true #] // fire alarm
+				updateResource [# buildStatus() #]
+			}
+		}
+		
+		println("[businesslogic] | [State] handleTimeout | Exit point.")
+	} Goto running
+	
+	State acceptIn {
+		println("[businesslogic] | [State] acceptIn | Entry point.")
+		
+		if [# parking_slots.isEmpty() #] {
+			println("[businesslogic] | [State] acceptIn | Sending failure to client.. ")
+			replyTo parking_car_interest with inform_in : inform_in(0)
+		} else {
+		[# 
+			RESERVED_SLOTNUM_INDOOR_AREA = parking_slots.removeFirst()
+			wait_for_client_enter_indoor_area = true
+		#]
+			println("[businesslogic] | [State] acceptIn | Let the car enter in the indoor area. I'm sending SLOTNUM.")
+			replyTo parking_car_interest with inform_in : inform_in($RESERVED_SLOTNUM_INDOOR_AREA)
+			forward dtoccupiedwatchdog -m start_watchdog : start_watchdog(X)
+			[# dtoccupied_watchdog_running = true #]
+		}
+		println("[businesslogic] | [State] acceptIn | Exit point.")
+	} Goto running
+	
+	State carEnter {
+		println("[businesslogic] | [State] carEnter | Entry point.")
+		
+		onMsg( car_enter : car_enter(SLOTNUM) ) {
+			[# 
+				val client_SLOTNUM = payloadArg(0).toInt()
+			#]
+				println("[businesslogic] | [State] carEnter | Received SLOTNUM=$client_SLOTNUM")
+				if [# client_SLOTNUM == RESERVED_SLOTNUM_INDOOR_AREA && RESERVED_SLOTNUM_INDOOR_AREA != 0 #] {
+				[#
+					RESERVED_SLOTNUM_CAR_PARK = RESERVED_SLOTNUM_INDOOR_AREA
+					RESERVED_SLOTNUM_INDOOR_AREA = 0
+					car_park_request = true	
+				#]
+				} else {
+					println("[businesslogic] | [State] carEnter | Invalid car enter request: SLOTNUM is wrong.")
+					replyTo car_enter with response_car_enter : response_car_enter(INVALID)
+				}
+			}
+		
+		println("[businesslogic] | [State] carEnter | Exit point.")
+	} Goto doCarPark if [# car_park_request #] else running
+	
+	State doCarPark {
+		println("[businesslogic] | [State] doCarPark | Entry point.")
+		[# transport_trolley_working = true #]
+		updateResource [# buildStatus() #]
+		
+		println("[businesslogic] | [State] doCarPark | TransportTrolley is going to INDOOR...")
+		// series of commands to basic robot ...
+		delay 2000
+		println("[businesslogic] | [State] doCarPark | TransportTrolley at INDOOR!")
+		[#
+			// simplified! need to change in random generation
+			val TOKENID = "PMSx$RESERVED_SLOTNUM_CAR_PARK" 
+			token_parking_slots.add(TOKENID)
+		#]
+		println("[businesslogic] | [State] doCarPark | Send TOKENID=$TOKENID to client...")
+		replyTo car_enter with response_car_enter : response_car_enter($TOKENID)
+		println("[businesslogic] | [State] doCarPark | TransportTrolley is taking over the car...")
+		delay 1000
+		println("[businesslogic] | [State] doCarPark | TransportTrolley is going to SLOTNUM n. $RESERVED_SLOTNUM_CAR_PARK...")
+		// series of commands to basic robot ...
+		delay 2000
+		println("[businesslogic] | [State] doCarPark | TransportTrolley at SLOTNUM n. $RESERVED_SLOTNUM_CAR_PARK!")
+		println("[businesslogic] | [State] doCarPark | TransportTrolley is releasing the car...")
+		delay 1000
+		[# 
+			car_park_request = false 
+			parking_slots_status[RESERVED_SLOTNUM_CAR_PARK - 1] = "OCCUPIED"
+			RESERVED_SLOTNUM_CAR_PARK = 0
+		#]
+		updateResource [# buildStatus() #]
+		println("[businesslogic] | [State] doCarPark | Exit point.")
+	} Goto transportTrolleyBackToHome // simplification for the first model
+	
+	State transportTrolleyBackToHome {
+		println("[businesslogic] | [State] transportTrolleyBackToHome | Entry point.")
+		
+		println("[businesslogic] | [State] transportTrolleyBackToHome | TransportTrolley is going to HOME...")
+		// series of commands to basic robot ...
+		delay 2000
+		println("[businesslogic] | [State] transportTrolleyBackToHome | TransportTrolley at HOME!")
+		[# transport_trolley_working = false #]
+		updateResource [# buildStatus() #]
+		println("[businesslogic] | [State] transportTrolleyBackToHome | Exit point.")
+	} Goto running
+	
+	State acceptOut {
+		println("[businesslogic] | [State] checkTokenId | Entry point.")
+		println("[businesslogic] | [State] checkTokenId | Checking the TokenID...")
+		onMsg( car_pickup : car_pickup(TOKENID) ) {
+		[# 
+			var tokenid_valid = false
+			val TOKENID = payloadArg(0).toString() 
+			val token_index = token_parking_slots.indexOf(TOKENID)
+		#]
+			if [# token_index >= 0 #] {
+				[# 
+				token_parking_slots.removeAt(token_index)
+				for (c in TOKENID) { #]
+					if [# c.isDigit() #] {
+					[# 
+						tokenid_valid = true
+						RESERVED_SLOTNUM_CAR_PICK_UP = Character.getNumericValue(c)
+						car_pickup_request = true
+						
+						break
+					#]
+					}
+				[# } #]
+			}
+			if [# !tokenid_valid #] {
+				println("[businesslogic] | [State] invalidTokenId | TOKENID=$TOKENID is invalid. Can't pick up the car.")
+				replyTo car_pickup with accept_out_failure : accept_out_failure(X)
+			}
+		}
+		println("[businesslogic] | [State] checkTokenId | Exit point.")
+	} Goto doCarPickUp if [# car_pickup_request #] else running
+	
+	State doCarPickUp {
+		println("[businesslogic] | [State] doCarPickUp | Entry point.")
+		[# transport_trolley_working = true #]
+		updateResource [# buildStatus() #]
+		
+		println("[businesslogic] | [State] doCarPickUp | TransportTrolley is going to SLOTNUM n. $RESERVED_SLOTNUM_CAR_PICK_UP...")
+		// series of commands to basic robot ...
+		delay 2000
+		println("[businesslogic] | [State] doCarPickUp | TransportTrolley at SLOTNUM n. $RESERVED_SLOTNUM_CAR_PICK_UP!")
+		println("[businesslogic] | [State] doCarPickUp | TransportTrolley is taking over the car...")
+		delay 1000
+		println("[businesslogic] | [State] doCarPickUp | TransportTrolley is going to OUTDOOR...")
+		// series of commands to basic robot ...
+		delay 2000
+		println("[businesslogic] | [State] doCarPickUp | TransportTrolley at OUTDOOR!")
+		println("[businesslogic] | [State] doCarPickUp | TransportTrolley is releasing the car...")
+		delay 1000
+		println("[businesslogic] | [State] doCarPickUp | Set free the parking slot n. $RESERVED_SLOTNUM_CAR_PICK_UP")
+		[# 
+			parking_slots.add(RESERVED_SLOTNUM_CAR_PICK_UP) 
+			wait_for_client_exit_outdoor_area = true
+			car_pickup_request = false
+			parking_slots_status[RESERVED_SLOTNUM_CAR_PICK_UP - 1] = "FREE"
+			RESERVED_SLOTNUM_CAR_PICK_UP = 0
+		#]
+		println("[businesslogic] | [State] doCarPickUp | Telling the client to go away...")
+		replyTo car_pickup with accept_out_success : accept_out_success(X)
+		forward dtfreewatchdog -m start_watchdog : start_watchdog(X)
+		[# dtfree_watchdog_running = true #]
+		updateResource [# buildStatus() #]
+		println("[businesslogic] | [State] doCarPickUp | Exit point.")
+	} Goto transportTrolleyBackToHome  // simplification for the first model
+	
+}
+
+// TODO in a real implementation this two watchdogs should be a single component instantiable multiple times with different names.
+// TODO need to find a way to let configurable the whenTime duration.
+
+QActor dtoccupiedwatchdog context ctxbusinesslogic {
+	State init initial {
+		println("[dtoccupiedwatchdog] | [State] init | Entry point.")
+		println("[dtoccupiedwatchdog] | [State] init | Exit point.")
+	} Goto wait
+	
+	State wait {
+		println("[dtoccupiedwatchdog] | [State] wait | Entry point.")
+		println("[dtoccupiedwatchdog] | [State] wait | Exit point.")
+	} Transition t0
+	whenMsg start_watchdog -> running
+	whenMsg stop_watchdog -> wait //ignore
+	
+	State running {
+		println("[dtoccupiedwatchdog] | [State] running | Entry point.")
+		println("[dtoccupiedwatchdog] | [State] running | Exit point.")
+	} Transition t0
+	whenTime 60000 -> emitTimeout
+	whenMsg stop_watchdog -> wait
+	
+	State emitTimeout {
+		println("[dtoccupiedwatchdog] | [State] emitTimeout | Entry point.")
+		emit local_timeout : local_timeout(X)
+		println("[dtoccupiedwatchdog] | [State] emitTimeout | Exit point.")
+	} Goto wait
+}
+
+QActor dtfreewatchdog context ctxbusinesslogic {
+	State init initial {
+		println("[dtfreewatchdog] | [State] init | Entry point.")
+		println("[dtfreewatchdog] | [State] init | Exit point.")
+	} Goto wait
+	
+	State wait {
+		println("[dtfreewatchdog] | [State] wait | Entry point.")
+		println("[dtfreewatchdog] | [State] wait | Exit point.")
+	} Transition t0
+	whenMsg start_watchdog -> running
+	whenMsg stop_watchdog -> wait //ignore
+	
+	State running {
+		println("[dtfreewatchdog] | [State] running | Entry point.")
+		println("[dtfreewatchdog] | [State] running | Exit point.")
+	} Transition t0
+	whenTime 60000 -> emitTimeout
+	whenMsg stop_watchdog -> wait
+	
+	State emitTimeout {
+		println("[dtfreewatchdog] | [State] emitTimeout | Entry point.")
+		emit local_timeout : local_timeout(X)
+		println("[dtfreewatchdog] | [State] emitTimeout | Exit point.")
+	} Goto wait
+}

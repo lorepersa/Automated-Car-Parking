@@ -1,0 +1,272 @@
+
+System systemmastermind
+
+// mock "human" interactions between human (client/manager) and GUIs
+
+Request  req_client_accept_in          : req_client_accept_in(X)
+Reply    rep_client_accept_in          : rep_client_accept_in(SLOTNUM)
+Request  req_client_car_enter          : req_client_car_enter(SLOTNUM)
+Reply    rep_client_car_enter          : rep_client_car_enter(TOKENID)
+Request  req_client_accept_out         : req_client_accept_out(TOKENID)
+Reply    rep_client_accept_out_success : rep_client_accept_out_success(X)
+Reply    rep_client_accept_out_failure : rep_client_accept_out_failure(X)
+
+Reply    rep_manager_done                         : rep_manager_done(X)
+Reply    rep_manager_fail                         : rep_manager_fail(X)
+Request  req_manager_fan_automatic_mode           : req_manager_fan_automatic_mode(X)
+Request  req_manager_fan_manual_mode              : req_manager_fan_manual_mode(X)
+Request  req_manager_fan_on                       : req_manager_fan_on(X)
+Request  req_manager_fan_off                      : req_manager_fan_off(X)
+
+// business logic - client
+Request   parking_car_interest : parking_car_interest( X )
+Reply     inform_in            : inform_in(SLOTNUM)
+Request   car_enter            : car_enter(SLOTNUM)
+Reply     response_car_enter   : response_car_enter(TOKENID)
+Request   car_pickup           : car_pickup(TOKENID)
+Reply     accept_out_success   : accept_out_success(X)
+Reply     accept_out_failure   : accept_out_failure(X)
+
+// business logic - manager
+Dispatch  manager_fan_automatic_mode         : manager_fan_automatic_mode(X)
+Dispatch  manager_fan_manual_mode            : manager_fan_manual_mode(X)
+Request   manager_fan_on                     : manager_fan_on(X)
+Request   manager_fan_off                    : manager_fan_off(X)
+Reply     fan_done                           : fan_done(X)
+Reply     fan_fail                           : fan_fail(REASON)
+Dispatch  manager_transport_trolley_start    : manager_transport_trolley_start(X)
+Dispatch  manager_transport_trolley_stop     : manager_transport_trolley_stop(X)
+
+// mock weightsensor
+Dispatch  input_weight                             : input_weight(W)
+// mock outsonar
+Dispatch  input_distance                           : input_distance(D)
+// mock thermometer
+Dispatch  input_temperature                        : input_temperature(T)
+
+Dispatch  update : update(STATUS)
+
+Context ctxmastermind            ip [host="localhost" port=8070]
+
+Context ctxbusinesslogic         ip [host="127.0.0.1" port=8065]
+
+// following context used only to set mock data (weight, distance, temperature) 
+Context ctxweightsensor          ip [host="127.0.0.1" port=8060]
+Context ctxoutsonar              ip [host="127.0.0.1" port=8061]
+Context ctxthermometer           ip [host="127.0.0.1" port=8062]  
+
+ExternalQActor businesslogic     context ctxbusinesslogic
+ExternalQActor weightsensor      context ctxweightsensor
+ExternalQActor outsonar          context ctxoutsonar
+ExternalQActor thermometer       context ctxthermometer
+
+QActor parkservicegui context ctxmastermind {
+	
+	[# 
+		var SLOTNUM = 0 
+		var TOKENID = ""
+		var response_car_pickup = ""
+	#]
+	
+	State init initial {
+		println("[parkservicegui] | [State] init | Entry point.")
+		[# 
+			SLOTNUM = 0 
+			TOKENID = ""
+			response_car_pickup = ""
+		#]
+				
+		println("[parkservicegui] | [State] init | Exit point.")
+	} Goto wait
+	
+	State wait {
+		println("[parkservicegui] | [State] wait | Entry point.")
+		println("[parkservicegui] | [State] wait | Exit point.")
+	} Transition t0
+	whenRequest req_client_accept_in -> interestedInParkingCar
+	whenReply   inform_in -> enterIndoor
+	whenRequest req_client_car_enter -> carEnter
+	whenRequest req_client_accept_out -> askForPickUpCar
+	whenReply   response_car_enter -> receiveTokenId
+	whenReply   accept_out_success -> pickUpCar
+	whenReply   accept_out_failure -> cannotPickUpCar 
+	
+	State interestedInParkingCar {
+		println("[parkservicegui] | [State] InterestedInParkingCar | Entry point.")
+		onMsg(req_client_accept_in : req_client_accept_in(X)) {
+			
+		}
+		request businesslogic -m parking_car_interest : parking_car_interest(io)
+		println("[parkservicegui] | [State] InterestedInParkingCar | Exit point.")
+	} Goto wait
+
+	State enterIndoor {
+		println("[parkservicegui] | [State] enterIndoor | Entry point.")
+		onMsg( inform_in : inform_in(SLOTNUM) ){
+			[# SLOTNUM = payloadArg(0).toInt() #]			
+			println("[parkservicegui] | [State] enterIndoor | Client receives SLOTNUM = $SLOTNUM")
+			
+			if [# SLOTNUM > 0 #] {
+				replyTo req_client_accept_in with rep_client_accept_in : rep_client_accept_in($SLOTNUM)
+			} else {
+				replyTo req_client_accept_in with rep_client_accept_in : rep_client_accept_in(0)
+			}
+			
+		}
+		println("[parkservicegui] | [State] enterIndoor | Exit point.")
+	} Goto wait
+	
+	State carEnter {
+		println("[parkservicegui] | [State] CarEnter | Entry point.")
+		onMsg(req_client_car_enter : req_client_car_enter(SLOTNUM)) {
+			[# SLOTNUM = payloadArg(0).toInt() #]
+		}
+		request businesslogic -m car_enter : car_enter($SLOTNUM)
+		println("[parkservicegui] | [State] CarEnter | Exit point.")
+	} Goto wait
+	
+	State receiveTokenId {
+		println("[parkservicegui] | [State] ReceiveTokenId | Entry point.")
+		onMsg( response_car_enter : response_car_enter(TOKENID)){
+			[# TOKENID = payloadArg(0).toString() #]
+			println("[parkservicegui] | [State] ReceiveTokenId | Client receives TOKENID = $TOKENID ")
+			replyTo req_client_car_enter with rep_client_car_enter : rep_client_car_enter($TOKENID)
+		}
+		println("[parkservicegui] | [State] ReceiveTokenId | Exit point.")
+	} Goto wait
+	
+	State askForPickUpCar {
+		println("[parkservicegui] | [State] askForPickUpCar | Entry point.")
+		onMsg(req_client_accept_out : req_client_accept_out(TOKENID)) {
+			[# TOKENID = payloadArg(0) #]
+		}
+		println("[parkservicegui] | [State] askForPickUpCar | Ok now it's time to pick up my car")
+		request businesslogic -m car_pickup : car_pickup($TOKENID)
+		println("[parkservicegui] | [State] askForPickUpCar | Exit point.")
+	} Goto wait
+	 
+	State pickUpCar {
+		println("[parkservicegui] | [State] pickUpCar | Entry point.")
+		onMsg ( accept_out_success : accept_out_success(X) ){
+			println("[parkservicegui] | [State] pickUpCar | Thank you! Now I'm leaving the outdoor area.. bye")	
+			replyTo req_client_accept_out with rep_client_accept_out_success : rep_client_accept_out_success(X)
+		}
+		println("[parkservicegui] | [State] pickUpCar | Exit point.")
+	} Goto wait
+	
+	State cannotPickUpCar {
+		println("[parkservicegui] | [State] cannotPickUpCar | Entry point.")
+		onMsg ( accept_out_failure : accept_out_failure(X) ){
+			println("[parkservicegui] | [State] cannotPickUpCar | My token is not valid. I'll be back.")
+			replyTo req_client_accept_out with rep_client_accept_out_failure : rep_client_accept_out_failure(X)
+		}
+		println("[parkservicegui] | [State] cannotPickUpCar | Exit point.")
+	} Goto wait
+}
+
+QActor parkservicestatusgui context ctxmastermind {
+	
+	[# val businesslogicObserver = itunibo.qakobserver.FactoryQakObserver.create(myself, "businesslogic") #]
+	
+	State init initial {  
+		[# businesslogicObserver.observe() #]  
+	} Goto wait  
+	
+	State wait {
+		println("[parkservicestatusgui] | wait")
+	} Transition t0
+	whenMsg update -> updateStatus
+	
+	State updateStatus {
+		printCurrentMessage
+	} Goto wait
+	
+}
+
+QActor mastermind context ctxmastermind {
+	
+	[# 
+		var SLOTNUM = 0 
+		var TOKENID = ""   
+	#]   
+	
+	State init initial {
+		println("[mastermind] | [State] init | Entry point.")
+		delay 5000
+		println("[mastermind] | [State] init | Exit point.")
+	} Goto carEnterIndoorArea
+	
+	State carEnterIndoorArea {
+		println("[mastermind] | [State] carEnterIndoorArea | Entry point.")
+		request parkservicegui -m req_client_accept_in : req_client_accept_in(X)
+		println("[mastermind] | [State] carEnterIndoorArea | Exit point.")
+	} Transition t0 whenReply rep_client_accept_in -> receiveSlotnum
+	
+	State receiveSlotnum {
+		println("[mastermind] | [State] receiveSlotnum | Entry point.")
+		onMsg(rep_client_accept_in : rep_client_accept_in(SLOTNUM)) {
+			[# SLOTNUM = payloadArg(0).toInt() #] 
+			println("[mastermind] | [State] receiveSlotnum | SLOTNUM: $SLOTNUM.")
+		}
+		println("[mastermind] | [State] receiveSlotnum | Exit point.")
+	} Transition t0 whenTime 1000 -> carDetectedByWeightSensor
+	
+	State carDetectedByWeightSensor {
+		println("[mastermind] | [State] carDetectedByWeightSensor | Entry point.")
+		[# val W = 800 #]
+		forward weightsensor -m input_weight : input_weight($W)
+		println("[mastermind] | [State] carDetectedByWeightSensor | Exit point.")
+	} Transition t0 whenTime 2000 -> pressCarEnterButton
+	
+	State pressCarEnterButton {
+		println("[mastermind] | [State] pressCarEnterButton | Entry point.")
+		request parkservicegui -m req_client_car_enter : req_client_car_enter($SLOTNUM)
+		println("[mastermind] | [State] pressCarEnterButton | Exit point.")
+	} Transition t0 whenReply rep_client_car_enter -> readTokenId
+	
+	State readTokenId {
+		println("[mastermind] | [State] readTokenId | Entry point.")
+		onMsg(rep_client_car_enter : rep_client_car_enter(TOKENID)) {
+			[# TOKENID = payloadArg(0) #]
+			println("[mastermind] | [State] readTokenId | TOKENID: $TOKENID.")
+		}
+		println("[mastermind] | [State] readTokenId | Exit point.")
+	} Goto transportrolleyWithdrawCar
+	
+	State transportrolleyWithdrawCar {
+		println("[mastermind] | [State] transportrolleyWithdrawCar | Entry point.")
+		[# val W = 0 #]
+		forward weightsensor -m input_weight : input_weight($W)
+		println("[mastermind] | [State] transportrolleyWithdrawCar | Exit point.")
+	} Goto idleUntilPickupRequest
+	
+	State idleUntilPickupRequest {
+		println("[mastermind] | [State] idleUntilPickupRequest | Entry point.")
+		delay 10000
+		println("[mastermind] | [State] idleUntilPickupRequest | Exit point.")
+	} Goto pickupRequest
+	
+	State pickupRequest {
+		println("[mastermind] | [State] pickupRequest | Entry point.")
+		request parkservicegui -m req_client_accept_out : req_client_accept_out($TOKENID)
+		println("[mastermind] | [State] pickupRequest | Exit point.")
+	} Transition t0 whenReply rep_client_accept_out_success -> carDetectedByOutSonar
+	
+	State carDetectedByOutSonar {
+		println("[mastermind] | [State] carDetectedByOutSonar | Entry point.")
+		[# val  D = 10 #]
+		forward outsonar -m input_distance : input_distance($D)
+		println("[mastermind] | [State] carDetectedByOutSonar | Exit point.")
+	} Transition t0 whenTime 7000 -> carLeaveOutdoorArea
+	
+	State carLeaveOutdoorArea {
+		println("[mastermind] | [State] carLeaveOutdoorArea | Entry point.")
+		[# val  D = 200 #]
+		forward outsonar -m input_distance : input_distance($D)
+		println("[mastermind] | [State] carLeaveOutdoorArea | Exit point.")
+	} Transition t0 whenTime 3000 -> end
+	
+	State end {
+		println("[mastermind] | [State] end")
+	}
+}

@@ -1,0 +1,38 @@
+/**
+ * Example of a thermometer component implementation.
+ * 
+ * Simplification:
+ * - The temperature is not measured but is received via a dispatch
+ * - The TMAX is not configurable here
+ * - TODO other?
+ */
+System systemthermometer
+ 
+Dispatch  input_temperature : input_temperature(T) // mock
+
+Context ctxthermometer           ip [host="localhost" port=8062]
+
+QActor thermometer context ctxthermometer {
+
+	State init initial {
+		println("[thermometer] | [State] init | Entry point.")
+		updateResource [# "thermometer(22)" #]
+		println("[thermometer] | [State] init | Exit point.")
+	} Goto wait
+	
+	State wait {
+		println("[thermometer] | [State] wait | Entry point.")
+		println("[thermometer] | [State] wait | Exit point.")
+	} Transition t0
+	whenMsg     input_temperature -> updateTemperature
+	
+	State updateTemperature {
+		println("[thermometer] | [State] updateTemperature | Entry point.")
+		onMsg(input_temperature : input_temperature(T)) {
+			[# var T = payloadArg(0).toInt() #]
+			println("[thermometer] | [State] updateTemperature | Temperature: $T °C.")
+			updateResource [# "thermometer($T)" #]
+		} // end onMsg
+		println("[thermometer] | [State] updateTemperature | Exit point.")
+	} Goto wait
+}

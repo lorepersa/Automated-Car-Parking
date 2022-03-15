@@ -1,0 +1,40 @@
+/**
+ * Example of a outsonar component implementation.
+ * 
+ * Simplification:
+ * - The distance is not measured but is received via a dispatch
+ * - The DMIN is not configurable here
+ * - TODO other?
+ */
+System systemoutsonar
+
+Dispatch  input_distance : input_distance(D) // mock
+
+
+Context ctxoutsonar              ip [host="localhost" port=8061]
+
+
+QActor outsonar context ctxoutsonar {
+	
+	State init initial {
+		println("[outsonar] | [State] init | Entry point.")
+		updateResource [# "outsonar(200)" #]
+		println("[outsonar] | [State] init | Exit point.")
+	} Goto wait
+	
+	State wait {
+		println("[outsonar] | [State] wait | Entry point.")
+		println("[outsonar] | [State] wait | Exit point.")
+	} Transition t0
+	whenMsg input_distance -> updateDistance
+	
+	State updateDistance {
+		println("[outsonar] | [State] updateDistance | Entry point.")
+		onMsg(input_distance : input_distance(W)) {
+			[# var D = payloadArg(0).toInt() #]
+			println("[outsonar] | [State] updateDistance | Distance: $D cm.")		
+			updateResource [# "outsonar($D)" #]
+		} // end onMsg
+		println("[outsonar] | [State] updateDistance | Exit point.")
+	} Goto wait
+}
