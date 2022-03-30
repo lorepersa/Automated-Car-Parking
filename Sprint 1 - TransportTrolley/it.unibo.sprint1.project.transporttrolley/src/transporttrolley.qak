@@ -1,0 +1,337 @@
+
+System systembusinesslogic
+
+// open session
+Request   transport_trolley_new_job               : transport_trolley_new_job(X)
+Reply     transport_trolley_job_accepted          : transport_trolley_job_accepted(X)
+
+// move transport trolley to destination
+Request   transport_trolley_go_to                 : transport_trolley_go_to(DESTINATION)
+Reply     transport_trolley_arrived_at            : transport_trolley_arrived_at(DESTINATION)
+
+// car handling commands
+Request   transport_trolley_take_over_car         : transport_trolley_take_over_car(X)
+Reply     transport_trolley_car_taken_over        : transport_trolley_car_taken_over(X)
+Request   transport_trolley_release_car           : transport_trolley_release_car(X)
+Reply     transport_trolley_car_released          : transport_trolley_car_released(X)
+
+// unknown destination, cannot take over car, cannot release car
+Reply     transport_trolley_error                 : transport_trolley_error(REASON)
+
+// close session
+Dispatch  transport_trolley_job_done              : transport_trolley_job_done(X)
+
+// resumable behavior
+Dispatch  transport_trolley_start             : transport_trolley_start(X)
+Dispatch  transport_trolley_stop              : transport_trolley_stop(X)
+
+// internal messages
+Dispatch  auto_transport_trolley_go_home      : auto_transport_trolley_go_home(X)
+Dispatch  move_done           : move_done(MOVE)
+Dispatch  move_fail           : move_fail(MOVE,DURATION,CAUSE)
+
+// basicrobot
+Dispatch cmd        : cmd(MOVE)     
+Dispatch end        : end(ARG)  
+Request  step       : step( TIME )	
+Reply    stepdone   : stepdone(V)  
+Reply    stepfail   : stepfail(DURATION, CAUSE)
+
+Context ctxbusinesslogic     ip [host="localhost" port=8065]
+Context ctxbasicrobot        ip [host="robot" port=8020]  
+
+ExternalQActor basicrobot context ctxbasicrobot 
+
+QActor transporttrolley context ctxbusinesslogic {
+	
+	[# 
+		var DESTINATION = "HOME"
+		var car_taken_over = false
+		var handling_job = false
+		var auto_back_to_home = false
+		val resource = itunibo.qakobserver.FactoryQakResource.create(myself)
+		lateinit var status : itunibo.automatedcarparking.transporttrolley.TransportTrolleyStatus
+		val jsonStatus = itunibo.automatedcarparking.utilities.JsonStatus
+		lateinit var planner : itunibo.automatedcarparking.transporttrolley.planner.IPlanner
+		val basicRobotUtil = itunibo.automatedcarparking.transporttrolley.basicrobot.BasicRobotUtility
+		lateinit var watchdog : itunibo.qakutils.watchdog.Watchdog
+		val transportTrolleyRolodex = itunibo.automatedcarparking.rolodex.TransportTrolleyRolodex
+		
+		lateinit var config : itunibo.automatedcarparking.transporttrolley.TransportTrolleyConfiguration
+	#]
+	  
+	State init initial {
+		println("[transporttrolley] | [State] init | Entry point.") 
+		[#
+			config = itunibo.automatedcarparking.configuration.TransportTrolleyConfigurationReader.read(transportTrolleyRolodex.filenameConfiguration)
+			basicRobotUtil.setStepMoveDuration(config.stepMoveDuration)
+			watchdog = itunibo.qakutils.watchdog.Watchdog(myself, config.timeLimitBackToHome, itunibo.automatedcarparking.transporttrolley.BackToHomeAutoMessage)
+			planner = itunibo.automatedcarparking.transporttrolley.planner.PlannerFactory.create()
+			planner.setPosition("HOME")
+			val homePosition = planner.getCurrentPosition()
+			status = itunibo.automatedcarparking.transporttrolley.TransportTrolleyStatus(stopped=false, idle=true, moveFailed=false, coordinate=homePosition)
+			resource.notify(jsonStatus.getJsonString(status))
+		#]
+		println("[transporttrolley] | [State] init | Exit point.") 
+	} Goto wait
+	
+	State wait {
+		println("[transporttrolley] | [State] wait | Entry point.") 	
+		println("[transporttrolley] | [State] wait | Exit point.") 
+	} Transition t0
+	whenMsg     transport_trolley_start                                                     -> handleResumableMessages
+	whenMsg     transport_trolley_stop                                                      -> handleResumableMessages
+	whenRequest transport_trolley_new_job       and [# !status.stopped && !handling_job #]  -> handleNewJob // maybe sent by multiple QActors
+	whenRequest transport_trolley_go_to         and [# !status.stopped #]                   -> handleNewDestination
+	whenMsg     move_done                       and [# !status.stopped #]                   -> handleMoveReply
+	whenMsg     move_fail                       and [# !status.stopped #]                   -> handleMoveReply
+	whenReply   stepdone                                                                    -> convertStepReply
+	whenReply   stepfail                                                                    -> convertStepReply
+	whenRequest transport_trolley_take_over_car and [# !status.stopped #]                   -> handleCarTask
+	whenRequest transport_trolley_release_car   and [# !status.stopped #]                   -> handleCarTask
+	whenMsg     transport_trolley_job_done                                                  -> handleJobDone
+	whenMsg     auto_transport_trolley_go_home  and [# !status.stopped #]                   -> handleGoHome
+	
+	State handleResumableMessages {
+		println("[transporttrolley] | [State] handleResumableMessages | Entry point.") 
+		onMsg(transport_trolley_start : transport_trolley_start(X)) {
+			println("[transporttrolley] | [State] handleResumableMessages | Received START!.") 
+			[# status.stopped = false #] 
+			
+			if [# status.moveFailed #] {
+				println("[transporttrolley] | [State] handleResumableMessages | Last move is failed, reposition transport trolley at HOME!.") 
+				[# planner.setPosition("HOME") #]
+				[# status.coordinate = planner.getCurrentPosition() #]
+				if [# !DESTINATION.equals("HOME", true) #] {
+					println("[transporttrolley] | [State] handleResumableMessages | Uh, need to replan a path to $DESTINATION starting from HOME...") 
+					[# planner.buildPlan(DESTINATION) #]
+				} else {
+					println("[transporttrolley] | [State] handleResumableMessages | Uh, destination is HOME and I am arrived at HOME now!") 
+					if [# handling_job #] {
+						replyTo transport_trolley_go_to with transport_trolley_arrived_at : transport_trolley_arrived_at(HOME)
+					} else {
+						[# status.idle = true #]
+					}
+				}
+				[# auto_back_to_home = false #]
+				[# status.moveFailed = false #]
+			}
+			
+			if [# !planner.isWaitingMoveResult() #] {
+				[# 
+				val move = planner.nextMove()
+				move?.let {
+					println("[transporttrolley] | [State] handleResumableMessages | Doing move $move...")
+					basicRobotUtil.sendMove(myself, move)
+				}
+				#]
+			}
+		}
+		onMsg(transport_trolley_stop : transport_trolley_stop(X)) {
+			println("[transporttrolley] | [State] handleResumableMessages | Received STOP!.") 
+			[# status.stopped = true #]
+		}
+		
+		// update status
+		[# resource.notify(jsonStatus.getJsonString(status))#]
+		
+		println("[transporttrolley] | [State] handleResumableMessages | Exit point.") 
+	} Goto wait
+	
+	State convertStepReply {
+		println("[transporttrolley] | [State] convertStepReply | Entry point.") 
+		
+		onMsg (stepdone : stepdone(X)) {
+			println("[transporttrolley] | [State] convertStepReply | Received stepdone!") 
+			// change reply stepdone into dispatch move_done
+			[# myself.autoMsg("move_done", "move_done(w)") #]
+		}
+		onMsg (stepfail : stepfail(DURATION,CAUSE)) {
+			// change reply stepfail into dispatch move_fail
+			[# val DURATION = payloadArg(0) #]
+			[# val CAUSE = payloadArg(1) #]
+			println("[transporttrolley] | [State] convertStepReply | Received stepfail with {duration: $DURATION ms, cause: $CAUSE}...") 
+			[# myself.autoMsg("move_fail", "move_fail(w,$DURATION,$CAUSE)") #]
+		}
+		println("[transporttrolley] | [State] convertStepReply | Entry point.") 
+	} Goto wait
+	
+	State handleMoveReply { 
+		println("[transporttrolley] | [State] handleMoveReply | Entry point.") 
+		[# var doUpdate = false #]
+		onMsg(move_done : move_done(MOVE)) {
+			println("[transporttrolley] | [State] handleMoveReply | Move done.")
+			[#
+				val MOVE_DONE = payloadArg(0)
+				planner.moveDone()
+				status.moveFailed = false
+				
+				if (config.updatePositionAfterEachStep) {
+					if (MOVE_DONE.equals("w", true)) {
+						status.coordinate = planner.getCurrentPosition()
+						doUpdate = true
+					}
+				} 
+				
+				
+				val move = planner.nextMove()
+				if (move != null) {
+					println("[transporttrolley] | [State] handleMoveReply | Doing move $move...")
+					basicRobotUtil.sendMove(myself, move)
+				} else {
+					
+					// reached destination...
+					println("[transporttrolley] | [State] handleMoveReply | Reached destination $DESTINATION!") 
+					
+					if (!DESTINATION.equals("HOME", true) || !auto_back_to_home) {
+					#]
+						replyTo transport_trolley_go_to with transport_trolley_arrived_at : transport_trolley_arrived_at($DESTINATION)
+					[#
+					}
+					
+					if (DESTINATION.equals("HOME", true) && auto_back_to_home) {
+						status.idle = true
+					}
+					
+					auto_back_to_home = false
+					status.coordinate = planner.getCurrentPosition()
+					
+					doUpdate = true
+				}
+			#]
+			
+		}
+		onMsg(move_fail : move_fail(MOVE,DURATION,CAUSE)) {
+			[# val CAUSE = payloadArg(2) #]
+			println("[transporttrolley] | [State] handleMoveReply | Failure: $CAUSE.") 
+			
+			[# planner.moveFail() #]
+			[# status.stopped = true #]
+			[# status.moveFailed = true #]
+			
+			[# doUpdate = true #]
+		}
+		
+		if [# doUpdate #] {
+			// update status
+			[# resource.notify(jsonStatus.getJsonString(status)) #]
+		}
+		
+		println("[transporttrolley] | [State] handleMoveReply | Exit point.") 
+	} Goto wait
+	
+	State handleNewJob {
+		println("[transporttrolley] | [State] handleNewJob | Entry point.") 
+		[# handling_job = true #]
+		[# watchdog.stop() #]
+		[# status.idle = false #]
+		[# resource.notify(jsonStatus.getJsonString(status)) #]
+		replyTo transport_trolley_new_job with transport_trolley_job_accepted : transport_trolley_job_accepted(X)
+		println("[transporttrolley] | [State] handleNewJob | Exit point.") 
+	} Goto wait
+	
+	State handleNewDestination {
+		println("[transporttrolley] | [State] handleNewDestination | Entry point.") 
+		onMsg (transport_trolley_go_to : transport_trolley_go_to(DESTINATION)) {
+		[#
+			DESTINATION = payloadArg(0)
+			println("[transporttrolley] | [State] handleNewDestination | Received destination: $DESTINATION.") 
+			val ok = planner.buildPlan(DESTINATION)
+			if (ok) {
+				println("[transporttrolley] | [State] handleNewDestination | Known destination!.") 
+				if (!planner.isWaitingMoveResult()) {
+					val move = planner.nextMove()
+					if (move != null) {
+						println("[transporttrolley] | [State] handleNewDestination | Doing move $move...")
+						basicRobotUtil.sendMove(myself, move)
+					} else {
+						#]
+						println("[transporttrolley] | [State] handleNewDestination | I'm already at $DESTINATION...") 
+						replyTo transport_trolley_go_to with transport_trolley_arrived_at : transport_trolley_arrived_at($DESTINATION)
+						[#
+					}
+				}
+				// else the first move of the new plan will be handled when the current move terminates...
+			} else {
+				println("[transporttrolley] | [State] handleNewDestination | Unknown destination...") 
+				#]
+				replyTo transport_trolley_go_to with transport_trolley_error : transport_trolley_error(UNKNOWN_DESTINATION)
+				[#
+			}
+			
+			auto_back_to_home = false
+		#]
+		}
+
+		println("[transporttrolley] | [State] handleNewDestination | Exit point.") 
+	} Goto wait
+
+	State handleJobDone {
+		println("[transporttrolley] | [State] handleJobDone | Entry point.") 
+		[# handling_job = false #]
+		if [# planner.isHomePosition(planner.getCurrentPosition()) #] {
+			[# status.idle = true #]
+		} else {
+			[# watchdog.start() #]
+		}
+		println("[transporttrolley] | [State] handleJobDone | Exit point.") 
+	} Goto wait
+	
+	State handleGoHome {
+		println("[transporttrolley] | [State] handleGoHome | Entry point.") 
+		if [# !handling_job #] {
+		[#
+			DESTINATION = "HOME"
+			planner.buildPlan("HOME")
+			auto_back_to_home = true
+			
+			if (!planner.isWaitingMoveResult()) {
+				val move = planner.nextMove() 
+			
+				if (move != null) {
+					println("[transporttrolley] | [State] handleGoHome | Doing move $move...")
+					basicRobotUtil.sendMove(myself, move)
+				} else {
+					println("[transporttrolley] | [State] handleGoHome | I'm already at HOME...")
+					auto_back_to_home = false
+				}
+			}
+			
+		#]
+		} else {
+			println("[transporttrolley] | [State] handleGoHome | Skipping auto back to HOME because I'm handling another job...")
+		}
+		println("[transporttrolley] | [State] handleGoHome | Exit point.") 
+	} Goto wait
+	
+	State handleCarTask {
+		println("[transporttrolley] | [State] handleCarTask | Entry point.")
+		onMsg(transport_trolley_take_over_car : transport_trolley_take_over_car(X)) {
+			if [# !car_taken_over #] {
+				println("[transporttrolley] | [State] handleCarTask | Taking over car...")
+				delay 1000
+				[# car_taken_over = true #]
+				println("[transporttrolley] | [State] handleCarTask | Car taken over!")
+				replyTo transport_trolley_take_over_car with transport_trolley_car_taken_over : transport_trolley_car_taken_over(X)
+			} else {
+				[# val REASON = "CANNOT TAKE OVER MORE THAN ONE CAR"#]
+				replyTo transport_trolley_take_over_car with transport_trolley_error : transport_trolley_error($REASON)
+			}
+
+		}
+		onMsg(transport_trolley_release_car : transport_trolley_release_car(X)) {
+			if [# car_taken_over #] {
+				println("[transporttrolley] | [State] handleCarTask | Releasing car...")
+				delay 1000
+				[# car_taken_over = false #]
+				println("[transporttrolley] | [State] handleCarTask | Car released!")
+				replyTo transport_trolley_release_car with transport_trolley_car_released : transport_trolley_car_released(X)
+			} else {
+				[# val REASON = "NO CAR TAKED OVER" #]
+				replyTo transport_trolley_release_car with transport_trolley_error : transport_trolley_error($REASON)		
+			}
+		}
+		println("[transporttrolley] | [State] handleCarTask | Exit point.") 
+	} Goto wait
+	
+}

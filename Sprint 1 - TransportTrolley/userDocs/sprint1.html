@@ -1,0 +1,1039 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+    <!--
+<link rel="stylesheet" type="text/css" href="../css/issStyle1.css">
+<script type="text/javascript" src="../css/issStyle.js"></script>
+-->
+
+<head>
+  <link href="style/style.css" rel="stylesheet" type="text/css">
+
+<title>Sprint 1 - Transport Trolley</title>
+</head>
+
+<body>
+<div id="top">
+<h1>LABORATORIO DI INGEGNERIA DEI SISTEMI SOFTWARE <font size="5"></font> </h1>
+</div>
+
+<div class="body">
+<h2>Introduction</h2>
+
+
+<h2>Requirements</h2>
+<div class="remark">
+Customer's requirements are available <a href="https://raw.githubusercontent.com/anatali/issLab2021/main/it.unibo.issLabStart/userDocs/TFBO21ISS.pdf">here</a>.
+</div>
+
+<h2>Requirement analysis</h2>
+<div class="remark">
+Requirements analysis is available <a href="http://htmlpreview.github.io/?https://github.com/lorepersa/Automated-Car-Parking/blob/main/Requirements%20Analysis/Requirements%20analysis.html">here</a>.
+</div>
+
+<h2>First Problem Analysis</h2>
+<div class="remark">
+A First Problem analysis is available <a href="http://htmlpreview.github.io/?https://github.com/lorepersa/Automated-Car-Parking/blob/main/First%20Problem%20Analysis/userDocs/First%20Problem%20Analysis.html">here</a>.
+</div>
+
+<h2>Sprint Backlog</h2>
+<div class="remark">
+  <h3>Transport Trolley</h3>
+  The goals of this sprint are the following:
+  <table>
+    <tr>
+      <th>Description</th>
+      <th>Requirements</th>
+    </tr>
+    <tr>
+      <td>The transport trolley, given a task, is able to reach the right cell in the parking-area and perform its job.</td>
+      <td>
+        <a href="https://htmlpreview.github.io/?https://github.com/lorepersa/Automated-Car-Parking/blob/main/Requirements%20Analysis/Requirements%20analysis.html#F20">F20</a>, <a href="https://htmlpreview.github.io/?https://github.com/lorepersa/Automated-Car-Parking/blob/main/Requirements%20Analysis/Requirements%20analysis.html#F21">F21</a>, <a href="https://htmlpreview.github.io/?https://github.com/lorepersa/Automated-Car-Parking/blob/main/Requirements%20Analysis/Requirements%20analysis.html#F22">F22</a>, <a href="https://htmlpreview.github.io/?https://github.com/lorepersa/Automated-Car-Parking/blob/main/Requirements%20Analysis/Requirements%20analysis.html#F23">F23</a>, <a href="https://htmlpreview.github.io/?https://github.com/lorepersa/Automated-Car-Parking/blob/main/Requirements%20Analysis/Requirements%20analysis.html#NF2">NF2</a>
+      </td>
+    </tr>
+    <tr>
+      <td>The transport trolley can be started/stopped with a command.</td>
+      <td><a href="https://htmlpreview.github.io/?https://github.com/lorepersa/Automated-Car-Parking/blob/main/Requirements%20Analysis/Requirements%20analysis.html#F11">F11</a> (only start and stop)</td>
+    </tr>
+    <tr>
+      <td>The status of the transport trolley must survive after a system reboot.</td>
+      <td><a href="https://htmlpreview.github.io/?https://github.com/lorepersa/Automated-Car-Parking/blob/main/Requirements%20Analysis/Requirements%20analysis.html#NF3">NF3</a></td>
+    </tr>
+    <tr>
+      <td>Should be possible to analyse the behaviour of the transport trolley.</td>
+      <td><a href="https://htmlpreview.github.io/?https://github.com/lorepersa/Automated-Car-Parking/blob/main/Requirements%20Analysis/Requirements%20analysis.html#NF4">NF4</a></td>
+    </tr>
+  </table>
+</div>
+
+<h2>Summary</h2>
+<div class="remark">
+  <ol>
+    <li>
+      <a href="#problem-analysis">Problem Analysis</a>
+      <ol>
+        <li>
+          <a href="#starting-point">Starting point</a>
+        </li>
+        <li>
+          <a href="#transport-trolley-analysis">Transport Trolley Analysis</a>
+        </li>
+        <li>
+          <a href="#startup-configuration">Startup Configuration</a>
+        </li>
+        <li>
+          <a href="#transport-trolley-tasks">Transport Trolley Tasks</a>
+        </li>
+        <li>
+          <a href="#interactions">Interactions</a>
+        </li>
+        <li>
+          <a href="#logical-architecture">Logical Architecture</a>
+        </li>
+      </ol>
+      <li>
+        <a href="#test-plan">Test Plan</a>
+      </li>
+      <li>
+        <a href="#project">Project</a>
+      </li>
+      <li>
+        <a href="#testing">Testing</a>
+      </li>
+      <li>
+        <a href="#deployment">Deployment</a>
+      </li>
+    </li>
+  </ol>
+</div>
+
+<h2 id="problem-analysis">Problem Analysis</h2>
+<div class="remark">
+
+  <h3 id="starting-point">General Considerations and Starting Point</h3>
+  For this first sprint, then initial logical architecture is:
+  <p align="center"><a href="./img/first_problem_analysis_legenda.png">Legenda</a></p>
+  <div class="interactions__image">
+    <center>
+      <img src="./img/first_problem_analysis_logical_architecture.png" alt="first_problem_analysis_logical_architecture.png"/>
+    </center>
+  </div>
+  <br><br>
+  This sprint will be focused on <b>Transport Trolley</b>. So it will cover the BasicRobot and the BusinessLogic section that interacts with it.
+  <br><br>
+
+  <h3 id="transport-trolley-analysis">Transport Trolley Analysis</h3>
+  <p>
+    The transport trolley is a robot that can be controlled through a <a href="https://github.com/anatali/issLab2021/blob/main/it.unibo.qak21.basicrobot/src/basicrobot.qak">BasicRobot actor</a>, given us by the customer. Its API allow to move the robot forward and backward, to turn it left or right and to halt the current move. The step move is characterized by an execution time (for example move forward the robot for X ms). In this system the time of the step will be the same for every step, in order to make the robot move forward of a distance equal to its size. Note that, since the robot can be real or virtual, the time of a step move should be <b>configurable</b> by the system administrator.<br>
+    To avoid making the central system too dependent on a specific implementation of the BasicRobot and to hide the complexity of this BasicRobot API, a <k>transport trolley actor</k> will be introduced in the system. From now on, in the rest of the document, we refer to <b>"Business Logic*"</b> as the remaining part of the Business Logic that does not involve the transport trolley actor. <br>
+    This new actor will be able to interact with both the BasicRobot and other parts of BusinessLogic, in order to trasform a task request in a sequence of moves for the BasicRobot.
+    <br>
+    To do all of this, the transport trolley actor has to use a static object, the <a href="https://htmlpreview.github.io/?https://github.com/anatali/issLab2021/blob/main/it.unibo.planner20/userDocs/LabPlanner.html">plannerUtil</a> provided by the customer, that, given a map and the destination coordinates, can generate a possible path that the BasicRobot can follow.
+    <br><br>
+    <h4>Start & Stop</h4>
+    In addition, the transport trolley actor must be able to stop (and then resume) the behaviour of the robot depending on the will of the manager or those who command it.
+    From the analysis point of view, <b>stopping the robot behaviour means</b> that the BasicRobot shouldn't be able to receive (and so perform) any other moves. It's better to implement the stop logic in this way and not to intervene directly on the BasicRobot through halt command, because this last one can easily interrupt the robot during a step and put the system on a corrupted state.
+    <br>
+    So when the transport trolley receives a stop signal, it stops propagating moves to the BasicRobot. As a result, the BasicRobot will make the last current move and then it will stop waiting to receive the next moves, that will not arrive until the TransportTrolley will receive a start signal. Only at that moment it will resume sending moves that the BasicRobot will perform.
+    <br><br>
+    <b>N.B.</b> The stop/start <b>dispatch</b> can arrive at any moment. When the transport trolley is <b>stopped</b>, it does not accept any other job (requests will remain waiting to be handled; no reply will be given).
+    <br><br>
+    <!-- Quando il tt riceve uno stop, smette di propagare le mosse al basicRobot, che così facendo eseguirà l'ultima mossa e poi si fermerà in attesa di riceverne altre, che non arriveranno fino a che il tt riceverà uno start e quindi riprenderà a inviare le mosse. -->
+  </p>
+
+  <h3>About Parking Area Map</h3>
+  <table class="table_no_border">
+    <tr>
+      <td>
+        <div class="interactions__image">
+          <center>
+            <img src="./img/map_cell_num.png" alt="map_cell_num.png"/>
+          </center>
+        </div>
+      </td>
+      <td>
+        <div class="interactions__image">
+          <center>
+            <img src="./img/map_slotnums.png" alt="map_slotnums.png"/>
+          </center>
+        </div>
+      </td>
+    </tr>
+  </table>
+  <p>
+    Talking to the customer, the Transport Trolley arrival cells have been defined for each symbolic position that the robot must reach. In particular, this mapping has been done:
+  </p>
+    <table style="width: 50%; text-align: center;">
+      <tr>
+        <th colspan="3">Transport Trolley Position</th>
+      </tr>
+      <tr>
+        <th>Position Name</th>
+        <th>Cell</th>
+        <th>Direction</th>
+      </tr>
+      <tr>
+        <th>HOME</th>
+        <td>(0,0)</td>
+        <td>sud</td>
+      </tr>
+      <tr>
+        <th>INDOOR</th>
+        <td>(6,0)</td>
+        <td>nord</td>
+      </tr>
+      <tr>
+        <th>OUTDOOR</th>
+        <td>(6,4)</td>
+        <td>sud</td>
+      </tr>
+      <tr>
+        <th>1</th>
+        <td>(1,1)</td>
+        <td>est</td>
+      </tr>
+      <tr>
+        <th>2</th>
+        <td>(1,2)</td>
+        <td>est</td>
+      </tr>
+      <tr>
+        <th>3</th>
+        <td>(1,3)</td>
+        <td>est</td>
+      </tr>
+      <tr>
+        <th>4</th>
+        <td>(4,1)</td>
+        <td>ovest</td>
+      </tr>
+      <tr>
+        <th>5</th>
+        <td>(4,2)</td>
+        <td>ovest</td>
+      </tr>
+      <tr>
+        <th>6</th>
+        <td>(4,3)</td>
+        <td>ovest</td>
+      </tr>
+    </table>
+
+
+  <h3 id="startup-configuration">Startup Configuration</h3>
+  <p>
+    At each system's boot there is the need to let the <b>plannerUtil</b> aware of the obstacles in the parking area. Moreover, there is also a need to instruct the system about the exact position in the map of some weel-known positions of the transport trolley {HOME, INDOOR, OUTDOOR, PARKING_SLOT-1-2-3-4-5-6}.
+    <br>
+    However, since that the parking area could change in the time and maybe will raise up the need of more parking slots or other INDOOR/OUTDOOR AREAs, it is highly recommended to make this informations easily editable by the system administrator.
+    <br>
+    For this reason we highly recommend to let this informations editable and readable from <k>configuration files</k>.
+    <br>
+    For what is concerning the obstacles in the parking area we recommend to read directly the <a href="https://github.com/anatali/issLab2021/blob/main/it.unibo.issLabStart/userDocs/parkingMap.txt">parkingMap.txt</a> that the customer gave us since it is easily understable and editable by the customer.
+    <br>
+    Instead, for what is concerning the mapping between a name (like INDOOR) and the position reached by the transport trolley in the map, we advise to use a <b>configuration file</b>, in JSON format, since it will be easily understable and editable by both the machine and the system administrator. At each name should be associated the (X,Y) coordinates in the map (in which the transport trolley should arrive) and also the orientation of the transport trolley (nord(<k>upDir</k>), est(<k>rightDir</k>), sud(<k>downDir</k>) or ovest(<k>leftDir</k>)).
+    <br><br>
+    <b>N.B.</b> At each startup of the system is assumed that the transport trolley is located at its HOME position, moreover it is also assumed that it has not any task of the previous run to complete and it is <k>not stopped</k>; for that reasons there is no need of let information like the position in the map or the started/stopped status persistent and we can avoid this cost by using only a volatile representation of these information.
+  </p>
+  <br>
+
+  <h3 id="transport-trolley-tasks">Transport Trolley Tasks</h3>
+  <p>
+    To make the <b>transport trolley as reusable as possible</b>, as analysts, we created a communication protocol which allows to execute the transport trolley tasks, such as car-park or car-pick-up, but also a protocol that can be extended and reused for any other possible (future) task.
+    <br><br>
+    The communication protocol is divided into:
+    <ul>
+      <li><b>initial phase</b>: to initiate the protocol and to establish a connection. <br>
+      The protocol starts by sending a <b>transport_trolley_new_job</b> request to the transport trolley, which will answer with a <b>transport_trolley_job_accepted</b> if it can execute a task at that moment. In the other case the request is queued.</li>
+      <li><b>task phase</b>: the task execution part. <br>
+      In this phase, for each destination that has to be reached in the specific task, it is sent a request <b>transport_trolley_go_to</b> with the name of the destination (e.g. indoor, outdoor, home, parking slots) as payload. The transport trolley processes the request, gets the sequence of moves to reach the destination (using the plannerUtil) and imparts them to the BasicRobot. Once the moves are finished, the transport trolley answers with a <b>transport_trolley_arrived_at</b> reply, with the destination name as payload. Moreover, depending on the task, requests such as <b>transport_trolley_release_car</b> or <b>transport_trolley_take_over_car</b> can also be sent to force the transport trolley to let down or pick up the car. Note that in order to avoid misuse of the protocol, an error message has been defined: if the destination of the <b>transport_trolley_go_to</b> request is unknown or if the <b>transport_trolley_take_over_car</b> / <b>transport_trolley_release_car</b> fail, a <b>transport_trolley_error</b> reply is sent. </li>
+      <li><b>final phase</b>: to end the protocol and the connection. <br>
+      When the task is finished, a <b>transport_trolley_job_done</b> message is sent to the transport trolley to terminate the interaction.</li>
+    </ul>
+  </p>
+  <table class="table_no_border">
+    <tr>
+      <th class="in-depth-content" style="padding-right: 15px; width:50%">
+        <h4>Car Park</h4>
+        <div class="interactions__image">
+          <center>
+            <img src="./img/transport_trolley_car_park.png" alt="transport_trolley_car_park.png" style="width:100%"/>
+          </center>
+        </div>
+      </th>
+      <th></th>
+      <th class="in-depth-content" style="padding-left: 15px; width:50%">
+        <h4>Car Pick Up</h4>
+        <div class="interactions__image">
+          <center>
+            <img src="./img/transport_trolley_car_pick_up.png" alt="transport_trolley_car_pick_up.png" style="width:100%"/>
+          </center>
+        </div>
+      </th>
+    </tr>
+  </table>
+
+  <div class="in-depth-content" style="width:60%">
+    <h4>Sleep</h4>
+    <div style="padding: 20px; text-align: justify;">In the analysis, it has also been considered a possible <k>sleep mode</k> for the transport trolley. At the end of this task, the transport trolley will be stopped at the home position. This sleep mode is the safe modality in which the transport trolley must be put, to avoid a corruption of the system state, if the manager wants to shutdown or reboot the system.  In particular, thanks to the final <b>transport_trolley_stop</b>, the transport trolley will not accept any other incoming new job requests until it will be resumed.<br>
+    It has to be done in this way: </div>
+    <div class="interactions__image">
+      <center>
+        <img src="./img/transport_trolley_sleep.png" alt="transport_trolley_sleep.png"/>
+      </center>
+    </div>
+  </div>
+
+  <h3>Automatic Back To Home</h3>
+  <p>
+    When the transport trolley has finished to serve a request, and there are not other queued requests, it should be automatically back to home. That could be done by waiting for new requests for a while, and if no requests arrive then we can let the transport trolley go back home.
+    <br>
+    However, it is highly preferable to let the transport trolley accepting new request also during the back to home task; by doing so we reduce at minimum the waiting time for requests like car park or car pick up. Just to clarify, we want to emphasize that on the way HOME, if a new job arrives then the transport trolley should not anymore go HOME but it will reach the new destination starting from the position where it is located at the moment when the new job has been accepted.
+  </p>
+
+  <h3>Observable State</h3>
+  <p>
+    From an accurate analysis, the information of the transport trolley that has to be observable must contain:
+  </p>
+    <ul>
+      <li>the transport trolley state (idle/working/stopped), as per requirements;</li>
+      <li>the move_fail binary information, in case of failure during a robot move.</li>
+      <li>(optional) the current position, expressed in coordinates (X,Y), to confirm the movements and the position reached by the robot;</li>
+    </ul>
+  <p>
+    As analysts, we suggest to use <b>JSON</b> as data format, to improve the interaction and the communication. Moreover, thanks to <b>Gson or Jackson libraries</b> there's no abstraction gap.
+    <br><br>
+  </p>
+
+  <h3 id="interactions">Interactions</h3>
+    <!-- interaction image -->
+    <div class="interactions__image">
+      <center>
+        <img src="./img/transport_trolley_interaction.png" alt="transport_trolley_interaction.png"/>
+      </center>
+    </div>
+    <table class="table_interactions_messages">
+      <tr>
+        <th>Message</th>
+        <th>Payload</th>
+        <th>Semantic</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>transport_trolley_new_job</td>
+        <td>X</td>
+        <td>request</td>
+        <td>Ask to start a new job</td>
+      </tr>
+      <tr>
+        <td>transport_trolley_job_accepted</td>
+        <td>X</td>
+        <td>reply</td>
+        <td>The transport trolley accepts the job</td>
+      </tr>
+      <tr>
+        <td>transport_trolley_go_to</td>
+        <td>indoor | outdoor | slotnum | home</td>
+        <td>request</td>
+        <td>Ask the transport trolley to go to a specific place</td>
+      </tr>
+      <tr>
+        <td>transport_trolley_arrived_at</td>
+        <td>indoor | outdoor | slotnum | home</td>
+        <td>reply</td>
+        <td>Success</td>
+      </tr>
+      <tr>
+        <td>transport_trolley_take_over_car</td>
+        <td>X</td>
+        <td>request</td>
+        <td>Ask the transport trolley to take over a car</td>
+      </tr>
+      <tr>
+        <td>transport_trolley_car_taken_over</td>
+        <td>X</td>
+        <td>reply</td>
+        <td>Success</td>
+      </tr>
+      <tr>
+        <td>transport_trolley_release_car</td>
+        <td>X</td>
+        <td>request</td>
+        <td>Ask the transport trolley to release a car</td>
+      </tr>
+      <tr>
+        <td>transport_trolley_car_released</td>
+        <td>X</td>
+        <td>reply</td>
+        <td>Success</td>
+      </tr>
+      <tr>
+        <td>transport_trolley_error</td>
+        <td>REASON</td>
+        <td>reply</td>
+        <td>Failure, the requested operation cannot be performed</td>
+      </tr>
+      <tr>
+        <td>transport_trolley_job_done</td>
+        <td>X</td>
+        <td>dispatch</td>
+        <td>Inform the transport trolley that the job is finished</td>
+      </tr>
+      <tr>
+        <td>transport_trolley_start</td>
+        <td>X</td>
+        <td>dispatch</td>
+        <td>Start the transport trolley</td>
+      </tr>
+      <tr>
+        <td>transport_trolley_stop</td>
+        <td>X</td>
+        <td>dispatch</td>
+        <td>Stop the transport trolley</td>
+      </tr>
+      <tr>
+          <td>
+            cmd
+          </td>
+          <td>
+            MOVE
+          </td>
+          <td>
+            dispatch
+          </td>
+          <td>
+            Moves to perform until a prefixed time limit is reached or an end is received.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            step
+          </td>
+          <td>
+            TIME
+          </td>
+          <td>
+            request
+          </td>
+          <td>
+            Move forward for the given TIME.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            stepdone
+          </td>
+          <td>
+            V
+          </td>
+          <td>
+            reply
+          </td>
+          <td>
+            Step move completed with success.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            stepfail
+          </td>
+          <td>
+            DURATION,CAUSE
+          </td>
+          <td>
+            reply
+          </td>
+          <td>
+            Step move cannot be completed due to some error (i.e. hitted an obstacle).
+          </td>
+        </tr>
+
+    </table>
+
+
+  <h3>Possible problems and solutions</h3>
+  During this analysis, some problematic aspects have been noticed:
+  <h4>Move_fail Problem</h4>
+  In case of move_fail error, the robot will be in a corrupted state, because the planned route was not well calculated or correctly executed. In any case the robot is in a position not well known to the planner and the transport trolley itself. <br>
+  So as analysts, we suggest solving this problem like this: <br>
+  <ol>
+    <li>As soon as a move_fail is received, the transport trolley must immediately put itself in the stopped state;</li>
+    <li>The manager will have to place the robot at HOME position, according with the configured orientation
+      <ul>
+        <li>[Virtual Robot] by refreshing the WEnv</li>
+        <li>[Real Robot] by manually and physically moving the robot</li>
+      </ul>
+    </li>
+    <li>In the meantime, the transport trolley has to plan a new path to the destination he had to reach previously, but with the home as starting position</li>
+    <li>The manager has to resume (by sending a start command) the transport trolley, which will execute the new right moves.</li>
+  </ol>
+  <br>
+  <b>N.B.</b> In all this, the system is running! Only the robot is stopped to be repositioned at home. Once restarted, it will continue the job that was serving.
+  <h4>System Crash</h4>
+  This is an extreme situation, but it can happen, so it has been analysed. <br>
+  <br>
+  If a crash occurs, the transport trolley will be manually placed at the home position and it will assume that if it was serving a job, it was done by the manager.
+  <br><br>
+
+  <h3 id="logical-architecture">Logical Architecture</h3>
+  <div class="interactions__image">
+    <center>
+      <img src="./img/logical_architecture.png" alt="logical_architecture.png"/>
+    </center>
+  </div>
+  <p align="center">A QAK model of the interactions involving the transport trolley can be found <a href="../it.unibo.sprint1.model.transporttrolley/src/transporttrolley.qak">here</a></p>
+
+
+
+</div><!-- End Problem Analysis section [end class="remark"] -->
+
+<h2 id="test-plan">Test Plans</h2>
+<div class="remark">
+  <p>
+    An implementation of the test cases described below can be found <a href="../it.unibo.sprint1.test/test/it/unibo/sprint1/test/TestPlan.kt">here</a>
+  </p>
+  <h4>TestCarPark</h4>
+  <ul>
+    <li>
+      <b>Description</b>: The transport trolley performs all the steps to park a car.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          The transport trolley is <b>NOT STOPPED</b>.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested interactions behaviour</b>:
+      <ol>
+        <li>
+          Open a new job session.
+        </li>
+        <li>
+          Ask to the transport trolley to go at indoor.
+        </li>
+        <li>
+          <ks>Assert</ks> that the transport trolley is arrived at indoor.
+        </li>
+        <li>
+          Ask to the transport trolley to take over the car.
+        </li>
+        <li>
+          <ks>Assert</ks> that the transport trolley taken over the car.
+        </li>
+        <li>
+          Ask to the transport trolley to go at slotnum.
+        </li>
+        <li>
+          <ks>Assert</ks> that the transport trolley is arrived at slotnum.
+        </li>
+        <li>
+          Ask to the transport trolley to release the car.
+        </li>
+        <li>
+          <ks>Assert</ks> that the transport trolley released the car.
+        </li>
+        <li>
+          Close the job session.
+        </li>
+      </ol>
+    </li>
+  </ul>
+  <h4>TestCarPickUp</h4>
+  <ul>
+    <li>
+      <b>Description</b>: The transport trolley performs all the steps to pick up a car.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          The transport trolley is <b>NOT STOPPED</b>.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested interactions behaviour</b>:
+      <ol>
+        <li>
+          Open a new job session.
+        </li>
+        <li>
+          Ask to the transport trolley to go at slotnum.
+        </li>
+        <li>
+          <ks>Assert</ks> that the transport trolley is arrived at slotnum.
+        </li>
+        <li>
+          Ask to the transport trolley to take over the car.
+        </li>
+        <li>
+          <ks>Assert</ks> that the transport trolley taken over the car.
+        </li>
+        <li>
+          Ask to the transport trolley to go at outdoor.
+        </li>
+        <li>
+          <ks>Assert</ks> that the transport trolley is arrived at outdoor.
+        </li>
+        <li>
+          Ask to the transport trolley to release the car.
+        </li>
+        <li>
+          <ks>Assert</ks> that the transport trolley released the car.
+        </li>
+        <li>
+          Close the job session.
+        </li>
+      </ol>
+    </li>
+  </ul>
+  <h4>TestAutomaticBackToHomeAfterCarPark</h4>
+  <ul>
+    <li>
+      <b>Description</b>: The transport trolley comes back to home, automatically, after a car park job.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          The transport trolley is <b>NOT STOPPED</b>.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested interactions behaviour</b>:
+      <ol>
+        <li>
+          Init a car park job.
+        </li>
+        <li>
+          <ks>Assert</ks> that the transport trolley status is <b>WORKING</b>.
+        </li>
+        <li>
+          Complete tha car park job.
+        </li>
+        <li>
+          <ks>Assert</ks> that after a certain amount of time the transport trolley status became <b>IDLE</b>.
+        </li>
+      </ol>
+    </li>
+  </ul>
+  <h4>TestAutomaticBackToHomeAfterCarPickUp</h4>
+  <ul>
+    <li>
+      <b>Description</b>: The transport trolley comes back to home, automatically, after a car pick up job.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          The transport trolley is <b>NOT STOPPED</b>.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested interactions behaviour</b>:
+      <ol>
+        <li>
+          Init a car pick up job.
+        </li>
+        <li>
+          <ks>Assert</ks> that the transport trolley status is <b>WORKING</b>.
+        </li>
+        <li>
+          Complete tha car pick up job.
+        </li>
+        <li>
+          <ks>Assert</ks> that after a certain amount of time the transport trolley status became <b>IDLE</b>.
+        </li>
+      </ol>
+    </li>
+  </ul>
+  <h4>TestSleepMode</h4>
+  <ul>
+    <li>
+      <b>Description</b>: The transport trolley is able to go in sleep mode.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          The transport trolley is not at HOME.
+        </li>
+        <li>
+          The transport trolley is <b>NOT STOPPED</b>.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested interactions behaviour</b>:
+      <ol>
+        <li>
+          Open a new job session.
+        </li>
+        <li>
+          Ask to the transport trolley to go at home.
+        </li>
+        <li>
+          <ks>Assert</ks> that the transport trolley is arrived at home.
+        </li>
+        <li>
+          Stop the transport trolley.
+        </li>
+        <li>
+          <ks>Assert</ks> that the transport trolley is stopped.
+        </li>
+        <li>
+          Close the job session.
+        </li>
+      </ol>
+    </li>
+    <h4>TestStartAndStop</h4>
+    <ul>
+      <li>
+        <b>Description</b>: The transport trolley can be stopped/resumed.
+      </li>
+      <li>
+        <b>Initial conditions</b>:
+        <ol>
+          <li>
+            The transport trolley is <b>NOT STOPPED</b>.
+          </li>
+        </ol>
+      </li>
+      <li>
+        <b>Tested interactions behaviour</b>:
+        <ol>
+          <li>
+            Send a stop command to the transport trolley.
+          </li>
+          <li>
+            <ks>Assert</ks> that the transport trolley status is STOPPED.
+          </li>
+          <li>
+            Send a start command to the transport trolley.
+          </li>
+          <li>
+            <ks>Assert</ks> that the transport trolley is NOT STOPPED.
+          </li>
+        </ol>
+      </li>
+  </ul>
+</div>
+
+<h2 id="project">Project</h2>
+<div class="remark">
+  <h3 id="project-planner">About planner usage</h3>
+  <p>
+    The customer gave us a software component, <a href="https://htmlpreview.github.io/?https://github.com/anatali/issLab2021/blob/main/it.unibo.planner20/userDocs/LabPlanner.html">plannerUtil.kt</a>, that we can use in order to get a path from the current transport trolley position to a given destination.
+    <br>
+    In the initialization phase the plannerUtil needs to read the map in a <b>binary</b> format. Keeping in mind that in the future the parking map could change we decided to design a software component <a href="../it.unibo.sprint1.project.transporttrolley/resources/itunibo/automatedcarparking/configuration/ParkingAreaMapReader.kt">ParkingAreaMapReader.kt</a> able to convert the map from its <k>textual</k> representation to its <k>binary</k> representation and then feed the latter to the plannerUtil.
+    <br>
+    Once initialized the plannerUtil assumes that the transport trolley is at HOME position with <k>downDir</k> direction. If we need to change its position we need to construct a plan with the setGoal(X,Y) method and then use the updateMap(move) method for each (completed) move of the given plan. Note that the plannerUtil will update its internal position at each completed move, so we have an updated reference to the current position of the transport trolley and its direction in the map.
+    <br>
+    About the direction of the transport trolley we need to discuss a little further, because the plannerUtil does not have any method able to set also the direction in the goal destination, but we can only set the goal coordinate (X,Y) of the position in the map. Since the analysts discussed about adding a fixed orientation of the transport trolley when it reaches, as destination, some well known position in the map, we need to develop a small logic layer over the plannerUtil in order to add some "turn" move when the transport trolley reaches the goal destination but its orientation is not the correct one. These moves are not computed by the plannerUtil but once they are completed we can inform the plannerUtil about the turn move done with a call to <b>updateMap( )</b> in order to let it updates its internal orientation.
+  </p>
+  <p>
+    Keeping in mind what we discussed above we designed several components in order to follow the <k>SOLID</k> software engineering principles.
+    <br>
+    The main GoF desing pattern used here is the <k>Factory Pattern</k>.
+  </p>
+  <div>
+    <center>
+      <img src="./img/planner_class_hierarchy.png" alt="planner_class_hierarchy.png"/>
+    </center>
+  </div>
+  <h4>IPlanner</h4>
+  <p>
+    <k><a href="../it.unibo.sprint1.project.transporttrolley/resources/itunibo/automatedcarparking/transporttrolley/planner/IPlanner.kt">IPlanner</a></k> is an interface that expose several methods with the main purposes of build a new plan, set the transport trolley in a given position in the map, retrieve the current position and update it when the current move is completed with success.
+  </p>
+  <div>
+    <center>
+      <img src="./img/iplanner.png" alt="iplanner.png"/>
+    </center>
+  </div>
+  <h4>PlannerFactory</h4>
+  <div>
+    <p>
+      <k><a href="../it.unibo.sprint1.project.transporttrolley/resources/itunibo/automatedcarparking/transporttrolley/planner/PlannerFactory.kt">PlannerFactory</a></k> is a factory class for the IPlanner interface. The current state of the art is to init and give a reference to the <k>SingletonPlanner</k> that is a singleton Kotlin object. However it has been designed keeping in mind that in the future maybe the system will be composed by multiple transport trolley and each of them may asks for an independent planner, so in that case the <b>create( )</b> method could be changed without doing any modification inside the code of the users of <k>IPlanner</k>.
+    </p>
+    <div>
+      <center>
+        <img src="./img/plannerfactory.png" alt="plannerfactory.png"/>
+      </center>
+    </div>
+  </div>
+  <h4>SingletonPlanner</h4>
+  <p>
+    <k><a href="../it.unibo.sprint1.project.transporttrolley/resources/itunibo/automatedcarparking/transporttrolley/planner/SingletonPlanner.kt">SingletonPlanner</a></k> is a singleton instance of the <k>IPlanner</k> interface. It exposes the same public methods of the <k>IPlanner</k> interface, plus a <b>init( )</b> method that must be called before the first use.
+    <br>
+    It uses the plannerUtil given by the customer in order to build the plan and update the transport trolley position. The main reason we designed this class as a <k>singleton object</k> is that it uses the customer's plannerUtil that is also a singleton object.
+    <br><br>
+    Without entering in implementation details, we could have designed a class, instantiable several times, but this would have led to design and implementation efforts and minor efficiency at the code level without benefits to the solution of our problem, which still consider a single transport trolley. If in the future the client wants to add other transport trolleys in the system, we will have to choose whether to create a support above the plannerUtil that allows to share this resource between multiple transport trolleys, or it will be necessary to make a more drastic decision and not use at all the plannerUtil provided by the client, as it was mainly designed to be used by a single transport trolley.
+  </p>
+  <div>
+    <center>
+      <img src="./img/singletonplanner.png" alt="singletonplanner.png"/>
+    </center>
+  </div>
+  <h4>Other utility classes</h4>
+  <ul>
+    <li>
+      <b><a href="../it.unibo.sprint1.project.transporttrolley/resources/itunibo/automatedcarparking/transporttrolley/Position.kt">Position</a></b>: a Kotlin <k>data class</k> that holds two integer coordinates (X,Y) and a direction in string format (one of the following: upDir, rightDir, downDir, leftDir).
+    </li>
+    <li>
+      <b><a href="../it.unibo.sprint1.project.transporttrolley/resources/itunibo/automatedcarparking/transporttrolley/NamedPosition.kt">NamedPosition</a></b>: a Kotlin <k>data class</k> that associate a name with a Position.
+    </li>
+    <li>
+      <b><a href="../it.unibo.sprint1.project.transporttrolley/resources/itunibo/automatedcarparking/transporttrolley/NamedPositionCollection.kt">NamedPositionCollection</a></b>: a Kotlin <k>data class</k> that holds a mutable collection of NamedPosition.
+    </li>
+  </ul>
+  <h3>About the interactions with the basicrobot</h3>
+  <p>
+    The analysts said that we need to use a subset of the API exposed by the basicrobot. In particular we need to use the request-response [step(TIME) - stepdone(V)/stepfail(DURATION,CAUSE)] for the forward moves and the dispatch [cmd(MOVE)] for the other moves, but we will use it in particular for the turn left/right moves.
+    <br>
+    Since we need to expect a response when we send a forward move and we do not have any response when we send a turn left/right moves, we decided to add a dispatch <b>autoMsg</b> of type <b>move_done</b> or <b>move_fail</b>. In particular <b>move_done</b> is sent always when the move is turn left/right (after a small delay) or when a <b>stepdone</b> is received, and <b>move_fail</b> is sent only when a <b>stepfail</b> is received. Using this autoMsg we notevoly simplify the handling of the interactions with the basicrobot and moreover we are also protecting the logic of our implementation from changes to the API of the basicrobot.
+    <br>
+    Moreover, the class <a href="../it.unibo.sprint1.project.transporttrolley/resources/itunibo/automatedcarparking/transporttrolley/basicrobot/BasicRobotUtility.kt">BasicRobotUtility</a> contains a method that accept a move (in String format: w, l, r) computed by the planner and transform it into a message to send to the basicrobot (with the correct semantic) and send it. In case of a turn move it also wait for a small delay and then automatically send an autoMsg move_done.
+
+  </p>
+  <h3>About observable JSON status</h3>
+  <p>
+    The status of the transport trolley should be observable and easily processable by other entities. For that reason we decided to use a largely used format for connected machines interoperability, such as JSON. <br>
+    In order to let the status observable by other QActors, the transport trolley QActor need to instantiate a QakResource instance using the qakobserver framework and update its status using the <b>notify( )</b> method. <br>
+    In order to be easily converted from/to JSON using the Gson library, is better to define a Kotlin data class, <a href="../it.unibo.sprint1.project.transporttrolley/resources/itunibo/automatedcarparking/transporttrolley/TransportTrolleyStatus.kt">TransportTrolleyStatus</a>, composed as follow.
+  </p>
+  <div>
+    <center>
+      <img src="./img/transporttrolleystatus.png" alt="transporttrolleystatus.png"/>
+    </center>
+  </div>
+  <p>
+    Note that the status {IDLE, WORKING, STOPPED} is not an explicit variable of the class, but it can be easily computed by combining the information given by the variables <b>stopped</b> and <b>idle</b>. Moreover, note that this is done by the <b>getStatusIdleWorkingStopped( )</b> method.
+  </p>
+  <h3>About startup configuration</h3>
+  <p>
+    At the startup the transport trolley is located at HOME position in "downDir" direction. However, since the customer in the future might want to change the map, we need to develop facilities in order to read the textual map, convert it into binary format and let the plannerUtil process it. Moreover, we need to associate a "name" to some position in the map in order to let the transport trolley easily controllable by other entities, so they do not need to know the exact coordinates of positions in the map, but they only need to know the associated name. In order to let also this name association configurable, we read a JSON file in which a NamedPositionCollection is encapsulated.
+    <br>
+    This is done during the initialization of the SingletonPlanner by using the <a href="../it.unibo.sprint1.project.transporttrolley/resources/itunibo/automatedcarparking/configuration/MapNamedPositionsReader.kt">MapNamedPositionsReader</a>
+    <br><br>
+    An utility, named GeneratorJsonTransportTrolleyPositions, able to generate the JSON file for the most important cells {HOME, INDOOR, OUTDOOR, 1, 2, 3, 4, 5, 6} in the map of our domain can be found <a href="../it.unibo.sprint1.project.transporttrolley/resources/itunibo/automatedcarparking/generator/GeneratorJsonTransportTrolleyConfiguration.kt">here</a>.
+  </p>
+  <h3>Watchdog</h3>
+  <p>
+    When a job request has been completed, the transport trolley should back home if there are not other job requests. In order to simplify the handling of such time sensitive situations, we decided to implement a watchdog utility project that can be found <a href="../itunibo.qakutils/src/itunibo/qakutils/watchdog">here</a>; the main idea behind this watchdog project is to let the caller QActor able to start a watchdog and stop it or receive a <b>configurable autoMsg</b> when the timer expires.
+    <br>
+    Moreover we decided to let <b>configurable</b> also the duration of this watchdog timer, so it can be modified from a JSON file.
+  </p>
+  <h3>About persistence</h3>
+  <p>
+    There is no need to persist informations about the transport trolley status and position.
+  </p>
+  <h3>About configuration files</h3>
+  <p>
+    Here are listed the configuration files that will be read at the system startup. Note that all of these files should be located in the working directory of the running application.
+
+    <table>
+      <tr>
+        <th>
+          File Name
+        </th>
+        <th>
+          Description
+        </th>
+      </tr>
+      <tr>
+        <td>
+          <a href="../it.unibo.sprint1.project.transporttrolley/parkingMap.txt">parkingMap.txt</a>
+        </td>
+        <td>
+          Contains the textual representation of the parking map given by the customer.
+          <br><br>
+          Processed by <a href="../it.unibo.sprint1.project.transporttrolley/resources/itunibo/automatedcarparking/configuration/ParkingAreaMapReader.kt">ParkingAreaMapReader</a>.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <a href="../it.unibo.sprint1.project.transporttrolley/config_transport_trolley_map_named_positions.json">config_transport_trolley_map_named_positions.json</a>
+        </td>
+        <td>
+          Contains the mapping between a name and some known transport trolley position and its orientation in the map. At the time of this writing in our domain those positions are: HOME, INDOOR, OUTDOOR, 1, 2, 3, 4, 5, 6.
+          <br><br>
+          The Kotlin data class related to this JSON file can be found <a href="../it.unibo.sprint1.project.transporttrolley/resources/itunibo/automatedcarparking/transporttrolley/NamedPositionCollection.kt">here</a>.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <a href="../it.unibo.sprint1.project.transporttrolley/config_transport_trolley.json">config_transport_trolley.json</a>
+        </td>
+        <td>
+          Created considering the possibility to let the transport trolley behaviour as configurable as possible. At the moment of this writing, it contains the possibility to configure: the step move duration (expressed in milliseconds), the time that the transport trolley should wait before back home when no other tasks are queued, the possibility to update the status (about the robot position in the map) after each successful step move. <br>
+          If in the future arises the need to let other behaviours configurable, a feature-flag should be added inside this file json.
+          <br><br>
+          The Kotlin data class related to this JSON file can be found <a href="../it.unibo.sprint1.project.transporttrolley/resources/itunibo/automatedcarparking/transporttrolley/TransportTrolleyConfiguration.kt">here</a>.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <a href="../it.unibo.sprint1.project.transporttrolley/systembusinesslogic.pl">systembusinesslogic.pl</a>
+        </td>
+        <td>
+          Can be used to configure the IP address of the basic robot QActor.
+        </td>
+      </tr>
+    </table>
+  </p>
+  <h3>About GUI</h3>
+  <p>
+    In order to show to the customer what we developed during this sprint, we decided to develop a basic Web GUI that can be used to simulate the transport trolley tasks and monitor its behaviour inside the WEnv.
+    <br>
+    In particular the GUI shows the status {IDLE,WORKING,STOPPED} of the transport trolley and permits to run tasks like car park / car pick up and start / stop. Moreover, when a move fail happens, the "Refresh WEnv" button permits to relocate the transport trolley at HOME position in a stopped state. By using the "start" button the transport trolley will resume its behaviour and complete the task that it was handling before the failed move.
+    <br><br>
+    However, since this GUI will not be part of the final release of the product we do not enter in technical details about its implementation. Its usage is recommended just for what is concerning the testing of the software produced in this sprint.
+  </p>
+  <div class="interactions__image">
+    <center>
+      <img src="./img/gui.png" alt="gui.png"/>
+    </center>
+  </div>
+  <h3>QAK</h3>
+  <div class="interaction_qak_example" style="width:90%;">
+    <p align="center">
+      The following QAK contains the implementation of the transport trolley QActor.
+    </p>
+    <a href="../it.unibo.sprint1.project.transporttrolley/src/transporttrolley.qak">
+    <div class="interaction_qak_example_link">
+      transporttrolley.qak
+    </div>
+    </a>
+  </div>
+
+
+</div><!-- End Project section [end class="remark"] -->
+
+<h2 id="testing">Testing</h2>
+<div class="remark">
+  <p>
+    The tests have been described in the <a href="#test-plan">above sections</a> and have been implemented <a href="../it.unibo.sprint1.test/test/it/unibo/sprint1/test/TestPlan.kt">here</a>.
+  </p>
+  <h4>How to run</h4>
+  <p>
+    <ol>
+      <li>
+        Open a terminal inside the "Sprint 1 - TransportTrolley" directory
+      </li>
+      <li>
+        Build all the libraries with:
+        <pre>[WINDOWS] .\rebuild_for_docker.bat</pre>
+        or
+        <pre>[LINUX]   ./rebuild_for_docker.bash</pre>
+      </li>
+      <li>
+        Build the docker images with:
+        <pre>docker-compose -f sprint1.yaml build</pre>
+      </li>
+      <li>
+        Launch the docker images with:
+        <pre>docker-compose -f basicrobotVirtual.yaml -f sprint1.yaml up</pre>
+      </li>
+      <li>
+        Wait until all the docker images are running...
+      </li>
+      <li>
+        Open the <a href="http://localhost:8081" target="_blank">Web GUI</a> and monitor it
+        while the tests are running in order to catch and handle "move fail" errors.
+      </li>
+      <li>
+        Open a new terminal inside the "it.unibo.sprint1.test" directory
+      </li>
+      <li>
+        Launch the tests with:
+        <pre>gradle test</pre>
+      </li>
+    </ol>
+  </p>
+</div><!-- End Testing section [end class="remark"] -->
+
+<h2 id="deployment">Deployment</h2>
+<div class="remark">
+<p>
+  We used Docker to deploy the software developed during this sprint.
+</p>
+<h4>How to run</h4>
+<p>
+  <ol>
+    <li>
+      Open a terminal inside the "Sprint 1 - TransportTrolley" directory
+    </li>
+    <li>
+      Build all the libraries with:
+      <pre>[WINDOWS] .\rebuild_for_docker.bat</pre>
+      or
+      <pre>[LINUX]   ./rebuild_for_docker.bash</pre>
+    </li>
+    <li>
+      Build the docker images with:
+      <pre>docker-compose -f sprint1.yaml build</pre>
+    </li>
+    <li>
+      Launch the docker images with:
+      <pre>docker-compose -f basicrobotVirtual.yaml -f sprint1.yaml up</pre>
+    </li>
+    <li>
+      Wait until all the docker images are running...
+    </li>
+    <li>
+      Open the <a href="http://localhost:8081" target="_blank">Web GUI</a> and use it.
+    </li>
+  </ol>
+</p>
+<h4>Logging</h4>
+<p>
+  The logs written by the transport trolley can be obtained by running the following command.
+  <pre>docker logs --timestamps -f sprint1-transporttrolley-transporttrolley-1</pre>
+</p>
+
+</div><!-- End Deployment section [end class="remark"] -->
+
+<div class="contact-us" id="contact-us">
+  <table>
+    <tr>
+      <td colspan="2"><h3>By:</h3></td>
+    </tr>
+    <tr>
+      <td>
+        <div class="student__image">
+          <center>
+            <img src="./img/students/lorenzo_persampieri.jpg" alt="lorenzo_persampieri.jpg"/>
+          </center>
+        </div>
+      </td>
+      <td>
+        <div class="student__image">
+          <center>
+            <img src="./img/students/gianluca_soavi.jpg" alt="gianluca_soavi.jpg"/>
+          </center>
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <th>Lorenzo Persampieri</th>
+      <th>Gianluca Soavi</th>
+    </tr>
+    <tr style="padding-bottom: 10px;">
+      <td>lorenzo.persampieri@studio.unibo.it</td>
+      <td>gianluca.soavi@studio.unibo.it</td>
+    </tr>
+    <tr>
+      <th colspan="2" style="border-top: 1px solid black; padding-top: 10px;">Github Repository</th>
+    </tr>
+    <tr>
+      <td colspan="2"><a href="https://github.com/lorepersa/Automated-Car-Parking">https://github.com/lorepersa/Automated-Car-Parking</a></td>
+    </tr>
+  </table>
+</div><!-- End Contact Us class remark -->
+
+
+</body>
+</html>

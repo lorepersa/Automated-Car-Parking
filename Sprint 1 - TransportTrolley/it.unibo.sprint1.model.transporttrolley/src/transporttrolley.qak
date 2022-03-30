@@ -1,0 +1,196 @@
+
+System systembusinesslogic
+
+// open session
+Request   transport_trolley_new_job               : transport_trolley_new_job(X)
+Reply     transport_trolley_job_accepted          : transport_trolley_job_accepted(X)
+
+// move transport trolley to destination
+Request   transport_trolley_go_to                 : transport_trolley_go_to(DESTINATION)
+Reply     transport_trolley_arrived_at            : transport_trolley_arrived_at(DESTINATION)
+
+// car handling commands
+Request   transport_trolley_take_over_car         : transport_trolley_take_over_car(X)
+Reply     transport_trolley_car_taken_over        : transport_trolley_car_taken_over(X)
+Request   transport_trolley_release_car           : transport_trolley_release_car(X)
+Reply     transport_trolley_car_released          : transport_trolley_car_released(X)
+
+// unknown destination, cannot take over car, cannot release car
+Reply     transport_trolley_error                 : transport_trolley_error(REASON)
+
+// close session
+Dispatch  transport_trolley_job_done              : transport_trolley_job_done(X)
+
+// resumable behavior
+Dispatch  transport_trolley_start             : transport_trolley_start(X)
+Dispatch  transport_trolley_stop              : transport_trolley_stop(X)
+
+// basicrobot
+Dispatch cmd        : cmd(MOVE)     
+Dispatch end        : end(ARG)  
+Request  step       : step( TIME )	
+Reply    stepdone   : stepdone(V)  
+Reply    stepfail   : stepfail(DURATION, CAUSE)
+
+Context ctxbusinesslogic     ip [host="localhost" port=8065]
+Context ctxbasicrobot        ip [host="robot" port=8020]  
+
+ExternalQActor basicrobot context ctxbasicrobot 
+
+QActor transporttrolley context ctxbusinesslogic {
+	
+	[# 
+		var DESTINATION = "HOME"
+		var POSITION_NAME = "HOME"
+		var stopped = false
+		var moveFailed = false
+		var atHome = true
+		var car_taken_over = false
+		var handling_job = false
+	#]
+	  
+	State init initial {
+		println("[transporttrolley] | [State] init | Entry point.")
+		
+		
+		// transport trolley at HOME position, orientation downDir, not stopped
+		
+		// TODO update status here
+		
+		println("[transporttrolley] | [State] init | Exit point.") 
+	} Goto wait
+	
+	State wait {
+		println("[transporttrolley] | [State] wait | Entry point.") 	
+		println("[transporttrolley] | [State] wait | Exit point.") 
+	} Transition t0
+	whenMsg     transport_trolley_start                                              -> handleResumableMessages
+	whenMsg     transport_trolley_stop                                               -> handleResumableMessages
+	whenRequest transport_trolley_new_job       and [# !stopped && !handling_job #]  -> handleNewJob // maybe sent by multiple QActors
+	whenRequest transport_trolley_go_to         and [# !stopped #]                   -> handleNewDestination
+	whenRequest transport_trolley_take_over_car and [# !stopped #]                   -> handleCarTask
+	whenRequest transport_trolley_release_car   and [# !stopped #]                   -> handleCarTask
+	whenMsg     transport_trolley_job_done                                           -> handleJobDone
+	
+	State handleResumableMessages {
+		println("[transporttrolley] | [State] handleResumableMessages | Entry point.") 
+		onMsg(transport_trolley_start : transport_trolley_start(X)) {
+			println("[transporttrolley] | [State] handleResumableMessages | Received START!.") 
+			[# stopped = false #] 
+			
+			if [# moveFailed #] {
+				println("[transporttrolley] | [State] handleResumableMessages | Last move is failed, reposition transport trolley at HOME!.") 
+				
+				// set transport trolley at HOME position
+				
+				[# atHome = true #]
+				
+				if [# handling_job && DESTINATION.equals("HOME", true) #] {
+					replyTo transport_trolley_go_to with transport_trolley_arrived_at : transport_trolley_arrived_at(HOME)
+				}
+			}
+			
+			// if there are moves in the planner, do them...
+		}
+		onMsg(transport_trolley_stop : transport_trolley_stop(X)) {
+			println("[transporttrolley] | [State] handleResumableMessages | Received STOP!.") 
+			[# stopped = true #]
+		}
+		
+		// TODO update status here
+		
+		println("[transporttrolley] | [State] handleResumableMessages | Exit point.") 
+	} Goto wait
+	
+	State handleNewJob {
+		println("[transporttrolley] | [State] handleNewJob | Entry point.") 
+		[# handling_job = true #]
+		replyTo transport_trolley_new_job with transport_trolley_job_accepted : transport_trolley_job_accepted(X)
+		println("[transporttrolley] | [State] handleNewJob | Exit point.") 
+	} Goto wait
+	
+	State handleNewDestination {
+		println("[transporttrolley] | [State] handleNewDestination | Entry point.") 
+		onMsg (transport_trolley_go_to : transport_trolley_go_to(DESTINATION)) {
+			[# DESTINATION = payloadArg(0) #]
+			println("[transporttrolley] | [State] handleNewDestination | Received destination: $DESTINATION.")
+			
+			if [# DESTINATION.equals(POSITION_NAME) #] {
+				println("[transporttrolley] | [State] handleNewDestination | I'm already at $DESTINATION...") 
+				replyTo transport_trolley_go_to with transport_trolley_arrived_at : transport_trolley_arrived_at($DESTINATION)
+			} else {
+				// TODO move the basic robot until it arrives at destination...
+				delay 5000
+				
+				// when arrive at destination...
+				println("[transporttrolley] | [State] handleNewDestination | Arrived at $DESTINATION!.") 
+				replyTo transport_trolley_go_to with transport_trolley_arrived_at : transport_trolley_arrived_at($DESTINATION)
+				
+				[# POSITION_NAME = DESTINATION #]
+				
+				if [# POSITION_NAME.equals("HOME") #] {
+					[# atHome = true #]
+				} else {
+					[# atHome = false #]
+				}
+			}
+		}
+
+		println("[transporttrolley] | [State] handleNewDestination | Exit point.") 
+	} Goto wait
+
+	State handleJobDone {
+		println("[transporttrolley] | [State] handleJobDone | Entry point.") 
+		[# handling_job = false #]
+		println("[transporttrolley] | [State] handleJobDone | Exit point.") 
+	} Transition t0
+	whenTime 3000 -> handleGoHome
+	whenRequest transport_trolley_new_job -> handleNewJob
+	
+	State handleGoHome {
+		println("[transporttrolley] | [State] handleGoHome | Entry point.") 
+		
+		// TODO send moves to basic robot until it reaches HOME...
+		
+		// TODO if a new job arrives we should accept and handle it, so this go home task should be terminated...
+		delay 3000
+		
+		[# POSITION_NAME = "HOME" #]
+		println("[transporttrolley] | [State] handleGoHome | Arrived at HOME!.") 
+		
+		// TODO update status here...
+		
+		println("[transporttrolley] | [State] handleGoHome | Exit point.") 
+	} Goto wait
+	
+	State handleCarTask {
+		println("[transporttrolley] | [State] handleCarTask | Entry point.")
+		onMsg(transport_trolley_take_over_car : transport_trolley_take_over_car(X)) {
+			if [# !car_taken_over #] {
+				println("[transporttrolley] | [State] handleCarTask | Taking over car...")
+				delay 1000
+				[# car_taken_over = true #]
+				println("[transporttrolley] | [State] handleCarTask | Car taken over!")
+				replyTo transport_trolley_take_over_car with transport_trolley_car_taken_over : transport_trolley_car_taken_over(X)
+			} else {
+				[# val REASON = "CANNOT TAKE OVER MORE THAN ONE CAR"#]
+				replyTo transport_trolley_take_over_car with transport_trolley_error : transport_trolley_error($REASON)
+			}
+
+		}
+		onMsg(transport_trolley_release_car : transport_trolley_release_car(X)) {
+			if [# car_taken_over #] {
+				println("[transporttrolley] | [State] handleCarTask | Releasing car...")
+				delay 1000
+				[# car_taken_over = false #]
+				println("[transporttrolley] | [State] handleCarTask | Car released!")
+				replyTo transport_trolley_release_car with transport_trolley_car_released : transport_trolley_car_released(X)
+			} else {
+				[# val REASON = "NO CAR TAKED OVER" #]
+				replyTo transport_trolley_release_car with transport_trolley_error : transport_trolley_error($REASON)		
+			}
+		}
+		println("[transporttrolley] | [State] handleCarTask | Exit point.") 
+	} Goto wait
+	
+}

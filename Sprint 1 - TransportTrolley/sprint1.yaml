@@ -1,0 +1,16 @@
+version: '3'
+services:
+  transporttrolley:
+    build: ./it.unibo.sprint1.project.transporttrolley
+    image: sprint1/transporttrolley
+    ports:
+      - 8065:8065/tcp
+      - 8065:8065/udp
+  webgui:
+    build: ./it.unibo.sprint1.gui
+    image: sprint1/webgui
+    ports:
+      - 8081:8081/tcp
+      - 8081:8081/udp
+    depends_on:
+      - transporttrolley

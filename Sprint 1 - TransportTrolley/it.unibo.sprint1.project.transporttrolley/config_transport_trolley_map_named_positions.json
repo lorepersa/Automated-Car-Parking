@@ -1,0 +1,76 @@
+{
+  "positions": [
+    {
+      "name": "1",
+      "position": {
+        "column": 1,
+        "row": 1,
+        "direction": "rightDir"
+      }
+    },
+    {
+      "name": "2",
+      "position": {
+        "column": 1,
+        "row": 2,
+        "direction": "rightDir"
+      }
+    },
+    {
+      "name": "3",
+      "position": {
+        "column": 1,
+        "row": 3,
+        "direction": "rightDir"
+      }
+    },
+    {
+      "name": "4",
+      "position": {
+        "column": 4,
+        "row": 1,
+        "direction": "leftDir"
+      }
+    },
+    {
+      "name": "5",
+      "position": {
+        "column": 4,
+        "row": 2,
+        "direction": "leftDir"
+      }
+    },
+    {
+      "name": "6",
+      "position": {
+        "column": 4,
+        "row": 3,
+        "direction": "leftDir"
+      }
+    },
+    {
+      "name": "HOME",
+      "position": {
+        "column": 0,
+        "row": 0,
+        "direction": "downDir"
+      }
+    },
+    {
+      "name": "INDOOR",
+      "position": {
+        "column": 6,
+        "row": 0,
+        "direction": "upDir"
+      }
+    },
+    {
+      "name": "OUTDOOR",
+      "position": {
+        "column": 6,
+        "row": 4,
+        "direction": "downDir"
+      }
+    }
+  ]
+}
