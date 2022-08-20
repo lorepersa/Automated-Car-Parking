@@ -15,12 +15,13 @@ final internal class LocalQakResource(private val owner : ActorBasic) : QakResou
 		updateLocalObservers(input)
 	}
 	
-	override fun onRegister() {
+	override suspend fun onRegister() {
 		// do nothing
 	}
 	
-	override fun onUnregister() {
+	override suspend fun onUnregister() : Boolean {
 		// do nothing
+		return false
 	}
 	
 	override fun getActorName() : String {

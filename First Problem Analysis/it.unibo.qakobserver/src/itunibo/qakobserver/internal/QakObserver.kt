@@ -6,32 +6,54 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import itunibo.qakobserver.IQakObserver
 import itunibo.qakobserver.IMessageBuilder
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 
-final internal class QakObserver(private val owner : ActorBasic,
-								 private val resource : IQakResourceInternal,
-								 private val messageBuilder : IMessageBuilder)
-	: IQakObserver, IQakObserverInternal {
-	
+final internal class QakObserver(
+	private val owner: ActorBasic,
+	private val resource: IQakResourceInternal,
+	private val messageBuilder: IMessageBuilder
+) : IQakObserver, IQakObserverInternal {
+
 	private val mutex = Mutex()
 	private var onObserve = false
-	private var latestInput : String? = null
-	
+	private var latestInput: String? = null
+
 	@kotlinx.coroutines.ObsoleteCoroutinesApi
 	@kotlinx.coroutines.ExperimentalCoroutinesApi
-	final suspend override fun update(input : String) {
+	final suspend override fun update(input: String) = withContext(Dispatchers.Default) {
+		var doUpdate = false
 		mutex.withLock {
 			if (onObserve) {
 				if (latestInput == null || !input.equals(latestInput)) {
 					latestInput = input
-					val message = messageBuilder.buildMessage(input, owner.getName())
-					message?.let { // if not null
-						owner.autoMsg(it)
-					}
+					doUpdate = true
+				}
+			}
+		}
+		if (doUpdate) {
+			val message = messageBuilder.buildMessage(input, owner.getName())
+			message?.let { // if not null
+				owner.scope.launch {
+					owner.autoMsg(it)
 				}
 			}
 		}
 	}
-	
+
+	final override fun isObserving(): Boolean {
+		var result = false
+		runBlocking {
+			mutex.withLock {
+				result = onObserve
+			}
+		}
+
+		return result
+	}
+
 	/**
 	 * Start to observe another QActor.
 	 * Try to be more efficient if the observable and the observer are QActors of the same context,
@@ -44,7 +66,7 @@ final internal class QakObserver(private val owner : ActorBasic,
 		}
 		resource.registerLocalObserver(this)
 	}
-	
+
 	/**
 	 * Cancel the observer relation.
 	 */
@@ -55,7 +77,7 @@ final internal class QakObserver(private val owner : ActorBasic,
 		}
 		resource.unregisterLocalObserver(this)
 	}
-	
+
 	override fun equals(other: Any?): Boolean {
 		if (this === other) return true
 		if (other?.javaClass != javaClass) return false
@@ -67,7 +89,7 @@ final internal class QakObserver(private val owner : ActorBasic,
 		return true
 	}
 
-	override fun hashCode(): Int{
+	override fun hashCode(): Int {
 		return owner.getName().hashCode()
 	}
 }

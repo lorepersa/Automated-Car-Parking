@@ -46,8 +46,7 @@ internal object QakResourceManager {
 					val host = sysUtil.solve("getCtxHost($observableContext,H)", "H")!!
 					val port = sysUtil.solve("getCtxPort($observableContext,P)", "P")!!
 					val url = "coap://$host:$port/$observableContext/$observableName"
-					val coapClient = CoapClient(url)
-					observable = ProxyQakResource(observableName, coapClient)
+					observable = ProxyQakResource(observableName, url)
 					remoteResources.add(observable)
 				}
 				
