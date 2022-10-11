@@ -124,16 +124,16 @@ class Transporttrolley ( name: String, scope: CoroutineScope  ) : ActorBasicFsm(
 						if( checkMsgContent( Term.createTerm("stepdone(V)"), Term.createTerm("stepdone(X)"), 
 						                        currentMsg.msgContent()) ) { //set msgArgList
 								println("[transporttrolley] | [State] convertStepReply | Received stepdone!")
-								 myself.autoMsg("move_done", "move_done(w)")  
+								 myself.scope.launch { myself.autoMsg("move_done", "move_done(w)") }  
 						}
 						if( checkMsgContent( Term.createTerm("stepfail(DURATION,CAUSE)"), Term.createTerm("stepfail(DURATION,CAUSE)"), 
 						                        currentMsg.msgContent()) ) { //set msgArgList
 								 val DURATION = payloadArg(0)  
 								 val CAUSE = payloadArg(1)  
 								println("[transporttrolley] | [State] convertStepReply | Received stepfail with {duration: $DURATION ms, cause: $CAUSE}...")
-								 myself.autoMsg("move_fail", "move_fail(w,$DURATION,$CAUSE)")  
+								 myself.scope.launch { myself.autoMsg("move_fail", "move_fail(w,$DURATION,$CAUSE)") }  
 						}
-						println("[transporttrolley] | [State] convertStepReply | Entry point.")
+						println("[transporttrolley] | [State] convertStepReply | Exit point.")
 					}
 					 transition( edgeName="goto",targetState="wait", cond=doswitch() )
 				}	 

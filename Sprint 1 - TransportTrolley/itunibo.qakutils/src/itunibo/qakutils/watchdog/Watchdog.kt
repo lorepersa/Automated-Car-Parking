@@ -1,61 +1,35 @@
 package itunibo.qakutils.watchdog
 
-import kotlinx.coroutines.sync.Mutex
 import it.unibo.kactor.ActorBasic
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.CoroutineScope
-import java.util.Timer
-import java.util.TimerTask
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
 
 class Watchdog(private val owner : ActorBasic, private val timeLimitInMilliseconds : Long, private val messageBuilder : IExpiredTimeAutoMessage = DefaultMessageBuilder) {
 	
-	
-	class AutoMsgTimer(private val owner : ActorBasic, private val time : Long, private val messageBuilder : IExpiredTimeAutoMessage) {
-		private val mutex = Mutex()
-		private var running = true
-		
-		suspend fun start() {
-			GlobalScope.launch {
-				delay(time)
-				mutex.withLock {
-					if (running) {
-						owner.autoMsg(messageBuilder.buildMessage(owner.getName()))
-					}
-				}
-			}
-
-		}
-		
-		suspend fun stop() {
-			mutex.withLock {
-				running = false
-			}
-		}
-	}
-	
-	private val mutex = Mutex()
 	private var running = false
-	private var timer : AutoMsgTimer? = null
-	
+	private var timer : Job? = null
 	
 	suspend fun start() {
-		mutex.withLock {
-			timer = AutoMsgTimer(owner, timeLimitInMilliseconds, messageBuilder)
-			timer!!.start()
+		stop()
+		timer = owner.scope.launch {
+			delay(timeLimitInMilliseconds)
+			owner.autoMsg(messageBuilder.buildMessage(owner.getName()))
 		}
+		running = true
 	}
 	
 	suspend fun stop() {
-		mutex.withLock {
-			if (timer != null) {
-				timer!!.stop()
-				timer = null
-			}
+		running = false
+		timer?.let {
+			it.cancel()
+			it.join()
 		}
+		timer = null
+	}
+	
+	fun isRunning() : Boolean {
+		return running
 	}
 	
 }

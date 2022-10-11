@@ -996,6 +996,71 @@ A First Problem analysis is available <a href="http://htmlpreview.github.io/?htt
 
 </div><!-- End Deployment section [end class="remark"] -->
 
+<h2 id="sprint-review">Sprint Review</h2>
+<div class="remark">
+  After an interaction with the customer a new requirement about a Transport Trolley DSL raised up. In particular the customer asked us to encapsulate the <a href="#transport-trolley-tasks">Transport Trolley Communication Protocol</a> in a DSL.
+  <br><br>
+  <h3 id="transport-trolley-dsl">Transport Trolley DSL</h3>
+  The Transport Trolley DSL has been designed as a Kotlin Internal DSL by means of Kotlin <k>infix</k> and <k>extension</k> functions. The full implementation can be found <a href="../itunibo.automatedcarparking.dsl/src/itunibo/automatedcarparking/dsl/transporttrolley">here</a>.
+  <br><br>
+  <h4>Keywords</h4>
+  <ul>
+    <li><ks>transporttrolley</ks>: open the Transport Trolley DSL block.</li>
+    <li><ks>task</ks>: open a new Transport Trolley Task block, in particular the task lifetime is implicitly handled by means of <k>transport_trolley_new_job</k> and <k>transport_trolley_job_done</k> messages sent automatically respectively on task opening and task closing.</li>
+    <li><ks>go to "$POSITION"</ks>: move the transport trolley to "$POSITION". Task block only.</li>
+    <li><ks>takeOverCar after DELAY</ks>: Perform a take over car operation in the current position after a given delay in milliseconds. Task block only.</li>
+    <li><ks>releaseCar after DELAY</ks>: Perform a release car operation in the current position after a given delay in milliseconds. Task block only.</li>
+    <li><ks>takeOverCar at "$POSITION"</ks>: first move the transport trolley to "$POSITION" and then perform a take over car operation. This is just a shortcut to the command pair <k>go to "$POSITION" - takeOverCar after 0</k>. Task block only.</li>
+    <li><ks>releaseCar at "$POSITION"</ks>: first move the transport trolley to "$POSITION" and then perform a take over car operation. This is just a shortcut to the command pair <k>go to "$POSITION" - releaseCar after 0</k>. Task block only.</li>
+    <li><ks>start after DELAY</ks>: send a <k>transport_trolley_start</k> command after the given delay in milliseconds.</li>
+    <li><ks>stop after DELAY</ks>: send a <k>transport_trolley_stop</k> command after the given delay in milliseconds.</li>
+  </ul>
+  <h4>Example car park task</h4>
+  <p>In the example below we show how the DSL can be used to park the car at SLOTNUM 5.</p>
+  <pre>
+transporttrolley {
+  task {
+    takeOverCar at "INDOOR"
+    releaseCar at "5"
+  }
+}
+  </pre>
+  <h4>Example car pick up task</h4>
+  <p>In the example below we show how the DSL can be used to pick up the car at SLOTNUM 5 and release it at OUTDOOR.</p>
+  <pre>
+transporttrolley {
+  task {
+    takeOverCar at "5"
+    releaseCar at "OUTDOOR"
+  }
+}
+  </pre>
+  <h4>Example sleep task</h4>
+  <p>In the example below we show how the DSL can be used to perform the sleep task.</p>
+  <pre>
+transporttrolley {
+  task {
+    go to "HOME"
+    stop after 0
+  }
+}
+  </pre>
+  <h4>Example start transport trolley</h4>
+  <p>In the example below we show how the DSL can be used to start the transporttrolley after a given duration in milliseconds. Note that a "task" block is not necessary to send a start command.</p>
+  <pre>
+transporttrolley {
+  start after 0
+}
+  </pre>
+  <h4>Example stop transport trolley</h4>
+  <p>In the example below we show how the DSL can be used to stop the transporttrolley after a given duration in milliseconds. Note that a "task" block is not necessary to send a stop command.</p>
+  <pre>
+transporttrolley {
+  stop after 0
+}
+  </pre>
+</div><!-- End Sprint Review section [end class="remark"] -->
+
 <div class="contact-us" id="contact-us">
   <table>
     <tr>

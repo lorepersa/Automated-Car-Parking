@@ -1,4 +1,3 @@
-
 package it.unibo.sprint1.qakutils
 
 import it.unibo.kactor.ApplMessage

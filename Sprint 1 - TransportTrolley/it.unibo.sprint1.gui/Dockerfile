@@ -8,6 +8,7 @@ COPY build.gradle.kts /app/web/
 COPY settings.gradle.kts /app/web/
 COPY Californium.properties /app/web/
 COPY unibolibs/ /app/web/unibolibs/
+COPY jars/ /app/web/jars/
 
 WORKDIR /app/web
 

@@ -95,7 +95,7 @@ QActor transporttrolley context ctxbusinesslogic {
 		onMsg(transport_trolley_stop : transport_trolley_stop(X)) {
 			println("[transporttrolley] | [State] handleResumableMessages | Received STOP!.") 
 			[# stopped = true #]
-		}
+		}  
 		
 		// TODO update status here
 		
@@ -137,7 +137,7 @@ QActor transporttrolley context ctxbusinesslogic {
 		}
 
 		println("[transporttrolley] | [State] handleNewDestination | Exit point.") 
-	} Goto wait
+	} Goto wait 
 
 	State handleJobDone {
 		println("[transporttrolley] | [State] handleJobDone | Entry point.") 

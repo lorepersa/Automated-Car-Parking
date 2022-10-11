@@ -16,6 +16,7 @@ repositories {
 	mavenCentral()
 	flatDir {
 		dirs("unibolibs")
+		dirs("jars")
 	}
 }
 
@@ -31,8 +32,8 @@ dependencies {
 
 	annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 
-	implementation( "org.jetbrains.kotlinx:kotlinx-coroutines-core-common:1.1.0")
-	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.1.0")
+	implementation( "org.jetbrains.kotlinx:kotlinx-coroutines-core-common:1.3.0")
+	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.0")
 
 	implementation("org.eclipse.californium:californium-core:2.0.0-M12")
 	implementation("org.eclipse.californium:californium-proxy:2.0.0-M12")
@@ -40,6 +41,8 @@ dependencies {
 	implementation("tuprolog:2p301")
 	implementation("qak:it.unibo.qakactor:2.4")
 	implementation("uniboIssActorKotlin:IssActorKotlinRobotSupport:2.0")
+
+	implementation("dsl:itunibo.automatedcarparking.dsl:1.0")
 }
 
 tasks.withType<KotlinCompile> {

@@ -27,7 +27,6 @@ class TransportTrolleyController : ITransportTrolleyObserver {
 
     @PostConstruct
     fun init() {
-        this.template
         TransportTrolley.init(businessLogicConfig)
         TransportTrolley.registerObserver(this)
     }

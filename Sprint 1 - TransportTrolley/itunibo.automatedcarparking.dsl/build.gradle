@@ -12,7 +12,6 @@ USAGE:
 plugins {
     id 'java'
     id 'eclipse'
-    id 'application'
     id 'org.jetbrains.kotlin.jvm' version '1.4.32'
 }
 
@@ -23,7 +22,7 @@ sourceCompatibility = 1.8
 repositories {
     mavenCentral()
     jcenter()
-    flatDir {   dirs '../../unibolibs', '../jars'	 }
+    flatDir {   dirs '../../unibolibs'	 }
 }
 
 dependencies {
@@ -86,8 +85,6 @@ dependencies {
     //compile name: 'it.unibo.planner20-1.0'
  	// https://mvnrepository.com/artifact/com.googlecode.aima-java/aima-core
 	compile group: 'com.googlecode.aima-java', name: 'aima-core', version: '3.0.0'
-	
-	implementation name: 'itunibo.qakutils', version: '1.0'
 }
 
 compileKotlin {
@@ -108,14 +105,8 @@ eclipse {
         sourceSets -= [sourceSets.main, sourceSets.test]	
     }	
  }
-/*
-mainClassName = 'it.unibo.TODOKt'
 
 jar {
-    println("executing jar")
+    println("building jar")
     from sourceSets.main.allSource
-    manifest {
-        attributes 'Main-Class': "$mainClassName"
-    }
 }
-*/
