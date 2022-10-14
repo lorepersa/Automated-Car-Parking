@@ -1,0 +1,5 @@
+{
+  "timeLimitBackToHome": 1000,
+  "updatePositionAfterEachStep": false,
+  "stepMoveDuration": 350
+}

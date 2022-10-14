@@ -1,0 +1,344 @@
+body
+{
+    margin-left:  30px;
+    margin-right: 30px;
+}
+
+P
+{
+    font-family: "Times New Roman";
+    font-size: 18px;
+}
+
+a, a:visited, a:active, a:link, a:hover {
+    text-decoration: underline;
+    color: #545454;
+    background-color: transparent;
+	font-size: 93%;
+}
+
+a:hover {
+    background-color: #cccccc;
+}
+
+
+hr {
+    clear: both;
+    height: 1px;
+    color: #242424;
+    background-color: transparent;
+}
+
+h1, h2, h3 {
+    color: #242424;
+    clear: left;
+    font: 100% Tahoma, Helvetica, Arial, sans-serif;
+    margin-bottom: 0.5em;
+    padding-top: 0.5em;
+	border-radius: 10px;
+	padding: 5px;
+}
+
+top {
+	width: 100%;
+}
+
+
+#i {
+    color: #ff1010;
+}
+tt{
+	font-family: "Arial";
+    font-size: 90%;
+	color: #006600;
+}
+em{
+	font-family: "Arial";
+    font-size: 80%;
+	font-weight: bold;
+	border-style:solid;
+	border-color: #abe876;
+    color: #1632cc;
+}
+bc{
+	font-family: "Arial";
+	font-size: 90%;
+	font-weight: bold;
+    color: #990000;
+	background-color: #fcf8c7;
+}
+ks{
+	font-family: "Arial";
+	font-weight: bold;
+    color: #0000CD	;
+	font-size: 90%;
+}
+kc{
+	font-family: "Arial";
+	font-weight: bold;
+    color: #008000	;
+	font-size: 90%;
+}
+pre{
+	font-family: "Consolas";
+	font-size: 85%;
+	background-color: #f5f5f5;
+	border: 1.5px solid silver;
+	padding: 5px;
+}
+m{
+	font-family: "Helvetica";
+	line-height: 100%;
+ 	font-size: 75%;
+}
+div.body{
+
+    font-size: 18px;
+}
+k{
+    color: #990000;
+	font-weight: bold;
+	font-size: 90%;
+}
+h1 {
+    font-size: 150%;
+    background-color: #b2c0ff;
+	padding: 10px;
+}
+
+h2 {
+    background-color: #9ed8ff;
+    font-size: 130%;
+}
+
+h3 {
+	background-color: #e6ccff;
+    font-size: 100%;
+}
+h4 {
+    background-color: #ccffcc;
+    font-size: 100%;
+	width: 100%;
+	border-radius: 5px;
+	padding: 2px;
+}
+h5 {
+    background-color: #d5ffb0;
+    font-size: 100%;
+
+}
+div.req{
+	background-color: #d9ffb3;
+    font-size: 18px;
+	width: 700px;
+    border: 3px solid green;
+    padding: 15px;
+    margin: 10px;
+}
+div.remark{
+	background-color: #E3F2FD;
+    border: 1.5px solid #d5f2ed;
+    padding: 15px;
+    margin: 10px;
+	border-radius: 25px;
+}
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+}
+
+ol, ul, li {
+  margin: 0;
+  margin-left: 10px;
+  padding: 0;
+  padding-bottom: 5px;
+}
+
+table, th, td {
+	border: 1px solid black;
+}
+
+img {
+	border: 1.5px solid #d5f2ed
+
+}
+
+a, a:visited, a:active, a:link, a:hover {
+    text-decoration: underline;
+    color: #545454;
+    background-color: transparent;
+}
+
+div.wrapdesc{
+	width: 90%;
+	margin: auto;
+}
+
+div.imagedesc{
+	width: 85%;
+	margin: auto;
+}
+
+/*CUSTOM CSS*/
+
+/*---------------------------------------
+IMAGES
+-----------------------------------------*/
+.legenda__image img{
+  width:35%;
+  height:auto;
+  margin-left: auto;
+  margin-right: auto;
+}
+.interactions__image img{
+  width:80%;
+  height:auto;
+  margin-bottom:40px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.interactions_gui__image img{
+  width:55%;
+  height:auto;
+  margin-bottom:40px;
+  margin-left: auto;
+  margin-right: auto;
+}
+/*---------------------------------------
+SIMPLE TABLE
+-----------------------------------------*/
+table { width: 100%; margin: 20px auto; }
+th { padding: 10px 15px; }
+td { padding: 8px 15px; }
+.table_no_border, .table_no_border td, .table_no_border th { border: none;}
+/*---------------------------------------
+IN_DEPTH CONTENT
+-----------------------------------------*/
+.in-depth-content {
+  width: 80%;
+  border: 1px solid grey;
+  border-radius: 25px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  margin-left: auto;
+  margin-right: auto;
+  padding: 10px;
+  text-align: justify;
+}
+.in-depth-content h4 {
+  text-align: center;
+}
+/*---------------------------------------
+INTERACTIONS
+-----------------------------------------*/
+.table_interactions_messages{
+  margin-bottom:30px;
+  margin-left:auto;
+  margin-right:auto;
+  table-layout:fixed;
+  width:100%;
+}
+.table_interactions_messages td {
+  padding-left:5px;
+  padding-right:5px;
+  padding-top:5px;
+  padding-bottom:5px;
+  text-align: center;
+}
+.table_interactions_messages th:nth-child(1) {
+  width:25%;
+}
+.table_interactions_messages th:nth-child(3) {
+  width:10%;
+}
+.table_interactions_messages th:nth-child(4) {
+  width:35%;
+}
+.table_interactions_messages td:nth-child(1){
+  text-align: left;
+  padding-left: 20px;
+}
+.table_interactions_messages td:nth-child(4){
+  text-align: justify;
+}
+
+
+/*---------------------------------------
+QAK EXAMPLE
+-----------------------------------------*/
+.interaction_qak_example {
+  border: 1px solid black;
+  border-radius: 25px;
+  margin-bottom: 40px;
+  margin-right: auto;
+  margin-left: auto;
+  padding-top: 15px;
+  padding-bottom: 15px;
+  padding-left: 15px;
+  padding-right: 15px;
+  text-align: justify;
+  width:60%;
+}
+.interaction_qak_example h4 {
+  text-align: center;
+}
+.interaction_qak_example p, .component .interaction_qak_example ol {
+  margin-left: 8%;
+  margin-right: 8%;
+}
+.interaction_qak_example a {
+  cursor: default;
+}
+.interaction_qak_example_link {
+  background-color:pink;
+  border-radius:25px;
+  box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  margin-left:auto;
+  margin-right:auto;
+  margin-top: 20px;
+  padding-top:20px;
+  padding-bottom:20px;
+  text-align:center;
+  width:40%;
+}
+.interaction_qak_example_link:active {
+  background-color:rgb(255,182,193);
+  box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+.table_logical_architecture_qak {
+  border: none;
+  width: 100%;
+}
+.table_logical_architecture_qak td {
+  border: none;
+  width: 50%;
+}
+
+/*---------------------------------------
+STUDENT IMAGES
+-----------------------------------------*/
+.contact-us {
+  width: 60%;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 40px;
+  background-color: #E3F2FD;
+  border-radius: 25px;
+  padding: 15px;
+}
+.contact-us table {
+  text-align: center;
+  border:none;
+  margin-left: auto;
+  margin-right: auto;
+}
+.contact-us td, .contact-us th{
+  width: 50%;
+  border:none;
+  padding-bottom: 5px;
+}
+.student__image img{
+  width: auto;
+  height: 200px;
+}

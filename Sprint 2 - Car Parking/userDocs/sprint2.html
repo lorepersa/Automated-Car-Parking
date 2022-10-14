@@ -1,0 +1,1199 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+    <!--
+<link rel="stylesheet" type="text/css" href="../css/issStyle1.css">
+<script type="text/javascript" src="../css/issStyle.js"></script>
+-->
+
+<head>
+  <link href="style/style.css" rel="stylesheet" type="text/css">
+
+<title>Sprint 2 - Car Parking</title>
+</head>
+
+<body>
+<div id="top">
+<h1>LABORATORIO DI INGEGNERIA DEI SISTEMI SOFTWARE <font size="5"></font> </h1>
+</div>
+
+<div class="body">
+  <h2>Introduction</h2>
+
+
+  <h2 id="requirements">Requirements</h2>
+  <div class="remark">
+  Customer's requirements are available <a href="https://raw.githubusercontent.com/anatali/issLab2021/main/it.unibo.issLabStart/userDocs/TFBO21ISS.pdf">here</a>.
+  </div>
+
+  <h2 id="requirement-analysis">Requirement analysis</h2>
+  <div class="remark">
+  Requirements analysis is available <a href="../../Requirements%20Analysis/Requirements%20analysis.html">here</a>.
+  </div>
+
+  <h2 id="first-problem-analysis">First Problem Analysis</h2>
+  <div class="remark">
+  A First Problem analysis is available <a href="../../First%20Problem%20Analysis/userDocs/First%20Problem%20Analysis.html">here</a>.
+  </div>
+
+  <h2 id="sprint-1">Sprint 1</h2>
+  <div class="remark">
+  Sprint 1 is available <a href="../../Sprint%201%20-%20TransportTrolley/userDocs/sprint1.html">here</a>.
+  </div>
+
+  <h2 id="sprint-backlog">Sprint Backlog</h2>
+  <div class="remark">
+    <h3>Car Parking</h3>
+    The goals of this sprint are the following:
+    <table>
+      <tr>
+        <th>Description</th>
+        <th>Requirements</th>
+      </tr>
+      <tr>
+        <td>The weightSensor is able to detect the presence of a car in the indoor area.</td>
+        <td>
+          <a href="../../Requirements%20Analysis/Requirements%20analysis.html#F16">F16</a>, <a href="../../Requirements%20Analysis/Requirements%20analysis.html#NF2">NF2</a>
+        </td>
+      </tr>
+      <tr>
+        <td>The system is able to manage a parking car request.</td>
+        <td><a href="../../Requirements%20Analysis/Requirements%20analysis.html#F1">F1</a>, <a href="../../Requirements%20Analysis/Requirements%20analysis.html#F2">F2</a>, <a href="../../Requirements%20Analysis/Requirements%20analysis.html#F3">F3</a>, <a href="../../Requirements%20Analysis/Requirements%20analysis.html#F4">F4</a>, <a href="../../Requirements%20Analysis/Requirements%20analysis.html#F5">F5</a>, <a href="../../Requirements%20Analysis/Requirements%20analysis.html#NF1">NF1</a>
+        </td>
+      </tr>
+      <tr>
+        <td>The system provides the ParkServiceGUI to handle the client's car parking requests.</td>
+        <td><a href="../../Requirements%20Analysis/Requirements%20analysis.html#F1">F1</a>, <a href="../../Requirements%20Analysis/Requirements%20analysis.html#F4">F4</a>, <a href="../../Requirements%20Analysis/Requirements%20analysis.html#F5">F5</a></td>
+      </tr>
+      <tr>
+        <td>The status of the system must survive after a system reboot.</td>
+        <td><a href="../../Requirements%20Analysis/Requirements%20analysis.html#NF3">NF3</a></td>
+      </tr>
+      <tr>
+        <td>Should be possible to analyze the behaviour of the system.</td>
+        <td><a href="../../Requirements%20Analysis/Requirements%20analysis.html#NF4">NF4</a></td>
+      </tr>
+    </table>
+  </div>
+
+  <h2 id="summary">Summary</h2>
+  <div class="remark">
+    <ol>
+      <li>
+        <a href="#problem-analysis">Problem Analysis</a>
+        <ol>
+          <li>
+            <a href="#starting-point">Starting point</a>
+          </li>
+          <li>
+            <a href="#weight-sensor-analysis">Weight Sensor Analysis</a>
+          </li>
+          <li>
+            <a href="#parking-slot-controller-analysis">Parking Slot Controller Analysis</a>
+          </li>
+          <li>
+            <a href="#indoor-controller-analysis">Indoor Controller Analysis</a>
+          </li>
+          <li>
+            <a href="#park-service-gui-analysis">Park Service GUI Analysis</a>
+          </li>
+          <li>
+            <a href="#security-analysis">Security Considerations</a>
+          </li>
+          <li>
+            <a href="#interactions">Interactions</a>
+          </li>
+          <li>
+            <a href="#logical-architecture">Logical Architecture</a>
+          </li>
+        </ol>
+        <li>
+          <a href="#test-plan">Test Plan</a>
+        </li>
+        <li>
+          <a href="#project">Project</a>
+        </li>
+        <li>
+          <a href="#testing">Testing</a>
+        </li>
+        <li>
+          <a href="#deployment">Deployment</a>
+        </li>
+        <li>
+          <a href="#sprint-review">Sprint Review</a>
+        </li>
+      </li>
+    </ol>
+  </div>
+
+  <h2 id="problem-analysis">Problem Analysis</h2>
+  <div class="remark">
+
+    <h3 id="starting-point">General Considerations and Starting Point</h3>
+    For this second sprint, the initial logical architecture is:
+    <p align="center"><a href="./img/legenda.png">Legenda</a></p>
+    <div class="interactions__image">
+      <center>
+        <img src="./img/sprint2_starting_logical_architecture.png" alt="sprint2_starting_logical_architecture.png"/>
+      </center>
+    </div>
+    <br><br>
+    This sprint will be focused on <b>Car Parking</b> action. So it will cover the BusinessLogic* and the Transport Trolley section that interacts with it, in addition to the Weight Sensor part. It will also provide a first Park Service GUI.
+    <br>
+    <h4 id="problem-analysis-introduction">Introduction</h4>
+    In this sprint we will focus on the following interactions.<br><br>
+    <ul>
+      <li>the user expresses his interest in parking his car inside the PMS ("parking_car_interest request" will be associated to this action);</li>
+      <li>the PMS answers with a SLOTNUM (i.e. the parking slot number) which can have a value between 1 and 6 in the positive case (i.e. there are parking slots available) or a value equal to 0 (if all the parking slots are full). We will associate a "inform_in" response to this action;</li>
+      <li>the user then brings the car inside the indoor area and clicks the "car enter" button ("car_enter request");</li>
+      <li>if the weight sensor measures a weight greater than a certain threshold, then the system responds with a unique TOKENID to the customer and sends the transport trolley to collect (and then park) the customer's car. ("response_car_enter" reply)</li>
+    </ul>
+    <br>
+    <h3 id="weight-sensor-analysis">Weight Sensor Analysis</h3>
+    <div>
+      The task of the weight sensor is to measure the weight detected within the indoor area of ​​the PMS, to understand:
+      <ul>
+        <li>if a car has actually entered the indoor area</li>
+        <li>if the transport trolley has actually taken the car from the indoor area</li>
+      </ul>
+      From the requirements <b>the weight sensor is virtual</b>, but to facilitate a possible future integration with a real weight sensor, it would be appropriate to let the system <b>configurable</b> in order to choose between a virtual or real weightsensor.
+      <br><br>
+      In the case of a virtual weight sensor, it is necessary to <b>create a 'mock' interface</b> that allows you to check and modify the value of the weight sensor at any time.
+      <br><br>
+      It was also decided to <b>insert no logic inside the weight sensor</b> in order to make it as reusable as possible: the weight sensor is therefore limited only and exclusively to measure the weight.
+      <br><br>
+      The weightsensor is model as a <k>QActor</k>. It should be notified about the current weight via a proper <k>input_weight</k> dispatch independently from the underlying virtual or real configuration.
+      <br>
+      <h4>Observable State</h4>
+      <div>
+        After a careful analysis, it was decided to make the weight sensor an <a href="#observation-analysis">observable entity</a>; in particular the weightsensor QActor exposes in its observable status the information about the current weight measured in the indoor area. <br>
+      </div>
+    </div>
+    <h3>Parking Slot Controller and Indoor Controller</h3>
+    <div>
+      From a careful analysis, it was necessary for this sprint to introduce two new entities: <k>Parking Slot Controller</k> and <k>Indoor Controller</k>.
+    </div>
+    <h3 id="parking-slot-controller-analysis">Parking Slot Controller Analysis</h3>
+    <div>
+      The task of the <k>Parking Slot Controller</k> is to keep, update and make persistent the status of the parking slots.
+      <br>
+      It also deals with the generation of the TOKENIDs, as explained in the <a href="../../First%20Problem%20Analysis/userDocs/First%20Problem%20Analysis.html#business-logic-description">first problem analysis</a>.
+      <br><br>
+      Each parking slot can have three possible states: <b>free</b>, <b>reserved</b> and <b>occupied</b>.
+      <ul>
+        <li>A parking slot is <b>free</b> when there is no car parked on it and there are no outstanding requests for that single parking slot.</li>
+        <li>A parking slot enters the <b>reserved</b> state when no car is parked yet, but there is a pending request for that parking slot (i.e. the SLOTNUM has been communicated to a customer intending to enter in the parking area);</li>
+        <li>A parking slot is <b>occupied</b> when a car is parked.</li>
+      </ul>
+      <br>
+      It is necessary to have, inside the Parking Slot Controller, a way (i.e. a data structure) to map, for each parking slot, the SLOTNUM with the TOKENID generated for that parking slot. The information about which parking slots are free or occupied must be stored in a <k>persistent</k> way. Moreover, for the occupied parking slots we must store also the mapping between the SLOTNUM and the TOKENID currently associated.
+      <br><br>
+      The Parking Slot Controller has been modeled as a <k>QActor</k>. In particular it is able to receive requests to <b>reserve</b> a parking slot - that is, it selects a free parking slot (if any) and switches its status from free to reserved - and a further dispatch to <b>confirm</b> or <b>undone</b> the reservation: in the former case the parking slot status switches from reserved to occupied and in the latter case it switches from reserved to free. If the parking area is full a proper reply is returned.
+      <h4>Observable state</h4>
+      After a careful analysis, it was decided to make the Parking Slot Controller an <a href="#observation-analysis">observable entity</a>. <br>
+      The information of the Parking Slot Controller that has to be observable must contain the status of the parking slots. It does not contain and it must not contain the TOKENID associated to each single parking slot, because it constitutes sensitive information not to be shared with other entities.
+    </div>
+
+    <h3 id="indoor-controller-analysis">Indoor Controller Analysis</h3>
+    <div>
+      The goal of the <k>Indoor Controller</k> is to handle the <k>parking phase</k> requirement. In particular: it manages client <k>parking_car_interest</k> and <k>car_enter</k> requests, it interacts with the Parking Slot Controller and the Transport Trolley and it <k>observes</k> the Weight Sensor.
+      <br><br>
+      Our domain contains a single Indoor Area. However, thanks to the <a href="../../Sprint%201%20-%20TransportTrolley/userDocs/sprint1.html#transport-trolley-tasks">Transport Trolley Communication Protocol</a> flexibility is possible to add new Indoor Area in the future. For this reason at each Indoor Area should be assigned a unique <b>DOOR NAME</b> that is mapped to a given position in the parking area map (known by the Transport Trolley). So, each Indoor Controller is associated to a single Indoor Area characterized by its unique DOOR NAME; this DOOR NAME is used during the car parking phase to move the Transport Trolley to the correct indoor area.
+      <br>
+      Since our domain contains a single Indoor Area the prototype will have a single Indoor Controller.
+      <br><br>
+      To the Indoor Controller is associated a status that coincides with the current status of the Indoor Area: free, reserved or occupied.
+      <ul>
+        <li><b>free</b>: it means that currently <a href="#weight-sensor-observation">the weight sensor is not being observed</a> (and therefore it is assumed that the indoor area is free);</li>
+        <li><b>reserved</b>: it means that currently the Indoor Controller is handling a parking car interest request, but the weight sensor measures a weight lower than or equal to a <k>configurable</k> threshold WMAX;</li>
+        <li><b>occupied</b>: the indoor area is occupied by a car (the weight sensor measures a weight greater than WMAX).</li>
+      </ul>
+      <br>
+      The Indoor Controller has been modeled as <k>QActor</k>. <br>
+      <br>
+      In particular it interacts with the Parking Slot Controller to <b>reserve</b> a parking slot, <b>confirm</b> a parking slot or <b>undone</b> a reservation.
+      <ul>
+        <li>a <k>reserve_parking_slot</k> request is made in the moment that a <k>parking_car_interest</k> request is received.</li>
+        <li>a <k>confirm_parking_slot</k> dispatch is sent in the moment that a car has been parked in the parking area.</li>
+        <li>a <k>undone_reservation</k> dispatch is sent when the car exits from the Indoor Area or in corner cases as explained in the <a href="#indoor-controller-analysis-timer">timer section</a> below.</li>
+      </ul>
+      <h4 id="indoor-controller-analysis-car-enter">About car enter request</h4>
+      At each <k>car_enter</k> request a <k>response_car_enter</k> reply is associated. In the success case a valid TOKENID is returned to the user. <br>
+      However there are few cases when a spurious car enter request may arrive.
+      <ul>
+        <li>Indoor Area free: a <b>car_enter</b> request has been received but the Indoor Area status is free. Reply with <b>response_car_enter(IndoorAreaNotReserved)</b>.</li>
+        <li>Indoor Area reserved:  a <b>car_enter</b> request has been received but the Indoor Area status is reserved. Reply with <b>response_car_enter(IndoorAreaNotEngagedByCar)</b>.</li>
+        <li>Invalid Slotnum: a <b>car_enter</b> request mapped to an unexpected SLOTNUM has been received. Reply with <b>response_car_enter(InvalidSlotnum)</b>.</li>
+      </ul>
+      <h4 id="indoor-controller-analysis-timer">Timer</h4>
+      To limit user misbehavior, it is necessary to use timers in two specific situations that we have analysed.
+      <ul>
+        <li>The <b>first situation</b> can occur when, after the acceptance of a parking car interest request (and therefore the communication of the SLOTNUM), the customer does not enter the indoor area with his car.<br>
+        To avoid this case, a <ks>DTOCCUPIED timer</ks> has been designed (with a configurable duration) and it starts as soon as the SLOTNUM is returned from the system to the user and it is stopped/reset as soon as the weight sensor measures the weight of the machine. <br>In case the timer goes off/rings, the referenced parking car interest request must be automatically discarded and the parking slot reservation must be <b>canceled</b>.</li>
+        <li>The <b>second situation</b> occurs when the user, after having brought the car inside the indoor area, does not attempt to click the "car enter" button.<br>
+        To avoid endless waits, a <ks>DTCARENTER timer</ks> (with a configurable duration) is started when the weight sensor measures the weight of the machine inside the indoor area and is stopped/reset as soon as the transport trolley takes the machine to park it, and therefore the weight sensor no longer measures any specific weight. <br>
+        In the event that the timer goes off/rings, the manager must be notified and he has to intervene to help the user to press the "car enter" button or to escort the car out of the indoor area (together with the user). In the first case the car enter task is handled regularly, while in the second case the user request will be discarded, the parking slot reservation is <b>canceled</b> and the indoor area becomes free.
+        <br>
+        Note: the notification to the manager <b>must remain asserted</b> until one of the two actions is taken.
+      </li>
+      </ul>
+      For both timers, it can be used the <a href="../itunibo.qakutils/src/itunibo/qakutils/watchdog">watchdog utility</a> created and used for sprint 1.
+
+      <h4>Assumptions</h4>
+      Despite the presence of timers, some assumptions are necessary for a correct system behavior:
+      <ul>
+        <li>once the "car enter" button has been clicked, it is assumed that the car can no longer leave the indoor area. From that moment only the transport trolley is allowed to take and move the car from the indoor area.</li>
+      </ul>
+
+      <h4>Limitations</h4>
+      Since in our domain there is only one transport trolley <b>the car enter requests must be handle sequentially</b>. Moreover <b>at most one car</b> is allowed to stay in the Indoor Area in a given moment.
+
+      <h4 id="weight-sensor-observation">Weight sensor observation</h4>
+      <div>
+        As already analyzed in the <a href="../../First%20Problem%20Analysis/userDocs/First%20Problem%20Analysis.html#weight-sensor-costs">first problem analysis</a>, thanks to our <a href="../../First%20Problem%20Analysis/it.unibo.qakobserver/userDocs/Documentation.html">qakobserver framework</a>, it is possible to observe on necessity an entity, to minimize the bandwidth usage.
+        <br>
+        In particular, the Indoor Controller can start to observe the weight sensor when a parking car interest request has been received and stop it when the car exits from the indoor area (either if collected by transport trolley or taken by the user) or when the Indoor Controller has been notified that the parking area is full.
+        <br><br>
+        This process can save the system from a lot of useless interactions and optimize the use of the available bandwidth (e.g. during the "idle" phase between two Car Park requests the weightsensor is not observed and this leads our system to consume less bandwidth).
+      </div>
+
+      <h4 id="transport-trolley-communication">Transport trolley communication</h4>
+      <div>
+        As already said in the <a href="../../Sprint 1%20-%20TransportTrolley/userDocs/sprint1.html#sprint-review">Sprint 1 review</a>, the <a href="../../Sprint%201%20-%20TransportTrolley/userDocs/sprint1.html#transport-trolley-tasks">Transport Trolley Communication Protocol</a> is encapsulated by a <ks>DSL</ks>. In particular the Indoor Controller takes advantage of the Transport Trolley <b>Car Park Task</b>.
+      </div>
+
+      <h4 id="startup-configuration">Startup Configuration</h4>
+      <div>
+        At each system's boot there is the need to let the <b>Indoor Controller</b> aware of some parameters, like:
+        <ul>
+          <li><b>WMAX</b>: weight threshold which, if exceeded, means that a car is inside the indoor area;</li>
+          <li><b>DTOCCUPIED and DTCARENTER durations</b>: durations of the two timers</li>
+          <li><b>DOOR NAME</b>: the name of the indoor area as explained <a href="#indoor-controller-analysis">above</a>.</li>
+        </ul>
+      </div>
+
+      <h4>Observable state</h4>
+      <div>
+        After a careful analysis, it was decided to make the Indoor Controller an <a href="#observation-analysis">observable entity</a>. <br>
+        The information that has to be observable must contain the <b>status of the indoor area</b> (free, reserved, occupied) and a flag that is asserted since the DTCARENTER timeout expires to the moment a proper action is taken.
+      </div>
+
+    </div>
+
+    <h3 id="observation-analysis">About Observation</h3>
+    <div>
+      The <a href="../../First%20Problem%20Analysis/it.unibo.qakobserver/userDocs/Documentation.html">qakobserver framework</a> has to be used for each observable entity.
+      <br>
+      As analysts, we suggest to use <b>JSON</b> as data format, to improve the interaction and the communication, as we indicated also for the sprint 1. Moreover, thanks to <b>Gson or Jackson libraries</b> there's no abstraction gap.
+    </div>
+
+    <h3 id="park-service-gui-analysis">Park Service GUI</h3>
+    <div>
+      The Park Service GUI must be a simple interface for the user. It must be an interface that guides the user step by step during the car parking phase.
+      As already analyzed in the <a href="../../First%20Problem%20Analysis/userDocs/First%20Problem%20Analysis.html#park-service-gui">first problem analysis</a>, a <b>web application</b> can be a valid solution for the realization of the Park Service GUI.
+      <br><br>
+      <div class="in-depth-content">
+        So, from this moment, we will analyze the Park Service GUI taking into consideration the presence of a <k>web server</k>, which will take care of the communication with the domain logic, and a <k>GUI</k> that will collect user inputs.
+      </div>
+      <br>
+      In order to give a better user experience it was decided to show a single button for each car parking step (to avoid confusion). <br>
+      Moreover, informations like SLOTNUM and TOKENID should be persisted on GUI side in order to relieve the user of the responsibility to remember them. <br>
+      Furthermore, after a specific analysis, the status of the interactions between the gui and the web server must also be memorized, so that it can be easily restored in the unfortunate case of a GUI closure.
+    </div>
+
+    <h3 id="mock-data-gui-analysis">Mock Data GUI</h3>
+    <div>
+      The <b>Mock Data GUI</b> must be a simple interface that allows the manager to change and check the weight measured by the weight sensor, in case the weight sensor is virtual.
+      <br>
+      To increase the manager ease of use, the Mock Data Gui can be implemented as a <b>web application</b> as the Park Service GUI.
+      <br><br>
+      This GUI is not specified as a requirement and it is useless in case of a finished product with all real sensors. For that reason no in-depth analysis will be performed.
+    </div>
+
+    <h3 id="security-analysis">Security Considerations</h3>
+    <div>
+      After a careful analysis, the security in the communications, that arrive and depart from the Park Service GUI, could be a problem, especially for the transfer of <b>sensitive data such as SLOTNUM and TOKENID</b>.
+      In fact, if intercepted, this data could be used to retire any user machine or to cause a breakdown of the entire system.
+      An <b>encrypted data communication</b> can solve the problem.
+    </div>
+
+    <h3 id="interactions">Interactions</h3>
+    <div>
+      <!-- interaction image -->
+      <div class="interactions__image" style="margin-top: 50px;">
+        <center>
+          <img src="./img/indoor_controller_interaction_1.png" alt="indoor_controller_interaction_1.png"/>
+        </center>
+      </div>
+      <table class="table_interactions_messages">
+        <tr>
+          <th>Message</th>
+          <th>Payload</th>
+          <th>Semantic</th>
+          <th>Description</th>
+        </tr>
+        <tr>
+          <td>transport_trolley_new_job</td>
+          <td>X</td>
+          <td>request</td>
+          <td>Ask to start a new job</td>
+        </tr>
+        <tr>
+          <td>transport_trolley_job_accepted</td>
+          <td>X</td>
+          <td>reply</td>
+          <td>The transport trolley accepts the job</td>
+        </tr>
+        <tr>
+          <td>transport_trolley_go_to</td>
+          <td>indoor | outdoor | slotnum | home</td>
+          <td>request</td>
+          <td>Ask the transport trolley to go to a specific place</td>
+        </tr>
+        <tr>
+          <td>transport_trolley_arrived_at</td>
+          <td>indoor | outdoor | slotnum | home</td>
+          <td>reply</td>
+          <td>Success</td>
+        </tr>
+        <tr>
+          <td>transport_trolley_take_over_car</td>
+          <td>X</td>
+          <td>request</td>
+          <td>Ask the transport trolley to take over a car</td>
+        </tr>
+        <tr>
+          <td>transport_trolley_car_taken_over</td>
+          <td>X</td>
+          <td>reply</td>
+          <td>Success</td>
+        </tr>
+        <tr>
+          <td>transport_trolley_release_car</td>
+          <td>X</td>
+          <td>request</td>
+          <td>Ask the transport trolley to release a car</td>
+        </tr>
+        <tr>
+          <td>transport_trolley_car_released</td>
+          <td>X</td>
+          <td>reply</td>
+          <td>Success</td>
+        </tr>
+        <tr>
+          <td>transport_trolley_error</td>
+          <td>REASON</td>
+          <td>reply</td>
+          <td>Failure, the requested operation cannot be performed</td>
+        </tr>
+        <tr>
+          <td>transport_trolley_job_done</td>
+          <td>X</td>
+          <td>dispatch</td>
+          <td>Inform the transport trolley that the job is finished</td>
+        </tr>
+        <tr>
+          <td>reserve_parking_slot</td>
+          <td>X</td>
+          <td>request</td>
+          <td>Ask the Parking Slot Controller to reserve a free parking slot</td>
+        </tr>
+        <tr>
+          <td>parking_slot_reserved</td>
+          <td>SLOTNUM, TOKENID</td>
+          <td>reply</td>
+          <td>Success, parking slot reserved and tokenid generated</td>
+        </tr>
+        <tr>
+          <td>no_available_parking_slots</td>
+          <td>X</td>
+          <td>reply</td>
+          <td>Failure, no parking slots available</td>
+        </tr>
+        <tr>
+          <td>confirm_parking_slot</td>
+          <td>SLOTNUM, TOKENID</td>
+          <td>dispatch</td>
+          <td>Finalizes the occupation of the parking slot</td>
+        </tr>
+        <tr>
+          <td>undone_reservation</td>
+          <td>SLOTNUM, TOKENID</td>
+          <td>dispatch</td>
+          <td>Cancel the parking slot reservation</td>
+        </tr>
+
+      </table>
+
+      <!-- interaction image -->
+      <div class="interactions__image" style="margin-top: 70px;">
+        <center>
+          <img src="./img/indoor_controller_interaction_2.png" alt="indoor_controller_interaction_2.png" style="width: 100%;"/>
+        </center>
+      </div>
+      <table class="table_interactions_messages">
+        <tr>
+          <th>Message</th>
+          <th>Payload</th>
+          <th>Semantic</th>
+          <th>Description</th>
+        </tr>
+        <tr>
+          <td>parking_car_interest</td>
+          <td>X</td>
+          <td>request</td>
+          <td>The client ask to park the car</td>
+        </tr>
+        <tr>
+          <td>inform_in</td>
+          <td>SLOTNUM</td>
+          <td>reply</td>
+          <td>The system reply with a slotnum [0..6]</td>
+        </tr>
+        <tr>
+          <td>car_enter</td>
+          <td>SLOTNUM</td>
+          <td>request</td>
+          <td>The client click on "car enter" button</td>
+        </tr>
+        <tr>
+          <td>response_car_enter</td>
+          <td>TOKENID</td>
+          <td>reply</td>
+          <td>As explained <a href="#indoor-controller-analysis-car-enter">here</a></td>
+        </tr>
+        <tr>
+          <td>input_weight</td>
+          <td>W</td>
+          <td>dispatch</td>
+          <td>Send mock weight to weight sensor</td>
+        </tr>
+      </table>
+    </div>
+
+    <h3 id="machine-readable-model">Machine Readable Model</h3>
+    <pre>
+/**
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN INDOOR AREA [available parking slot]
+ * ==================================
+ * client using parkservicegui        | request parking_car_interest(X) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | observe weightsensor
+ *                                    | -- wait until measured weight in indoor area is lower than or equal to a given WMAX threshold --
+ *                                    | request reserve_parking_slot(X) to parkingslotscontroller
+ *                                    | -- set indoor area reserved --
+ *                                    |
+ * parkingslotscontroller             | replyTo reserve_parking_slot with parking_slot_reserved(SLOTNUM,TOKENID)
+ *                                    |
+ * indoorcontroller                   | -- save received SLOTNUM --
+ *                                    | -- save received TOKENID --
+ *                                    | replyTo parking_car_interest with inform_in(SLOTNUM)
+ *                                    | start dtoccupied timer
+ *                                    | -- wait until measured weight in indoor area is greater than a given WMAX threshold --
+ *                                    | stop dtoccupied timer
+ *                                    | start dtcarenter timer
+ *                                    | -- set indoor area engaged by car --
+ *
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN INDOOR AREA [unavailable parking slot]
+ * ==================================
+ * client using parkservicegui        | request parking_car_interest(X) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | observe weightsensor
+ *                                    | -- wait until measured weight in indoor area is lower than or equal to a given WMAX threshold --
+ *                                    | request reserve_parking_slot(X) to parkingslotscontroller
+ *                                    | -- set indoor area reserved --
+ *                                    |
+ * parkingslotscontroller             | replyTo reserve_parking_slot with no_available_parking_slots(X)
+ *                                    |
+ * indoorcontroller                   | replyTo parking_car_interest with inform_in(0)
+ *                                    | cancel weightsensor observation
+ *                                    | -- set indoor area free --
+ *
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN PARKING AREA [indoor area free]
+ * ==================================
+ * client using parkservicegui        | request car_enter(SLOTNUM) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | replyTo car_enter with response_car_enter(IndoorAreaNotReserved)
+ *                                    |
+ *
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN PARKING AREA [indoor area reserved - weight <= WMAX]
+ * ==================================
+ * client using parkservicegui        | request car_enter(SLOTNUM) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | replyTo car_enter with response_car_enter(IndoorAreaNotEngagedByCar)
+ *                                    |
+ *
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN PARKING AREA [invalid slotnum - indoor area engaged by car]
+ * ==================================
+ * client using parkservicegui        | request car_enter(SLOTNUM) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | replyTo car_enter with response_car_enter(InvalidSlotnum)
+ *                                    |
+ *
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN PARKING AREA [valid slotnum - indoor area engaged by car]
+ * ==================================
+ * client using parkservicegui        | request car_enter(SLOTNUM) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | stop dtcarenter timer
+ *                                    | -- disable dtcarenter alarm if enabled --
+ *                                    | [transporttrolley DSL] takeOverCar at INDOOR
+ *                                    | replyTo car_enter with response_car_enter(TOKENID)
+ *                                    | -- set indoor area free --
+ *                                    | cancel weightsensor observation
+ *                                    | [transporttrolley DSL] releaseCar at SLOTNUM
+ *                                    | forward confirm_parking_slot(SLOTNUM, TOKENID) to parkingslotscontroller
+ *                                    |
+ * parkingslotscontroller             | -- move parking slot SLOTNUM from status RESERVED to OCCUPIED --
+ *                                    | -- persist information about occupied parking slot SLOTNUM mapped to tokenid TOKENID --
+ *
+ * ==================================
+ * ================================== | ROUTINE CAR EXITS FROM INDOOR AREA
+ * ==================================
+ * indoorcontroller                   | stop dtcarenter timer
+ *                                    | cancel weightsensor observation
+ *                                    | -- set indoor area free --
+ *                                    | -- disable dtcarenter alarm if enabled --
+ *                                    | forward undone_reservation(SLOTNUM, TOKENID) to parkingslotscontroller
+ *
+ * parkingslotscontroller             | -- move parking slot SLOTNUM from status RESERVED to FREE --
+ *                                    | -- persist information about free parking slot SLOTNUM --
+ *
+ * ==================================
+ * ================================== | ROUTINE DTOCCUPIED TIMEOUT
+ * ==================================
+ * indoorcontroller                   | stop dtoccupied timer
+ *                                    | -- set indoor area free --
+ *                                    | cancel weightsensor observation
+ *                                    | forward undone_reservation(SLOTNUM, TOKENID) to parkingslotscontroller
+ *                                    |
+ * parkingslotscontroller             | -- move parking slot SLOTNUM from status RESERVED to FREE --
+ *                                    | -- persist information about free parking slot SLOTNUM --
+ *
+ * ==================================
+ * ================================== | ROUTINE DTCARENTER TIMEOUT
+ * ==================================
+ * indoorcontroller                   | stop dtcarenter timer
+ *                                    | -- enable dtcarenter alarm --
+ *
+ * ==================================
+ * ================================== | ROUTINE WEIGHTSENSOR MEASURE WEIGHT
+ * ==================================
+ * weightsensor                       | received input_weight(W)
+ *                                    | update observers with new weight W
+ *
+ */
+    </pre>
+    <p align="center">The QAK models can be found <a href="../model/">here</a></p>
+    <h3 id="logical-architecture">Logical Architecture</h3>
+    <p align="center"><a href="./img/legenda.png">Legenda</a></p>
+    <div class="interactions__image">
+      <center>
+        <img src="./img/sprint2_final_logical_architecture.png" alt="sprint2_final_logical_architecture.png"/>
+      </center>
+    </div>
+
+
+</div><!-- End Problem Analysis section [end class="remark"] -->
+
+<h2 id="test-plan">Test Plans</h2>
+<div class="remark">
+  <h4>TestSuccessAcceptIn</h4>
+  <ul>
+    <li>
+      <b>Description</b>: The client asks to enter in the indoor area and receives a valid SLOTNUM.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          Empty indoor area.
+        </li>
+        <li>
+          At least one free parking-slot.
+        </li>
+        <li>
+          The transportTrolley is not stopped.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested interactions behaviour</b>:
+      <ol>
+        <li>
+          Perform a "parking car interest" request through ParkServiceGUI.
+        </li>
+        <li>
+          <ks>Assert</ks> that the received slotnum is greater than 0.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested requirements</b>: F1, F2, F3
+    </li>
+  </ul>
+  <h4>TestFullParkingArea</h4>
+  <ul>
+    <li>
+      <b>Description</b>: The client asks to enter in the indoor area but he is refused and receives a SLOTNUM = 0.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          No free parking-slots available.
+        </li>
+        <li>
+          The transportTrolley is not stopped.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested interactions behaviour</b>:
+      <ol>
+        <li>
+          Perform a "parking car interest" request through ParkServiceGUI.
+        </li>
+        <li>
+          <ks>Assert</ks> that the received slotnum is equal to 0.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested requirements</b>: F1, F2, F3
+    </li>
+  </ul>
+  <h4>TestWeightSensorDetectCar</h4>
+  <ul>
+    <li>
+      <b>Description</b>: The indoorcontroller is able to detect that a car entered the indoor area.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          A successful "parking car interest" request has been made.
+        </li>
+        <li>
+          The weight measured by weightsensor is lower than WMAX.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested interactions behaviour</b>:
+      <ol>
+        <li>
+          Set a weight greater than WMAX on the weightsensor.
+        </li>
+        <li>
+          <ks>Assert</ks> that the indoor area status is "occupied" by observing the indoorcontroller status.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested requirements</b>: F16
+    </li>
+  </ul>
+  <h4>TestOccupiedIndoorArea</h4>
+  <ul>
+    <li>
+      <b>Description</b>: Only one car at a time has the permission to enter the indoor area. Test that when the indoor area is occupied no other "parking car interest" request is processed.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          A car entered the indoor area.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested interactions behaviour</b>:
+      <ol>
+        <li>
+          A second client asks to enter the indoor area by a "parking car interest" request.
+        </li>
+        <li>
+          After a given TIME LIMIT the request has not yet been processed.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested requirements</b>: F1, F2, F3, F16
+    </li>
+  </ul>
+</div>
+
+<h2 id="project">Project</h2>
+<div class="remark">
+  <h3 id="project-weightsensor-configuration">About WeightSensor configurability</h3>
+  <p>
+    In our domain the weightsensor is a mock (virtual) one and the input weight is received by an external dispatch sent by the MockDataGUI. However, since in the future the customer might ask to use a real weightsensor we decided to develop a small support able to handle both the real weightsensor and the virtual (mock) weightsensor. In particular, the class <a href="../it.unibo.automatedcarparking.weightsensor/resources/itunibo/automatedcarparking/weightsensor/WeightSensorSupport.kt">WeightSensorSupport.kt</a> can be <k>configured</k> to work with a <k>real</k> weightsensor or a <k>virtual</k> one by reading the mode from a configuration file.
+    <br><br>
+    The system administator can configure the system in order to use the virtual weightsensor or the real one by tweak the mode parameter ("virtual" or "real") in the configuration file <a href="../it.unibo.automatedcarparking.weightsensor/config_weight_sensor.json">config_weight_sensor.json</a>.
+    <br><br>
+    In both cases (virtual or real mode) the <k>weightsensor</k> QActor receives the current weight by a <k>input_weight</k> dispatch. <br>
+    In case of real weightsensor the dispatch could be generated and sent in form of <b>autoMsg()</b> by a thread or coroutine internal to the weightsensor. This autoMsg() should be sent by means of <a href="../it.unibo.automatedcarparking.weightsensor/resources/itunibo/automatedcarparking/weightsensor/RealWeightSensorSupport.kt">RealWeightSensorSupport.kt</a> (instantiated by the WeightSensorSupport.kt) each time a new weight is measured in the Indoor Area.
+    <br><br>
+    However, at the time of writing, as per requirements, only the <k>virtual</k> mode has been implemented.
+
+    <h4>About observable JSON status</h4>
+    <p>
+      The same considerations made <a href="#project-about-json-status">here</a> apply. The  Kotlin data class <a href="../it.unibo.automatedcarparking.weightsensor/resources/itunibo/automatedcarparking/weightsensor/Weight.kt">Weight.kt</a> contains the representation of the JSON status exposed by weightsensor.
+    </p>
+  </p>
+  <h3 id="project-indoorcontroller">About indoorcontroller</h3>
+  <p>
+    The indoorcontroller is designed as an observable QActor. It interacts with the other entities in the same way as explained in the <a href="#indoor-controller-analysis">problem analysis</a>. The system administrator can configure the indoorcontroller by tweaking the parameters of the configuration file <a href="../it.unibo.automatedcarparking.businesslogic/config_indoor_area.json">config_indoor_area.json</a>.
+    <br><br>
+    Notes:
+    <ol>
+      <li>
+        the parameter "doorName" (e.g. INDOOR) should be the same name of a position in the map known by the TransportTrolley actor.
+      </li>
+      <li>
+        the parameter "WMAX" must be expressed in kilograms
+      </li>
+      <li>
+        the parameter "DTOCCUPIED" must be expressed in milliseconds
+      </li>
+      <li>
+        the parameter "DTCARENTER" must be expressed in milliseconds
+      </li>
+    </ol>
+    <h4>About observable JSON status</h4>
+    <p>
+      The same considerations made <a href="#project-about-json-status">here</a> apply. The  Kotlin data class <a href="../it.unibo.automatedcarparking.businesslogic/resources/itunibo/automatedcarparking/parkingarea/IndoorAreaStatus.kt">IndoorAreaStatus.kt</a> contains the representation of the JSON status exposed by indoorcontroller.
+    </p>
+  </p>
+  <h3 id="project-parkingslotscontroller">About parkingslotscontroller</h3>
+  <p>
+    The parkingslotscontroller is designed as an observable QActor. It interacts with the indoorcontroller actor in the same way as explained in the problem analysis. For testing and mock implementations purposes, we added an additional <k>dispatch reset : reset(X)</k> useful to reset the status of the parking slots and set all of them to free status.
+  </p>
+  <h4 id="project-parkingslotscontroller-tokenid">About TokenID generation</h4>
+  <p>
+    We designed a <a href="../it.unibo.automatedcarparking.businesslogic/resources/itunibo/automatedcarparking/parkingarea/TokenId.kt">TokenId.kt</a> class that handles the generation of a TokenID.
+    <br>
+    The TokenID is generated by the ParkingSlotController upon successful <b>reserve_parking_slot</b> request, in the same way as explained <a href="../../First Problem Analysis/userDocs/First Problem Analysis.html#business-logic">here</a>.
+  </p>
+  <h4 id="project-parkingslotscontroller-persistence">About persistence</h4>
+  <p>
+    The informations to persist are those relative to the status of the (free or occupied) parking slots. Since there is not relation between different data we highlight the fact that a NoSQL database should be the perfect match for our persistence problem. However, for the sake of simplicity, in this first prototype we decided to implement the persistence on a JSON File instead of pay the cost of database management. Note that this is just underlying support and there is nothing that stop to change it in the future with a real NoSQL database.
+    <br><br>
+    We take advantage of pattern DAO (Data Access Object) that help us to insert an abstraction layer over the underlying persistent support (e.g. a JSON File or a Database Connection). <br>
+    We designed the <a href="../it.unibo.automatedcarparking.businesslogic/resources/itunibo/automatedcarparking/parkingarea/persistence/ParkingSlotCollectionDAO.kt">ParkingSlotCollectionDAO.kt</a> as a singleton object that exposes API to <k>read/modify</k> the persistent status of each parking slot. It also exposes an <k>init()</k> method that is intended to be used to properly <k>configure</k> the singleton object in database mode or json mode.
+    <br>
+    At the time of writing we support only the JSON File mode.
+    <br><br>
+    Indipendently to the method chosen to persist the data, we highlight below the information stored for each parking slot.
+    <ol>
+      <li>INTEGER: The parking slot number.</li>
+      <li>STRING: The parking slot status, FREE or ENGAGED.</li>
+      <li>STRING: The TokenID (meaningful only if the parking slot is engaged).</li>
+    </ol>
+  </p>
+  <h4>About observable JSON status</h4>
+  <p>
+    The same considerations made <a href="#project-about-json-status">here</a> apply. The  Kotlin data class <a href="../it.unibo.automatedcarparking.businesslogic/resources/itunibo/automatedcarparking/parkingarea/ParkingSlot.kt">ParkingSlot.kt</a> contains the representation of the JSON status of a <b>single</b> Parking Slot. Since the parkingslotscontroller exposes a JSON status containing a <b>collection of parking slots</b> a Kotlin data class <a href="../it.unibo.automatedcarparking.businesslogic/resources/itunibo/automatedcarparking/parkingarea/ParkingSlotCollection.kt">ParkingSlotCollection.kt</a> has been designed.
+    <br><br>
+  </p>
+  <h3 id='project-about-json-status'>Considerations about observable JSON status</h4>
+  <p>
+    The status of the entities introduced above should be observable and easily processable by other entities. For that reason we decided to use a largely used format for connected machines interoperability, such as JSON. <br>
+    In order to let the status observable by other QActors, each observable QActor needs to instantiate a QakResource instance using the qakobserver framework and update its status using the notify( ) method. <br><br>
+    The Gson or Jackson library can be used to perform conversions from Kotlin data class to JSON string and vice versa.
+  </p>
+  <h3 id="project-parkservicegui-server">ParkServiceGUI Server</h3>
+  <p>
+    We chose to use <k>Spring Boot</k> to implement the web server that hosts the ParkServiceGUI. The WebServer acts like an intermediate layer between the client and the domain logic (indoorcontroller). <br>
+    In particular, the WebServer exposes <k>POST APIs</k> that permit these interactions.
+    <br><br>
+    Below are reported the POST mappings and their meaning. Note that each input/output parameter is transmitted in its literal format and then converted locally to its internal representation (e.g. the SLOTNUM 5 is transmitted as STRING "5" and then converted locally to the INTEGER 5).
+    <table>
+      <tr>
+        <th>POST API</th>
+        <th>Input</th>
+        <th>Output</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>/parking_car_interest</td>
+        <td></td>
+        <td>Slotnum</td>
+        <td>The client requests to enter the indoor area. The server responds with slotnum greater than 0 if the client has permission to enter the indoor area, otherwise it responds with slotnum equal to 0 (e.g. the parking area is full).</td>
+      </tr>
+      <tr>
+        <td>/car_enter</td>
+        <td>Slotnum</td>
+        <td>TokenID</td>
+        <td>The client requests to enter the parking area. The server responds with the TokenID or an error message.</td>
+      </tr>
+    </table>
+    <p>
+      The class <a href="../it.unibo.automatedcarparking.parkservicegui/src/main/kotlin/it/unibo/automatedcarparking/parkservicegui/ParkServiceGuiController.kt">ParkServiceGuiController.kt</a> implements those mappings between POST requests and domain logic interactions using the Spring Framework. Moreover the ParkServiceGuiController uses the classes <a href="../it.unibo.automatedcarparking.parkservicegui/src/main/kotlin/it/unibo/automatedcarparking/parkservicegui/qakutil/RemoteQakContext.kt">RemoteQakContext.kt</a> and <a href="../it.unibo.automatedcarparking.parkservicegui/src/main/kotlin/it/unibo/automatedcarparking/parkservicegui/qakutil/RemoteQactor.kt">RemoteQActor.kt</a> in order to perform request (and receive response) to/from the domain logic actors. A TCP connection is created in order to communicate with the <k>ctxbusinesslogic</k>.
+    </p>
+  </p>
+  <h3 id="project-parkservicegui-client">ParkServiceGUI Client</h3>
+  <p>
+    A <a href="../it.unibo.automatedcarparking.parkservicegui/src/main/resources/static/parkservicegui.js">JavaScript frontend</a> is used to perform the mapping between GUI buttons and POST requests.
+    <br><br>
+    The analysts raised up the possibility to store informations like SLOTNUM, TOKENID and the current status of the interactions between GUI and Web Server. <br>
+    A perfect match for our needs is given by the <a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage">localStorage JavaScript API</a> that is implemented by most browsers. The localStorage permits to save informations locally to the browser in a "key" - "value" mapping. <br>
+    Below we highlight which information are stored and when.
+    <table>
+      <tr>
+        <th>Key</th>
+        <th>Value</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>slotnum</td>
+        <td>INTEGER</td>
+        <td>Stored after each "/parking_car_interest" response. Retrieved every time the GUI user triggers a "/car_enter" request through the apposite button. Sent to the Web Server as input parameter of the "/car_enter" request.</td>
+      </tr>
+      <tr>
+        <td>tokenid</td>
+        <td>STRING</td>
+        <td>Stored after each "/car_enter" response.</td>
+      </tr>
+      <tr>
+        <td rowspan="3">checkpoint</td>
+        <td>home</td>
+        <td>Ready to perform a "/parking_car_interest" request.</td>
+      </tr>
+      <tr>
+        <td style="display: none"></td>
+        <td>received_slotnum</td>
+        <td>Received response after a "/parking_car_interest" request. Ready to perform a "/car_enter" request.</td>
+      </tr>
+      <tr>
+        <td style="display: none"></td>
+        <td>received_tokenid</td>
+        <td>Received response after a "/car_enter" request.</td>
+      </tr>
+    </table>
+    <br><br>
+    Below are reported some images related to the ParkServiceGUI.
+    <table class="table_no_border">
+      <tr>
+        <td>
+          <img src="./img/parkservicegui_car_park_parking_car_interest.png" alt="parkservicegui_car_park_parking_car_interest.png"
+          style="width:100%"/>
+        </td>
+        <td>
+          <img src="./img/parkservicegui_car_park_slotnum.png" alt="parkservicegui_car_park_slotnum.png"
+          style="width:100%"/>
+        </td>
+        <td>
+          <img src="./img/parkservicegui_car_park_tokenid.png" alt="parkservicegui_car_park_tokenid.png"
+          style="width:100%"/>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          Click "parking car interest" button to express interest in entering the indoor area.
+        </td>
+        <td>
+          The slotnum received is shown to the user. Click "car enter" button to park the car.
+        </td>
+        <td>
+          The tokenid received is shown to the user. Click "back to homepage".
+        </td>
+      </tr>
+    </table>
+  </p>
+  <h3 id="project-mockdatagui">MockDataGUI</h3>
+  <p>
+    Since our prototype is composed also by mock sensors we decided to implement a GUI that permits to the manager to easily change the values measured by the mock sensors.
+    This GUI is hosted by a WebServer developed with the Spring Boot Framework.
+    <br><br>
+    In this sprint we focused on the weight measured by the WeightSensor in the indoor area. The GUI also exposes a "reset parking slots" functionality in order to cleanup the current status of free/reserved/engaged parking slots and reset all of them to free status.
+    <br><br>
+    In particular messages to <k>weightsensor</k> QActor are sent as <k>input_weight</k> dispatch and the "reset parking slots" functionality is implemented by means of a <k>reset</k> dispatch sent to <k>parkingslotscontroller</k> QActor. GUI and Web Server interacts by means of POST requests (that are mapped by the WebServer to QActor messages).
+    <br><br>
+    Below are reported some images related to the MockDataGUI.
+
+    <table class="table_no_border">
+      <tr>
+        <td>
+          <img src="./img/mockdatagui_weightsensor_50.png" alt="mockdatagui_weightsensor_50.png"
+          style="width:100%"/>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          The "slider" can be used to set the weight to the desired value, which is shown below the slider itself. <br>
+          Click "reset parking slots" button to set all parking slots to the "free" status.
+        </td>
+      </tr>
+    </table>
+  </p>
+  <h3 id="project-transporttrolleygui">TransportTrolleyGUI</h3>
+  <p>
+    In order to handle "move failures" of the transport trolley we decided to use the GUI already proposed during the sprint 1 with minor changes in order to match just the problems related to the current sprint.
+
+    <table class="table_no_border">
+      <tr>
+        <td>
+          <img src="./img/transporttrolleygui_tt_idle.png" alt="transporttrolleygui_tt_idle.png"
+          style="width:100%"/>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          The behaviour of the "REFRESH WENV" and "START" buttons has been explained in the proper section "About GUI" of <a href="../../Sprint 1 - TransportTrolley/userDocs/sprint1.html">sprint 1</a>. At default these buttons are disabled and become enabled only when a move fail occurs.
+        </td>
+      </tr>
+    </table>
+  </p>
+  <h3 id="project-security">About security</h3>
+  <p>
+    We should use a secure connection in order to exchange data between the ParkServiceGUI and the WebServer since there is a transmission of confidential information like TokenId and Slotnum. A perfect match could be a secure <k>HTTPS</k> connection.
+    <br>
+    For the sake of simplicity we do not handle security issues in this first prototype.
+  </p>
+  <h3 id="project-configuration-files">About configuration files</h3>
+  <p>
+    <table>
+      <tr>
+        <th>
+          File Name
+        </th>
+        <th>
+          Description
+        </th>
+      </tr>
+      <tr>
+        <td>
+          <a href="../it.unibo.automatedcarparking.weightsensor/systemweightsensor.pl">systemweightsensor.pl</a>
+        </td>
+        <td>
+          Can be used to configure the listening port of the <k>ctxweightsensor</k>.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <a href="../it.unibo.automatedcarparking.weightsensor/config_weight_sensor.json">config_weight_sensor.json</a>
+        </td>
+        <td>
+          Contains the mode ("virtual" or "real") of the weightsensor.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <a href="../it.unibo.automatedcarparking.businesslogic/systembusinesslogic.pl">systembusinesslogic.pl</a>
+        </td>
+        <td>
+          Can be used to configure the hostname and port of the:
+          <k>ctxweightsensor</k>, <k>ctxbasicrobot</k>. Moreover you can configure the listening port of the <k>ctxbusinesslogic</k>.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <a href="../it.unibo.automatedcarparking.businesslogic/config_indoor_area.json">config_indoor_area.json</a>
+        </td>
+        <td>
+          Contains the informations to properly configure the indoor area as explained <a href="#project-indoorcontroller">here</a>.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <a href="../it.unibo.automatedcarparking.businesslogic/database_parking_slot.json">database_parking_slot.json</a>
+        </td>
+        <td>
+          Contains the persistent informations about parking slot status as explained in the <a href="#project-parkingslotscontroller-persistence">section above</a>. In a real scenario the database file should not be used as a configuration file, however, we decided to highlight it in this section since in a mock scenario is quite useful, in order to prepare the system in some free/engaged parking slots configuration.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <a href="../it.unibo.automatedcarparking.parkservicegui/src/main/resources/application.properties">application.properties</a>
+        </td>
+        <td>
+          Can be used to configure the hostname and port of the <k>ctxbusinesslogic</k>.
+          Moreover you can configure the listening port of the <k>ParkServiceGUI Web Server</k>.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <a href="../it.unibo.automatedcarparking.mockdatagui/src/main/resources/application.properties">application.properties</a>
+        </td>
+        <td>
+          Can be used to configure the hostname and port of the <k>ctxbusinesslogic</k> and <k>ctxweightsensor</k>.
+          Moreover you can configure the listening port of the <k>MockDataGUI Web Server</k>.
+        </td>
+      </tr>
+    </table>
+  </p>
+  <h3 id="project-qak-weightsensor">WeightSensor QAK</h3>
+  <div class="interaction_qak_example" style="width:90%;">
+    <p align="center">
+      The QAK below contains the implementation of the weightsensor QActor.
+    </p>
+    <a href="../it.unibo.automatedcarparking.weightsensor/src/weightsensor.qak">
+    <div class="interaction_qak_example_link">
+      weightsensor.qak
+    </div>
+    </a>
+  </div>
+  <h3 id="project-qak-businesslogic">BusinessLogic QAK</h3>
+  <div class="interaction_qak_example" style="width:90%;">
+    <p align="center">
+      The QAK below contains the implementation of the domain logic actors. In particular we implemented in this sprint the indoorcontroller and the parkingslotscontroller.
+    </p>
+    <a href="../it.unibo.automatedcarparking.businesslogic/src/businesslogic.qak">
+    <div class="interaction_qak_example_link">
+      businesslogic.qak
+    </div>
+    </a>
+  </div>
+
+
+</div><!-- End Project section [end class="remark"] -->
+
+<h2 id="testing">Testing</h2>
+<div class="remark">
+  <p>
+    The tests have been described in the <a href="#test-plan">above sections</a> and have been implemented <a href="../it.unibo.sprint2.test/test/it/unibo/sprint2/test/TestPlan.kt">here</a>. Each test interacts with the webservers by means of POST requests, so each test simulates the client behaviour.
+  </p>
+  <h4>How to run</h4>
+  <p>
+    <ol>
+      <li>
+        Open a terminal inside the "Sprint 2 - Car Parking" directory
+      </li>
+      <li>
+        Build all the libraries with:
+        <pre>[WINDOWS] .\rebuild_for_docker.bat</pre>
+        or
+        <pre>[LINUX]   ./rebuild_for_docker.bash</pre>
+      </li>
+      <li>
+        Build the docker images with:
+        <pre>docker-compose -f sprint2.yaml build</pre>
+      </li>
+      <li>
+        Launch the docker images with:
+        <pre>docker-compose -f basicrobotVirtual.yaml -f sprint2.yaml up</pre>
+      </li>
+      <li>
+        Wait until all the docker images are running...
+      </li>
+      <li>
+        Open the <a href="http://localhost:8081" target="_blank">TransportTrolleyGUI</a> and monitor it
+        while the tests are running in order to catch and handle "move fail" errors.
+      </li>
+      <li>
+        Open a new terminal inside the "it.unibo.sprint2.test" directory
+      </li>
+      <li>
+        Launch the tests with:
+        <pre>gradle test</pre>
+      </li>
+    </ol>
+  </p>
+</div><!-- End Testing section [end class="remark"] -->
+
+<h2 id="deployment">Deployment</h2>
+<div class="remark">
+<p>
+  We used Docker to deploy the software developed during this sprint.
+</p>
+<h4>How to run</h4>
+<p>
+  <ol>
+    <li>
+      Open a terminal inside the "Sprint 2 - Car Parking" directory
+    </li>
+    <li>
+      Build all the libraries with:
+      <pre>[WINDOWS] .\rebuild_for_docker.bat</pre>
+      or
+      <pre>[LINUX]   ./rebuild_for_docker.bash</pre>
+    </li>
+    <li>
+      Build the docker images with:
+      <pre>docker-compose -f sprint2.yaml build</pre>
+    </li>
+    <li>
+      Launch the docker images with:
+      <pre>docker-compose -f basicrobotVirtual.yaml -f sprint2.yaml up</pre>
+    </li>
+    <li>
+      Wait until all the docker images are running...
+    </li>
+    <li>
+      Open the <a href="http://localhost:8100" target="_blank">ParkServiceGUI</a>, <a href="http://localhost:8099" target="_blank">MockDataGUI</a>, <a href="http://localhost:8081" target="_blank">TransportTrolleyGUI</a> and use them.
+    </li>
+  </ol>
+</p>
+<h4>Logging</h4>
+<ul>
+  <li>
+    <p>weightsensor</p>
+    <pre>docker logs --timestamps -f sprint2-carparking_weightsensor_1</pre>
+  </li>
+  <li>
+    <p>businesslogic</p>
+    <pre>docker logs --timestamps -f sprint2-carparking_businesslogic_1</pre>
+  </li>
+  <li>
+    <p>parkservicegui</p>
+    <pre>docker logs --timestamps -f sprint2-carparking_parkservicegui_1</pre>
+  </li>
+</ul>
+<h4>Example GUIs usage</h4>
+<center>
+  <video width="750" autoplay loop muted>
+      <source src="./img/parkservicegui_car_park.mp4"
+              type="video/mp4">
+  </video>
+</center>
+
+
+</div><!-- End Deployment section [end class="remark"] -->
+
+<div class="contact-us" id="contact-us">
+  <table>
+    <tr>
+      <td colspan="2"><h3>By:</h3></td>
+    </tr>
+    <tr>
+      <td>
+        <div class="student__image">
+          <center>
+            <img src="./img/students/lorenzo_persampieri.jpg" alt="lorenzo_persampieri.jpg"/>
+          </center>
+        </div>
+      </td>
+      <td>
+        <div class="student__image">
+          <center>
+            <img src="./img/students/gianluca_soavi.jpg" alt="gianluca_soavi.jpg"/>
+          </center>
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <th>Lorenzo Persampieri</th>
+      <th>Gianluca Soavi</th>
+    </tr>
+    <tr style="padding-bottom: 10px;">
+      <td>lorenzo.persampieri@studio.unibo.it</td>
+      <td>gianluca.soavi@studio.unibo.it</td>
+    </tr>
+    <tr>
+      <th colspan="2" style="border-top: 1px solid black; padding-top: 10px;">Github Repository</th>
+    </tr>
+    <tr>
+      <td colspan="2"><a href="https://github.com/lorepersa/Automated-Car-Parking">https://github.com/lorepersa/Automated-Car-Parking</a></td>
+    </tr>
+  </table>
+</div><!-- End Contact Us class remark -->
+
+
+</body>
+</html>

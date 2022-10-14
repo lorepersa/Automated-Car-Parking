@@ -1,0 +1,40 @@
+version: '3'
+services:
+  weightsensor:
+    build: ./it.unibo.automatedcarparking.weightsensor
+    image: sprint2/weightsensor
+    ports:
+      - 8060:8060/tcp
+      - 8060:8060/udp
+  businesslogic:
+    build: ./it.unibo.automatedcarparking.businesslogic
+    image: sprint2/businesslogic
+    ports:
+      - 8065:8065/tcp
+      - 8065:8065/udp
+    depends_on:
+      - weightsensor
+  parkservicegui:
+    build: ./it.unibo.automatedcarparking.parkservicegui
+    image: sprint2/parkservicegui
+    ports:
+      - 8100:8100/tcp
+      - 8100:8100/udp
+    depends_on:
+      - businesslogic
+  transporttrolleygui:
+    build: ./it.unibo.transporttrolleygui
+    image: sprint2/transporttrolleygui
+    ports:
+      - 8081:8081/tcp
+      - 8081:8081/udp
+    depends_on:
+      - businesslogic
+  mockdatagui:
+    build: ./it.unibo.automatedcarparking.mockdatagui
+    image: sprint2/mockdatagui
+    ports:
+      - 8099:8099/tcp
+      - 8099:8099/udp
+    depends_on:
+      - weightsensor

@@ -1,0 +1,896 @@
+/**
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN INDOOR AREA [available parking slot]
+ * ==================================
+ * client using parkservicegui        | request parking_car_interest(X) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | observe weightsensor
+ *                                    | -- wait until measured weight in indoor area is lower than or equal to a given WMAX threshold --
+ *                                    | request reserve_parking_slot(X) to parkingslotscontroller
+ *                                    | -- set indoor area reserved --
+ *                                    |
+ * parkingslotscontroller             | replyTo reserve_parking_slot with parking_slot_reserved(SLOTNUM,TOKENID)
+ *                                    |
+ * indoorcontroller                   | -- save received SLOTNUM -- 
+ *                                    | -- save received TOKENID -- 
+ *                                    | replyTo parking_car_interest with inform_in(SLOTNUM)
+ *                                    | start dtoccupied timer
+ *                                    | -- wait until measured weight in indoor area is greater than a given WMAX threshold --
+ *                                    | stop dtoccupied timer
+ *                                    | start dtcarenter timer
+ *                                    | -- set indoor area engaged by car --
+ * 
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN INDOOR AREA [unavailable parking slot]
+ * ==================================
+ * client using parkservicegui        | request parking_car_interest(X) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | observe weightsensor
+ *                                    | -- wait until measured weight in indoor area is lower than or equal to a given WMAX threshold --
+ *                                    | request reserve_parking_slot(X) to parkingslotscontroller
+ *                                    | -- set indoor area reserved --
+ *                                    |
+ * parkingslotscontroller             | replyTo reserve_parking_slot with no_available_parking_slots(X)
+ *                                    |
+ * indoorcontroller                   | replyTo parking_car_interest with inform_in(0)
+ *                                    | cancel weightsensor observation
+ *                                    | -- set indoor area free --
+ * 
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN PARKING AREA [indoor area free]
+ * ==================================
+ * client using parkservicegui        | request car_enter(SLOTNUM) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | replyTo car_enter with response_car_enter(IndoorAreaNotReserved)
+ *                                    |
+ * 
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN PARKING AREA [indoor area reserved - weight <= WMAX]
+ * ==================================
+ * client using parkservicegui        | request car_enter(SLOTNUM) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | replyTo car_enter with response_car_enter(IndoorAreaNotEngagedByCar)
+ *                                    |
+ * 
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN PARKING AREA [invalid slotnum - indoor area engaged by car]
+ * ==================================
+ * client using parkservicegui        | request car_enter(SLOTNUM) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | replyTo car_enter with response_car_enter(InvalidSlotnum)
+ *                                    |
+ * 
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN PARKING AREA [valid slotnum - indoor area engaged by car]
+ * ==================================
+ * client using parkservicegui        | request car_enter(SLOTNUM) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | stop dtcarenter timer
+ *                                    | -- disable dtcarenter alarm if enabled -- 
+ *                                    | [transporttrolley DSL] takeOverCar at INDOOR
+ *                                    | replyTo car_enter with response_car_enter(TOKENID)
+ *                                    | -- set indoor area free --
+ *                                    | cancel weightsensor observation
+ *                                    | [transporttrolley DSL] releaseCar at SLOTNUM
+ *                                    | forward confirm_parking_slot(SLOTNUM, TOKENID) to parkingslotscontroller
+ *                                    |
+ * parkingslotscontroller             | -- move parking slot SLOTNUM from status RESERVED to OCCUPIED --
+ *                                    | -- persist information about occupied parking slot SLOTNUM mapped to tokenid TOKENID --
+ *
+ * ==================================
+ * ================================== | ROUTINE CAR EXITS FROM INDOOR AREA
+ * ==================================
+ * indoorcontroller                   | stop dtcarenter timer
+ *                                    | cancel weightsensor observation
+ *                                    | -- set indoor area free --
+ *                                    | -- disable dtcarenter alarm if enabled -- 
+ *                                    | forward undone_reservation(SLOTNUM, TOKENID) to parkingslotscontroller
+ * 
+ * parkingslotscontroller             | -- move parking slot SLOTNUM from status RESERVED to FREE --
+ *                                    | -- persist information about free parking slot SLOTNUM --
+ * 
+ * ==================================
+ * ================================== | ROUTINE DTOCCUPIED TIMEOUT
+ * ==================================
+ * indoorcontroller                   | stop dtoccupied timer
+ *                                    | -- set indoor area free --
+ *                                    | cancel weightsensor observation
+ *                                    | forward undone_reservation(SLOTNUM, TOKENID) to parkingslotscontroller
+ *                                    |
+ * parkingslotscontroller             | -- move parking slot SLOTNUM from status RESERVED to FREE --
+ *                                    | -- persist information about free parking slot SLOTNUM --
+ * 
+ * ==================================
+ * ================================== | ROUTINE DTCARENTER TIMEOUT
+ * ==================================
+ * indoorcontroller                   | stop dtcarenter timer
+ *                                    | -- enable dtcarenter alarm --
+ * 
+ * ==================================
+ * ================================== | ROUTINE WEIGHTSENSOR MEASURE WEIGHT
+ * ==================================
+ * weightsensor                       | received input_weight(W)
+ *                                    | update observers with new weight W
+ * 
+ */
+System systembusinesslogic
+
+// indoor controller
+
+Request   parking_car_interest : parking_car_interest(X)
+Reply     inform_in            : inform_in(SLOTNUM)
+
+Request   car_enter            : car_enter(SLOTNUM)
+Reply     response_car_enter   : response_car_enter(TOKENID)
+
+Dispatch  auto_car_taken_over  : auto_car_taken_over(X)
+Dispatch  auto_car_park_done   : auto_car_park_done(X)
+
+// event auto-sent only to the owner actor...
+Event     auto_indoor_area_weight   : auto_indoor_area_weight(W)
+
+// event auto-sent only to the owner actor...
+Event     auto_dtoccupied_timeout : auto_dtoccupied_timeout(X)
+
+// event auto-sent only to the owner actor...
+Event     auto_dtcarenter_timeout : auto_dtcarenter_timeout(X)
+
+// parking slots controller
+
+Request   reserve_parking_slot         : reserve_parking_slot(X)
+Reply     parking_slot_reserved        : parking_slot_reserved(SLOTNUM,TOKENID)
+Reply     no_available_parking_slots   : no_available_parking_slots(X)
+
+Dispatch  confirm_parking_slot         : confirm_parking_slot(SLOTNUM,TOKENID) 
+Dispatch  undone_reservation           : undone_reservation(SLOTNUM,TOKENID)
+
+
+// transport trolley
+
+// open session
+Request   transport_trolley_new_job        : transport_trolley_new_job(X)
+Reply     transport_trolley_job_accepted   : transport_trolley_job_accepted(X)
+
+// move transport trolley to destination
+Request   transport_trolley_go_to          : transport_trolley_go_to(DESTINATION)
+Reply     transport_trolley_arrived_at     : transport_trolley_arrived_at(DESTINATION)
+
+// car handling commands
+Request   transport_trolley_take_over_car  : transport_trolley_take_over_car(X)
+Reply     transport_trolley_car_taken_over : transport_trolley_car_taken_over(X)
+Request   transport_trolley_release_car    : transport_trolley_release_car(X)
+Reply     transport_trolley_car_released   : transport_trolley_car_released(X)
+
+// unknown destination, cannot take over car, cannot release car
+Reply     transport_trolley_error          : transport_trolley_error(REASON)
+
+// close session
+Dispatch  transport_trolley_job_done       : transport_trolley_job_done(X)
+
+// resumable behavior
+Dispatch  transport_trolley_start          : transport_trolley_start(X)
+Dispatch  transport_trolley_stop           : transport_trolley_stop(X)
+
+// internal messages
+Dispatch  auto_transport_trolley_go_home      : auto_transport_trolley_go_home(X)
+Dispatch  move_done           : move_done(MOVE)
+Dispatch  move_fail           : move_fail(MOVE,DURATION,CAUSE)
+
+// basicrobot
+Dispatch cmd        : cmd(MOVE)
+Dispatch end        : end(ARG)  
+Request  step       : step( TIME )	
+Reply    stepdone   : stepdone(V)  
+Reply    stepfail   : stepfail(DURATION, CAUSE)
+
+
+Context ctxbusinesslogic     ip [host="localhost" port=8065]
+Context ctxweightsensor      ip [host="127.0.0.1" port=8060]
+
+Context ctxbasicrobot        ip [host="robot" port=8020]  
+
+ExternalQActor weightsensor  context ctxweightsensor
+ExternalQActor basicrobot    context ctxbasicrobot 
+
+/*
+ * indoorcontroller status:
+ * FREE: means that the indoorcontroller is not observing the weightsensor, so it assumes that the indoor area is free
+ * RESERVED: means that the indoor area is reserved for a car but the car actually is not in the indoor area
+ * ENGAGED: means that the indoor area is reserved for a car and the car is actually in the indoor area
+ * 
+ */
+ 
+
+QActor indoorcontroller context ctxbusinesslogic {
+	[#
+		// configurable variables...
+		lateinit var DOOR_NAME : String
+		var WMAX : Long = 0
+		
+		// internal status...
+		var reserved = false
+		var engaged = false
+		var carEnterAlarm = false
+		var SLOTNUM = 0
+		var TOKENID = ""
+		var CAR_ENTER_SLOTNUM = SLOTNUM
+		var CAR_ENTER_TOKENID = TOKENID
+		var parking_car_interest = false
+		var handling_car_enter = false 
+		var reserved_parking_slot = false
+		var wait_for_take_over = false
+		var need_to_start_dtcarenter_timer = false
+		
+		val resource = itunibo.qakobserver.FactoryQakResource.create(myself)
+		
+		data class Weight(val weight : Int) {}
+		
+		val weightMessageBuilder = object : itunibo.qakobserver.IMessageBuilder {
+			
+			val gson = com.google.gson.Gson()
+			override fun buildMessage(input : String, observerName : String) : ApplMessage {
+				val weight = gson.fromJson(input, Weight::class.java).weight
+				return MsgUtil.buildEvent(observerName, "auto_indoor_area_weight", "auto_indoor_area_weight($weight)")
+			}
+		}
+		
+		val weightsensorObserver = itunibo.qakobserver.FactoryQakObserver.create(myself, "weightsensor", weightMessageBuilder)
+		
+		val dtoccupiedTimeoutMessage = object : itunibo.qakutils.watchdog.IExpiredTimeAutoMessage {
+			override fun buildMessage(ownerName: String): ApplMessage {
+				return MsgUtil.buildEvent(
+					ownerName,
+					"auto_dtoccupied_timeout",
+					"auto_dtoccupied_timeout(X)"
+				)
+			}
+		} 
+		
+		val dtcarenterTimeoutMessage = object : itunibo.qakutils.watchdog.IExpiredTimeAutoMessage {
+			override fun buildMessage(ownerName: String): ApplMessage {
+				return MsgUtil.buildEvent(
+					ownerName,
+					"auto_dtcarenter_timeout",
+					"auto_dtcarenter_timeout(X)"
+				)
+			}
+		} 
+		
+		lateinit var dtoccupiedWatchdog : itunibo.qakutils.watchdog.Watchdog 
+		lateinit var dtcarenterWatchdog : itunibo.qakutils.watchdog.Watchdog
+		
+	#]
+	
+	State init initial {
+		/* In production code values below should be properly configurable. */
+		[# WMAX = 500 #]  
+		[# DOOR_NAME = "INDOOR" #]
+		[# val DTOCCUPIED_TIMEOUT = 30000L #]
+		[# val DTCARENTER_TIMEOUT = 30000L #]
+		[# dtoccupiedWatchdog = itunibo.qakutils.watchdog.Watchdog(myself, DTOCCUPIED_TIMEOUT, dtoccupiedTimeoutMessage) #]
+		[# dtcarenterWatchdog = itunibo.qakutils.watchdog.Watchdog(myself, DTCARENTER_TIMEOUT, dtcarenterTimeoutMessage) #]
+		
+		println("[indoorcontroller] | init | Config - WMAX: $WMAX kG")
+		println("[indoorcontroller] | init | Config - Door Name: $DOOR_NAME")
+		println("[indoorcontroller] | init | Config - DTOCCUPIED Timeout: $DTOCCUPIED_TIMEOUT ms")
+		println("[indoorcontroller] | init | Config - DTCARENTER Timeout: $DTCARENTER_TIMEOUT ms")
+		[# resource.notify("status") #]
+	} Goto wait
+	
+	State wait {
+
+	} Transition t0
+	whenRequest parking_car_interest and [# !reserved #]                 -> handleParkingCarInterest
+	whenRequest car_enter  and [# !handling_car_enter #]                        -> handleCarEnter
+	whenReply   parking_slot_reserved                                           -> handleParkingSlot
+	whenReply   no_available_parking_slots                                      -> handleParkingSlot
+	whenMsg     auto_car_taken_over                                             -> handleCarTakeOver
+	whenMsg     auto_car_park_done                                              -> handleCarParkDone
+	whenEvent   auto_indoor_area_weight and [# weightsensorObserver.isObserving() #]  -> handleWeight // autoMsg by observer
+	whenEvent   auto_dtoccupied_timeout and [# dtoccupiedWatchdog.isRunning() #] -> handleEnterIndoorAreaTimeout // autoMsg by watchdog
+	whenEvent   auto_dtcarenter_timeout and [# dtcarenterWatchdog.isRunning() #] -> handleCarEnterTimeout
+	
+	State handleWeight {
+		
+		[# var update_status = false #]
+		
+		printCurrentMessage
+		onMsg(auto_indoor_area_weight : auto_indoor_area_weight(W)) {
+			[# val W = payloadArg(0).toInt() #]
+			
+			if [# W > WMAX #] {
+				
+				println("[indoorcontroller] | [State] handleWeight | Received Weight > WMAX!")
+				
+				/* stop the first timer */
+				if [# dtoccupiedWatchdog.isRunning() #] {
+					println("[indoorcontroller] | [State] handleWeight | Stop DTOCCUPIED timer...")
+					[# dtoccupiedWatchdog.stop() #]
+					
+					/* start the second timer */
+					if [# !handling_car_enter #] {
+						println("[indoorcontroller] | [State] handleWeight | Start DTCARENTER timer...")
+						[# dtcarenterWatchdog.start() #]
+					} else {
+						println("[indoorcontroller] | [State] handleWeight | Postpone DTCARENTER timer (ongoing car enter request)...")
+						[# need_to_start_dtcarenter_timer = true #] 
+					}
+				}
+				
+				if [# !engaged #] {
+					[# update_status = true #]
+				}
+				println("[indoorcontroller] | [State] handleWeight | $DOOR_NAME Area engaged by car!")
+				[# engaged = true #]
+			} else {
+				
+				println("[indoorcontroller] | [State] handleWeight | Received Weight <= WMAX!")
+				[# need_to_start_dtcarenter_timer = false #]
+				
+				if [# !wait_for_take_over && reserved_parking_slot && engaged #] {
+					println("[indoorcontroller] | [State] handleWeight | Undone parking slot reservation...")
+					forward parkingslotscontroller -m undone_reservation : undone_reservation($SLOTNUM,$TOKENID)
+					[# reserved_parking_slot = false #]
+				}
+				
+				if [# carEnterAlarm #] {
+					println("[indoorcontroller] | [State] handleWeight | DTCARENTER alarm raised...")
+					println("[indoorcontroller] | [State] handleWeight | Undone parking slot reservation...")
+					[# carEnterAlarm = false #]
+					[# reserved = false #]
+					[# update_status = true #]
+				}
+
+				if [# !parking_car_interest && !wait_for_take_over && engaged #] {
+					println("[indoorcontroller] | [State] handleWeight | $DOOR_NAME Area free!")
+					println("[indoorcontroller] | [State] handleWeight | Stop DTCARENTER timer...")
+					println("[indoorcontroller] | [State] handleWeight | Stop weightsensor observation...")
+					[# reserved = false #]
+					[# dtcarenterWatchdog.stop() #]
+					[# weightsensorObserver.cancel() #]
+					[# update_status = true #]
+				}
+				[# engaged = false #]
+				
+				if [# parking_car_interest #] {
+					println("[indoorcontroller] | [State] handleWeight | Reserve parking slot...")
+					[# parking_car_interest = false #]
+					request parkingslotscontroller -m reserve_parking_slot : reserve_parking_slot(X)
+				}
+			}
+		}
+		
+		if [# update_status #] {
+			[# resource.notify("status") #]
+		}
+	} Goto wait
+	
+	State handleParkingCarInterest {
+		printCurrentMessage
+		onMsg(parking_car_interest : parking_car_interest(X)) {
+			println("[indoorcontroller] | [State] handleParkingCarInterest | Parking car interest!")
+			[# reserved = true #]
+			[# parking_car_interest = true #]
+			println("[indoorcontroller] | [State] handleParkingCarInterest | Start weightsensor observation...")
+			[# weightsensorObserver.observe() #]
+			[# resource.notify("status") #]
+		}
+	} Goto wait
+	
+	State handleParkingSlot {
+		printCurrentMessage
+		onMsg(parking_slot_reserved : parking_slot_reserved(SLOTNUM,TOKENID)) {
+			[# SLOTNUM = payloadArg(0).toInt() #]
+			[# TOKENID = payloadArg(1) #]
+			println("[indoorcontroller] | [State] handleParkingSlot | reserved slotnum $SLOTNUM with tokenid $TOKENID")
+			replyTo parking_car_interest with inform_in : inform_in($SLOTNUM)
+			println("[indoorcontroller] | [State] handleParkingSlot | Start DTOCCUPIED timer...")
+			[# dtoccupiedWatchdog.start() #]
+			[# reserved_parking_slot = true #]
+		}
+		onMsg(no_available_parking_slots : no_available_parking_slots(X)) {
+			println("indoorcontroller | [State] handleParkingSlot | no parking slots available")
+			// inform the client that the parking area is full...
+			replyTo parking_car_interest with inform_in : inform_in(0)
+			[# reserved = false #]
+			[# engaged = false #]
+			[# parking_car_interest = false #]
+			println("indoorcontroller | [State] handleParkingSlot | Stop weightsensor observation...")
+			[# weightsensorObserver.cancel() #]
+			[# resource.notify("status") #]
+		}
+	} Goto wait
+	
+	State handleEnterIndoorAreaTimeout {
+		printCurrentMessage
+		onMsg(auto_dtoccupied_timeout : auto_dtoccupied_timeout(X)) {
+			println("[indoorcontroller] | [State] handleEnterIndoorAreaTimeout | DTOCCUPIED timeout, do not consider anymore the $DOOR_NAME AREA reserved...")
+			[# reserved = false #]
+			[# engaged = false #]
+			println("[indoorcontroller] | [State] handleEnterIndoorAreaTimeout | Stop weightsensor observation...")
+			[# weightsensorObserver.cancel() #]
+			[# dtoccupiedWatchdog.stop() #]
+			println("[indoorcontroller] | [State] handleEnterIndoorAreaTimeout | Undone parking slot reservation...")
+			forward parkingslotscontroller -m undone_reservation : undone_reservation($SLOTNUM,$TOKENID)
+			[# reserved_parking_slot = false #]
+			[# resource.notify("status") #]
+		}
+	} Goto wait 
+	
+	State handleCarEnterTimeout {
+		printCurrentMessage
+		onMsg(auto_dtcarenter_timeout : auto_dtcarenter_timeout(X)) {
+			println("[indoorcontroller] | [State] handleCarEnterTimeout | DTCARENTER timeout, too much time elapsed, need to inform the manager...")
+			[# dtcarenterWatchdog.stop() #]
+			[# carEnterAlarm = true #]
+			[# resource.notify("status") #]
+		}
+	} Goto wait
+	
+	State handleCarEnter {
+		printCurrentMessage
+		[# var ok = true #]
+		if [# ok && !reserved #] {
+			replyTo car_enter with response_car_enter : response_car_enter(IndoorAreaNotReserved)
+			println("[indoorcontroller] | [State] handleCarEnter | Received car enter request but the $DOOR_NAME Area is not reserved...")
+			[# ok = false #]
+		}
+		if [# ok && !engaged #] {
+			replyTo car_enter with response_car_enter : response_car_enter(IndoorAreaNotEngagedByCar)
+			println("[indoorcontroller] | [State] handleCarEnter | Received car enter request but the $DOOR_NAME Area is not engaged by car...")
+			[# ok = false #]
+		}
+		if [# ok #] {
+			onMsg(car_enter : car_enter(SLOTNUM)) {
+				[# val INPUT_SLOTNUM = payloadArg(0).toInt() #]
+				if [# INPUT_SLOTNUM == SLOTNUM #] {
+				
+					[# handling_car_enter = true #]
+					
+					[# CAR_ENTER_SLOTNUM = SLOTNUM #]
+					[# val CACHED_SLOTNUM = SLOTNUM #]
+					[# CAR_ENTER_TOKENID = TOKENID #]
+					[# val CACHED_TOKENID = TOKENID #]
+				
+					[# wait_for_take_over = true #]
+					
+					[# dtcarenterWatchdog.stop() #]
+					if [# carEnterAlarm #] {
+						[# carEnterAlarm = false #]
+						[# resource.notify("status") #]
+					}
+				
+					println("[indoorcontroller] | [State] handleCarEnter | Handle valid car enter request {SLOTNUM: $CACHED_SLOTNUM, TOKENID: $CACHED_TOKENID}")
+				
+				/*
+				 * Usage of Transport Trolley DSL for Car Park Task.
+				 */
+					[# val doorName = DOOR_NAME #]
+					[#
+						myself.scope.launch {
+							itunibo.automatedcarparking.dsl.transporttrolley.transporttrolley {
+								task {
+									println("[indoorcontroller] | Move the transport trolley to $doorName...")
+									takeOverCar at doorName
+								
+									myself.autoMsg("auto_car_taken_over", "auto_car_taken_over(X)")
+
+									println("[indoorcontroller] | Move the transport trolley to SLOTNUM $CACHED_SLOTNUM...")
+									releaseCar at "$CACHED_SLOTNUM"
+								}
+							}
+							myself.autoMsg("auto_car_park_done", "auto_car_park_done(X)")
+						}
+					#]
+				} else {
+					// malicious user ...
+					println("[indoorcontroller] | [State] handleCarEnter | Received car enter request with SLOTNUM $INPUT_SLOTNUM different from expected SLOTNUM $SLOTNUM...")
+					replyTo car_enter with response_car_enter : response_car_enter(InvalidSlotnum)
+				}	
+			}
+		}
+
+	} Goto wait
+	
+	State handleCarTakeOver {
+		println("[indoorcontroller] | [State] handleCarTakeOver")
+		println("[indoorcontroller] | [State] handleCarTakeOver | Send TOKENID $TOKENID to the user...")
+		replyTo car_enter with response_car_enter : response_car_enter($TOKENID)
+		
+		[# wait_for_take_over = false #]
+		[# reserved_parking_slot = false #]
+		
+		if [# !engaged #] {
+			println("[indoorcontroller] | [State] handleCarTakeOver | $DOOR_NAME Area free!")
+			[# reserved = false #]
+			println("[indoorcontroller] | [State] handleCarTakeOver | Stop weightsensor observation...")
+			[# weightsensorObserver.cancel() #]
+			[# resource.notify("status") #]
+		}
+		
+	} Goto wait
+	
+	State handleCarParkDone {
+		println("[indoorcontroller] | [State] handleCarParkDone")
+		[# handling_car_enter = false #]
+		println("[indoorcontroller] | [State] handleCarParkDone | Confirm mapping between parking slot $CAR_ENTER_SLOTNUM and TOKENID $CAR_ENTER_TOKENID...")
+		forward parkingslotscontroller -m confirm_parking_slot : confirm_parking_slot($CAR_ENTER_SLOTNUM,$CAR_ENTER_TOKENID)
+	
+		if [# need_to_start_dtcarenter_timer #] {
+			println("[indoorcontroller] | [State] handleCarParkDone | Start DTCARENTER timer...")
+			[# need_to_start_dtcarenter_timer = false #]
+			[# dtcarenterWatchdog.start() #]
+		}
+	} Goto wait
+
+}
+
+QActor parkingslotscontroller context ctxbusinesslogic {
+	
+	[# 
+		var available_parking_slot = true
+		val resource = itunibo.qakobserver.FactoryQakResource.create(myself)
+	#]
+
+	State init initial {
+		[#
+			resource.notify("status")
+		#]
+	} Goto wait
+	
+	State wait {
+		println("[parkingslotscontroller] | [State] wait") 
+	} Transition t0
+	whenRequest reserve_parking_slot -> handleReserveParkingSlot
+	whenMsg     confirm_parking_slot -> handleConfirmParkingSlot
+	whenMsg     undone_reservation   -> handleUndoneReservation
+	
+	
+	State handleReserveParkingSlot {
+		println("[parkingslotscontroller] | [State] handleReserveParkingSlot | Entry point.") 
+		printCurrentMessage
+		onMsg(reserve_parking_slot : reserve_parking_slot(X)) {
+			if [# !available_parking_slot #] {
+				println("[parkingslotscontroller] | [State] handleReserveParkingSlot | Parking area is full...") 
+				replyTo reserve_parking_slot with no_available_parking_slots : no_available_parking_slots(X)
+			} else {
+				/* NOTE: 
+				 * for the sake of simplicity here we send always the same parking slot.
+				 * in production code this is obviously not acceptable and the design decisions
+				 * are left to the project and development phase.                              */
+			[# 
+				val SLOTNUM = 1
+				val TOKENID = Ab1cd
+				resource.notify("status")
+			#]
+				println("[parkingslotscontroller] | [State] handleReserveParkingSlot | Reserved SLOTNUM $SLOTNUM - TOKENID $TOKENID") 
+				replyTo reserve_parking_slot with parking_slot_reserved : parking_slot_reserved($SLOTNUM,$TOKENID)
+			}
+		}
+		println("[parkingslotscontroller] | [State] handleReserveParkingSlot | Exit point.") 
+	} Goto wait
+	
+	State handleConfirmParkingSlot {
+		println("[parkingslotscontroller] | [State] handleConfirmParkingSlot | Entry point.") 
+		printCurrentMessage
+		onMsg(confirm_parking_slot : confirm_parking_slot(SLOTNUM,TOKENID)) {
+		[#
+			val reservedSlotnum = payloadArg(0).toInt()
+			val reservedTokenid = payloadArg(1)
+			println("[parkingslotscontroller] | [State] handleConfirmParkingSlot | Confirm parking slot $reservedSlotnum with tokenid $reservedTokenid ...") 
+			resource.notify("status")
+		#]
+		}
+		println("[parkingslotscontroller] | [State] handleConfirmParkingSlot | Exit point.") 
+	} Goto wait
+	
+	State handleUndoneReservation {
+		println("[parkingslotscontroller] | [State] handleUndoneReservation | Entry point.") 
+		printCurrentMessage
+		onMsg(undone_reservation : undone_reservation(SLOTNUM,TOKENID)) {
+			
+		[#
+			val reservedSlotnum = payloadArg(0).toInt()
+			val reservedTokenId = payloadArg(1)
+			println("[parkingslotscontroller] | [State] handleUndoneReservation | Undone reservation for $reservedSlotnum with TOKENID $reservedTokenId.") 
+			resource.notify("status")
+		#]
+		}
+		println("[parkingslotscontroller] | [State] handleUndoneReservation | Exit point.") 
+	} Goto wait
+
+}
+
+QActor transporttrolley context ctxbusinesslogic {
+	
+	[# 
+		var DESTINATION = "HOME"
+		var car_taken_over = false
+		var handling_job = false
+		var auto_back_to_home = false
+		val resource = itunibo.qakobserver.FactoryQakResource.create(myself)
+		lateinit var status : itunibo.automatedcarparking.transporttrolley.TransportTrolleyStatus
+		val jsonStatus = itunibo.automatedcarparking.utilities.JsonStatus
+		lateinit var planner : itunibo.automatedcarparking.transporttrolley.planner.IPlanner
+		val basicRobotUtil = itunibo.automatedcarparking.transporttrolley.basicrobot.BasicRobotUtility
+		lateinit var watchdog : itunibo.qakutils.watchdog.Watchdog
+		val transportTrolleyRolodex = itunibo.automatedcarparking.rolodex.TransportTrolleyRolodex
+		
+		lateinit var config : itunibo.automatedcarparking.transporttrolley.TransportTrolleyConfiguration
+	#]
+	  
+	State init initial {
+		println("[transporttrolley] | [State] init | Entry point.") 
+		[#
+			config = itunibo.automatedcarparking.configuration.TransportTrolleyConfigurationReader.read(transportTrolleyRolodex.filenameConfiguration)
+			basicRobotUtil.setStepMoveDuration(config.stepMoveDuration)
+			watchdog = itunibo.qakutils.watchdog.Watchdog(myself, config.timeLimitBackToHome, itunibo.automatedcarparking.transporttrolley.BackToHomeAutoMessage)
+			planner = itunibo.automatedcarparking.transporttrolley.planner.PlannerFactory.create()
+			planner.setPosition("HOME")
+			val homePosition = planner.getCurrentPosition()
+			status = itunibo.automatedcarparking.transporttrolley.TransportTrolleyStatus(stopped=false, idle=true, moveFailed=false, coordinate=homePosition)
+			resource.notify(jsonStatus.getJsonString(status))
+		#]
+		println("[transporttrolley] | [State] init | Exit point.") 
+	} Goto wait
+	
+	State wait {
+		println("[transporttrolley] | [State] wait | Entry point.") 	
+		println("[transporttrolley] | [State] wait | Exit point.") 
+	} Transition t0
+	whenMsg     transport_trolley_start                                                     -> handleResumableMessages
+	whenMsg     transport_trolley_stop                                                      -> handleResumableMessages
+	whenRequest transport_trolley_new_job       and [# !status.stopped && !handling_job #]  -> handleNewJob // maybe sent by multiple QActors
+	whenRequest transport_trolley_go_to         and [# !status.stopped #]                   -> handleNewDestination
+	whenMsg     move_done                       and [# !status.stopped #]                   -> handleMoveReply
+	whenMsg     move_fail                       and [# !status.stopped #]                   -> handleMoveReply
+	whenReply   stepdone                                                                    -> convertStepReply
+	whenReply   stepfail                                                                    -> convertStepReply
+	whenRequest transport_trolley_take_over_car and [# !status.stopped #]                   -> handleCarTask
+	whenRequest transport_trolley_release_car   and [# !status.stopped #]                   -> handleCarTask
+	whenMsg     transport_trolley_job_done                                                  -> handleJobDone
+	whenMsg     auto_transport_trolley_go_home  and [# !status.stopped #]                   -> handleGoHome
+	
+	State handleResumableMessages {
+		println("[transporttrolley] | [State] handleResumableMessages | Entry point.") 
+		onMsg(transport_trolley_start : transport_trolley_start(X)) {
+			println("[transporttrolley] | [State] handleResumableMessages | Received START!.") 
+			[# status.stopped = false #] 
+			
+			if [# status.moveFailed #] {
+				println("[transporttrolley] | [State] handleResumableMessages | Last move is failed, reposition transport trolley at HOME!.") 
+				[# planner.setPosition("HOME") #]
+				[# status.coordinate = planner.getCurrentPosition() #]
+				if [# !DESTINATION.equals("HOME", true) #] {
+					println("[transporttrolley] | [State] handleResumableMessages | Uh, need to replan a path to $DESTINATION starting from HOME...") 
+					[# planner.buildPlan(DESTINATION) #]
+				} else {
+					println("[transporttrolley] | [State] handleResumableMessages | Uh, destination is HOME and I am arrived at HOME now!") 
+					if [# handling_job #] {
+						replyTo transport_trolley_go_to with transport_trolley_arrived_at : transport_trolley_arrived_at(HOME)
+					} else {
+						[# status.idle = true #]
+					}
+				}
+				[# auto_back_to_home = false #]
+				[# status.moveFailed = false #]
+			}
+			
+			if [# !planner.isWaitingMoveResult() #] {
+				[# 
+				val move = planner.nextMove()
+				move?.let {
+					println("[transporttrolley] | [State] handleResumableMessages | Doing move $move...")
+					basicRobotUtil.sendMove(myself, move)
+				}
+				#]
+			}
+		}
+		onMsg(transport_trolley_stop : transport_trolley_stop(X)) {
+			println("[transporttrolley] | [State] handleResumableMessages | Received STOP!.") 
+			[# status.stopped = true #]
+		}
+		
+		// update status
+		[# resource.notify(jsonStatus.getJsonString(status))#]
+		
+		println("[transporttrolley] | [State] handleResumableMessages | Exit point.") 
+	} Goto wait
+	
+	State convertStepReply {
+		println("[transporttrolley] | [State] convertStepReply | Entry point.") 
+		
+		onMsg (stepdone : stepdone(X)) {
+			println("[transporttrolley] | [State] convertStepReply | Received stepdone!") 
+			// change reply stepdone into dispatch move_done
+			[# myself.scope.launch { myself.autoMsg("move_done", "move_done(w)") } #]
+		}
+		onMsg (stepfail : stepfail(DURATION,CAUSE)) {
+			// change reply stepfail into dispatch move_fail
+			[# val DURATION = payloadArg(0) #]
+			[# val CAUSE = payloadArg(1) #]
+			println("[transporttrolley] | [State] convertStepReply | Received stepfail with {duration: $DURATION ms, cause: $CAUSE}...") 
+			[# myself.scope.launch { myself.autoMsg("move_fail", "move_fail(w,$DURATION,$CAUSE)") } #]
+		}
+		println("[transporttrolley] | [State] convertStepReply | Exit point.") 
+	} Goto wait
+	
+	State handleMoveReply { 
+		println("[transporttrolley] | [State] handleMoveReply | Entry point.") 
+		[# var doUpdate = false #]
+		onMsg(move_done : move_done(MOVE)) {
+			println("[transporttrolley] | [State] handleMoveReply | Move done.")
+			[#
+				val MOVE_DONE = payloadArg(0)
+				planner.moveDone()
+				status.moveFailed = false
+				
+				if (config.updatePositionAfterEachStep) {
+					if (MOVE_DONE.equals("w", true)) {
+						status.coordinate = planner.getCurrentPosition()
+						doUpdate = true
+					}
+				} 
+				
+				
+				val move = planner.nextMove()
+				if (move != null) {
+					println("[transporttrolley] | [State] handleMoveReply | Doing move $move...")
+					basicRobotUtil.sendMove(myself, move)
+				} else {
+					
+					// reached destination...
+					println("[transporttrolley] | [State] handleMoveReply | Reached destination $DESTINATION!") 
+					
+					if (!DESTINATION.equals("HOME", true) || !auto_back_to_home) {
+					#]
+						replyTo transport_trolley_go_to with transport_trolley_arrived_at : transport_trolley_arrived_at($DESTINATION)
+					[#
+					}
+					
+					if (DESTINATION.equals("HOME", true) && auto_back_to_home) {
+						status.idle = true
+					}
+					
+					auto_back_to_home = false
+					status.coordinate = planner.getCurrentPosition()
+					
+					doUpdate = true
+				}
+			#]
+			
+		}
+		onMsg(move_fail : move_fail(MOVE,DURATION,CAUSE)) {
+			[# val CAUSE = payloadArg(2) #]
+			println("[transporttrolley] | [State] handleMoveReply | Failure: $CAUSE.") 
+			
+			[# planner.moveFail() #]
+			[# status.stopped = true #]
+			[# status.moveFailed = true #]
+			
+			[# doUpdate = true #]
+		}
+		
+		if [# doUpdate #] {
+			// update status
+			[# resource.notify(jsonStatus.getJsonString(status)) #]
+		}
+		
+		println("[transporttrolley] | [State] handleMoveReply | Exit point.") 
+	} Goto wait
+	
+	State handleNewJob {
+		println("[transporttrolley] | [State] handleNewJob | Entry point.") 
+		[# handling_job = true #]
+		[# watchdog.stop() #]
+		[# status.idle = false #]
+		[# resource.notify(jsonStatus.getJsonString(status)) #]
+		replyTo transport_trolley_new_job with transport_trolley_job_accepted : transport_trolley_job_accepted(X)
+		println("[transporttrolley] | [State] handleNewJob | Exit point.") 
+	} Goto wait
+	
+	State handleNewDestination {
+		println("[transporttrolley] | [State] handleNewDestination | Entry point.") 
+		onMsg (transport_trolley_go_to : transport_trolley_go_to(DESTINATION)) {
+		[#
+			DESTINATION = payloadArg(0)
+			println("[transporttrolley] | [State] handleNewDestination | Received destination: $DESTINATION.") 
+			val ok = planner.buildPlan(DESTINATION)
+			if (ok) {
+				println("[transporttrolley] | [State] handleNewDestination | Known destination!.") 
+				if (!planner.isWaitingMoveResult()) {
+					val move = planner.nextMove()
+					if (move != null) {
+						println("[transporttrolley] | [State] handleNewDestination | Doing move $move...")
+						basicRobotUtil.sendMove(myself, move)
+					} else {
+						#]
+						println("[transporttrolley] | [State] handleNewDestination | I'm already at $DESTINATION...") 
+						replyTo transport_trolley_go_to with transport_trolley_arrived_at : transport_trolley_arrived_at($DESTINATION)
+						[#
+					}
+				}
+				// else the first move of the new plan will be handled when the current move terminates...
+			} else {
+				println("[transporttrolley] | [State] handleNewDestination | Unknown destination...") 
+				#]
+				replyTo transport_trolley_go_to with transport_trolley_error : transport_trolley_error(UNKNOWN_DESTINATION)
+				[#
+			}
+			
+			auto_back_to_home = false
+		#]
+		}
+
+		println("[transporttrolley] | [State] handleNewDestination | Exit point.") 
+	} Goto wait
+
+	State handleJobDone {
+		println("[transporttrolley] | [State] handleJobDone | Entry point.") 
+		[# handling_job = false #]
+		if [# planner.isHomePosition(planner.getCurrentPosition()) #] {
+			[# status.idle = true #]
+		} else {
+			[# watchdog.start() #]
+		}
+		println("[transporttrolley] | [State] handleJobDone | Exit point.") 
+	} Goto wait
+	
+	State handleGoHome {
+		println("[transporttrolley] | [State] handleGoHome | Entry point.") 
+		if [# !handling_job #] {
+		[#
+			DESTINATION = "HOME"
+			planner.buildPlan("HOME")
+			auto_back_to_home = true
+			
+			if (!planner.isWaitingMoveResult()) {
+				val move = planner.nextMove() 
+			
+				if (move != null) {
+					println("[transporttrolley] | [State] handleGoHome | Doing move $move...")
+					basicRobotUtil.sendMove(myself, move)
+				} else {
+					println("[transporttrolley] | [State] handleGoHome | I'm already at HOME...")
+					auto_back_to_home = false
+				}
+			}
+			
+		#]
+		} else {
+			println("[transporttrolley] | [State] handleGoHome | Skipping auto back to HOME because I'm handling another job...")
+		}
+		println("[transporttrolley] | [State] handleGoHome | Exit point.") 
+	} Goto wait
+	
+	State handleCarTask {
+		println("[transporttrolley] | [State] handleCarTask | Entry point.")
+		onMsg(transport_trolley_take_over_car : transport_trolley_take_over_car(X)) {
+			if [# !car_taken_over #] {
+				println("[transporttrolley] | [State] handleCarTask | Taking over car...")
+				delay 1000
+				[# car_taken_over = true #]
+				println("[transporttrolley] | [State] handleCarTask | Car taken over!")
+				replyTo transport_trolley_take_over_car with transport_trolley_car_taken_over : transport_trolley_car_taken_over(X)
+			} else {
+				[# val REASON = "CANNOT TAKE OVER MORE THAN ONE CAR"#]
+				replyTo transport_trolley_take_over_car with transport_trolley_error : transport_trolley_error($REASON)
+			}
+
+		}
+		onMsg(transport_trolley_release_car : transport_trolley_release_car(X)) {
+			if [# car_taken_over #] {
+				println("[transporttrolley] | [State] handleCarTask | Releasing car...")
+				delay 1000
+				[# car_taken_over = false #]
+				println("[transporttrolley] | [State] handleCarTask | Car released!")
+				replyTo transport_trolley_release_car with transport_trolley_car_released : transport_trolley_car_released(X)
+			} else {
+				[# val REASON = "NO CAR TAKED OVER" #]
+				replyTo transport_trolley_release_car with transport_trolley_error : transport_trolley_error($REASON)		
+			}
+		}
+		println("[transporttrolley] | [State] handleCarTask | Exit point.") 
+	} Goto wait
+	
+}
