@@ -19,10 +19,8 @@ QActor weightsensor context ctxweightsensor {
 		val gson = com.google.gson.Gson()
 		val resource = itunibo.qakobserver.FactoryQakResource.create(myself)
 		
-		lateinit var support : itunibo.automatedcarparking.weightsensor.WeightSensorSupport
-		
 		fun getJsonWeight(weight : Int) : String {
-			return gson.toJson(itunibo.automatedcarparking.weightsensor.Weight(weight))
+			return gson.toJson("{ \"weight\": $weight }")
 		}
 	#]
 
@@ -31,7 +29,7 @@ QActor weightsensor context ctxweightsensor {
 		
 		[# resource.notify(getJsonWeight(0)) #]
 		
-		[# support = itunibo.automatedcarparking.weightsensor.WeightSensorSupport(myself) #]
+		// TODO need to configure if virtual or real...
 		
 		println("[weightsensor] | [State] init | Exit point.")
 	} Goto wait
