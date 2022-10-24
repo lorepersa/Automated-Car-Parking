@@ -32,12 +32,12 @@ class Parkingslotscontroller ( name: String, scope: CoroutineScope  ) : ActorBas
 					action { //it:State
 						println("[parkingslotscontroller] | [State] wait")
 					}
-					 transition(edgeName="t022",targetState="handleReserveParkingSlot",cond=whenRequest("reserve_parking_slot"))
-					transition(edgeName="t023",targetState="handleConfirmParkingSlot",cond=whenDispatch("confirm_parking_slot"))
-					transition(edgeName="t024",targetState="handleUndoneReservation",cond=whenDispatch("undone_reservation"))
-					transition(edgeName="t025",targetState="handleValidateTokenId",cond=whenRequest("validate_tokenid"))
-					transition(edgeName="t026",targetState="handleFreeParkingSlot",cond=whenDispatch("free_parking_slot"))
-					transition(edgeName="t027",targetState="handleReset",cond=whenDispatch("reset"))
+					 transition(edgeName="t023",targetState="handleReserveParkingSlot",cond=whenRequest("reserve_parking_slot"))
+					transition(edgeName="t024",targetState="handleConfirmParkingSlot",cond=whenDispatch("confirm_parking_slot"))
+					transition(edgeName="t025",targetState="handleUndoneReservation",cond=whenDispatch("undone_reservation"))
+					transition(edgeName="t026",targetState="handleValidateTokenId",cond=whenRequest("validate_tokenid"))
+					transition(edgeName="t027",targetState="handleFreeParkingSlot",cond=whenDispatch("free_parking_slot"))
+					transition(edgeName="t028",targetState="handleReset",cond=whenDispatch("reset"))
 				}	 
 				state("handleReserveParkingSlot") { //this:State
 					action { //it:State

@@ -29,16 +29,16 @@ class Parkservicecontroller ( name: String, scope: CoroutineScope  ) : ActorBasi
 				state("wait") { //this:State
 					action { //it:State
 					}
-					 transition(edgeName="t015",targetState="handleIndoorArea",cond=whenRequestGuarded("parking_car_interest",{ !handling_parking_car_interest  
+					 transition(edgeName="t016",targetState="handleIndoorArea",cond=whenRequestGuarded("parking_car_interest",{ !handling_parking_car_interest  
 					}))
-					transition(edgeName="t016",targetState="handleIndoorArea",cond=whenRequestGuarded("car_enter",{ !handling_car_enter  
+					transition(edgeName="t017",targetState="handleIndoorArea",cond=whenRequestGuarded("car_enter",{ !handling_car_enter  
 					}))
-					transition(edgeName="t017",targetState="handleOutdoorArea",cond=whenRequestGuarded("car_pick_up",{ !handling_car_pick_up  
+					transition(edgeName="t018",targetState="handleOutdoorArea",cond=whenRequestGuarded("car_pick_up",{ !handling_car_pick_up  
 					}))
-					transition(edgeName="t018",targetState="handleIndoorArea",cond=whenReply("inform_in"))
-					transition(edgeName="t019",targetState="handleIndoorArea",cond=whenReply("response_car_enter"))
-					transition(edgeName="t020",targetState="handleOutdoorArea",cond=whenReply("accept_out_success"))
-					transition(edgeName="t021",targetState="handleOutdoorArea",cond=whenReply("accept_out_failure"))
+					transition(edgeName="t019",targetState="handleIndoorArea",cond=whenReply("inform_in"))
+					transition(edgeName="t020",targetState="handleIndoorArea",cond=whenReply("response_car_enter"))
+					transition(edgeName="t021",targetState="handleOutdoorArea",cond=whenReply("accept_out_success"))
+					transition(edgeName="t022",targetState="handleOutdoorArea",cond=whenReply("accept_out_failure"))
 				}	 
 				state("handleIndoorArea") { //this:State
 					action { //it:State

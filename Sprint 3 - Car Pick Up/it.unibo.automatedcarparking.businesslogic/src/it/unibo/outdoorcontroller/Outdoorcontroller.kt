@@ -69,10 +69,11 @@ class Outdoorcontroller ( name: String, scope: CoroutineScope  ) : ActorBasicFsm
 					}))
 					transition(edgeName="t010",targetState="handleTokenId",cond=whenReply("valid_tokenid"))
 					transition(edgeName="t011",targetState="handleTokenId",cond=whenReply("invalid_tokenid"))
-					transition(edgeName="t012",targetState="handleCarPickUpDone",cond=whenDispatch("auto_car_pick_up_done"))
-					transition(edgeName="t013",targetState="handleDistance",cond=whenEventGuarded("auto_outdoor_area_distance",{ outsonarObserver.isObserving()  
+					transition(edgeName="t012",targetState="handleCarTakeOver",cond=whenDispatch("auto_car_taken_over"))
+					transition(edgeName="t013",targetState="handleCarPickUpDone",cond=whenDispatch("auto_car_pick_up_done"))
+					transition(edgeName="t014",targetState="handleDistance",cond=whenEventGuarded("auto_outdoor_area_distance",{ outsonarObserver.isObserving()  
 					}))
-					transition(edgeName="t014",targetState="handleDtfreeTimeout",cond=whenEventGuarded("auto_dtfree_timeout",{ dtfreeWatchdog.isRunning()  
+					transition(edgeName="t015",targetState="handleDtfreeTimeout",cond=whenEventGuarded("auto_dtfree_timeout",{ dtfreeWatchdog.isRunning()  
 					}))
 				}	 
 				state("handleDistance") { //this:State
@@ -188,6 +189,7 @@ class Outdoorcontroller ( name: String, scope: CoroutineScope  ) : ActorBasicFsm
 						println("[outdoorcontroller] | [State] handleCarTakeOver")
 						forward("free_parking_slot", "free_parking_slot($SLOTNUM,$TOKENID)" ,"parkingslotscontroller" ) 
 					}
+					 transition( edgeName="goto",targetState="wait", cond=doswitch() )
 				}	 
 				state("handleCarPickUpDone") { //this:State
 					action { //it:State

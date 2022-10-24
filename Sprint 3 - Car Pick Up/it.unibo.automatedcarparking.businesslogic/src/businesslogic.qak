@@ -678,6 +678,7 @@ QActor outdoorcontroller context ctxbusinesslogic {
 	whenRequest car_pick_up and [# !status.reserved #]                               -> handleCarPickUp
 	whenReply   valid_tokenid                                                        -> handleTokenId
 	whenReply   invalid_tokenid                                                      -> handleTokenId
+	whenMsg     auto_car_taken_over                                                  -> handleCarTakeOver
 	whenMsg     auto_car_pick_up_done                                                -> handleCarPickUpDone
 	whenEvent   auto_outdoor_area_distance and [# outsonarObserver.isObserving() #]  -> handleDistance // autoMsg by observer
 	whenEvent   auto_dtfree_timeout and [# dtfreeWatchdog.isRunning() #]             -> handleDtfreeTimeout // autoMsg by watchdog
@@ -791,7 +792,7 @@ QActor outdoorcontroller context ctxbusinesslogic {
 		printCurrentMessage
 		println("[outdoorcontroller] | [State] handleCarTakeOver")
 		forward parkingslotscontroller -m free_parking_slot : free_parking_slot($SLOTNUM,$TOKENID)
-	}
+	} Goto wait
 	
 	State handleCarPickUpDone {
 		println("[outdoorcontroller] | [State] handleCarPickUpDone")

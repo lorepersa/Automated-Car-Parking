@@ -52,24 +52,24 @@ class Transporttrolley ( name: String, scope: CoroutineScope  ) : ActorBasicFsm(
 						println("[transporttrolley] | [State] wait | Entry point.")
 						println("[transporttrolley] | [State] wait | Exit point.")
 					}
-					 transition(edgeName="t028",targetState="handleResumableMessages",cond=whenDispatch("transport_trolley_start"))
-					transition(edgeName="t029",targetState="handleResumableMessages",cond=whenDispatch("transport_trolley_stop"))
-					transition(edgeName="t030",targetState="handleNewJob",cond=whenRequestGuarded("transport_trolley_new_job",{ !status.stopped && !handling_job  
+					 transition(edgeName="t029",targetState="handleResumableMessages",cond=whenDispatch("transport_trolley_start"))
+					transition(edgeName="t030",targetState="handleResumableMessages",cond=whenDispatch("transport_trolley_stop"))
+					transition(edgeName="t031",targetState="handleNewJob",cond=whenRequestGuarded("transport_trolley_new_job",{ !status.stopped && !handling_job  
 					}))
-					transition(edgeName="t031",targetState="handleNewDestination",cond=whenRequestGuarded("transport_trolley_go_to",{ !status.stopped  
+					transition(edgeName="t032",targetState="handleNewDestination",cond=whenRequestGuarded("transport_trolley_go_to",{ !status.stopped  
 					}))
-					transition(edgeName="t032",targetState="handleMoveReply",cond=whenDispatchGuarded("move_done",{ !status.stopped  
+					transition(edgeName="t033",targetState="handleMoveReply",cond=whenDispatchGuarded("move_done",{ !status.stopped  
 					}))
-					transition(edgeName="t033",targetState="handleMoveReply",cond=whenDispatchGuarded("move_fail",{ !status.stopped  
+					transition(edgeName="t034",targetState="handleMoveReply",cond=whenDispatchGuarded("move_fail",{ !status.stopped  
 					}))
-					transition(edgeName="t034",targetState="convertStepReply",cond=whenReply("stepdone"))
-					transition(edgeName="t035",targetState="convertStepReply",cond=whenReply("stepfail"))
-					transition(edgeName="t036",targetState="handleCarTask",cond=whenRequestGuarded("transport_trolley_take_over_car",{ !status.stopped  
+					transition(edgeName="t035",targetState="convertStepReply",cond=whenReply("stepdone"))
+					transition(edgeName="t036",targetState="convertStepReply",cond=whenReply("stepfail"))
+					transition(edgeName="t037",targetState="handleCarTask",cond=whenRequestGuarded("transport_trolley_take_over_car",{ !status.stopped  
 					}))
-					transition(edgeName="t037",targetState="handleCarTask",cond=whenRequestGuarded("transport_trolley_release_car",{ !status.stopped  
+					transition(edgeName="t038",targetState="handleCarTask",cond=whenRequestGuarded("transport_trolley_release_car",{ !status.stopped  
 					}))
-					transition(edgeName="t038",targetState="handleJobDone",cond=whenDispatch("transport_trolley_job_done"))
-					transition(edgeName="t039",targetState="handleGoHome",cond=whenDispatchGuarded("auto_transport_trolley_go_home",{ !status.stopped  
+					transition(edgeName="t039",targetState="handleJobDone",cond=whenDispatch("transport_trolley_job_done"))
+					transition(edgeName="t040",targetState="handleGoHome",cond=whenDispatchGuarded("auto_transport_trolley_go_home",{ !status.stopped  
 					}))
 				}	 
 				state("handleResumableMessages") { //this:State
