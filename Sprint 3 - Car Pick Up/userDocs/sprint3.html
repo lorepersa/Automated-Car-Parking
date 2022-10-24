@@ -1,0 +1,1283 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+    <!--
+<link rel="stylesheet" type="text/css" href="../css/issStyle1.css">
+<script type="text/javascript" src="../css/issStyle.js"></script>
+-->
+
+<head>
+  <link href="style/style.css" rel="stylesheet" type="text/css">
+
+  <title>Sprint 3 - Car Pick Up</title>
+  </head>
+
+  <body>
+  <div id="top">
+  <h1>LABORATORIO DI INGEGNERIA DEI SISTEMI SOFTWARE <font size="5"></font> </h1>
+  </div>
+
+  <div class="body">
+    <h2>Introduction</h2>
+
+
+    <h2 id="requirements">Requirements</h2>
+    <div class="remark">
+    Customer's requirements are available <a href="https://raw.githubusercontent.com/anatali/issLab2021/main/it.unibo.issLabStart/userDocs/TFBO21ISS.pdf">here</a>.
+    </div>
+
+    <h2 id="requirement-analysis">Requirement analysis</h2>
+    <div class="remark">
+    Requirements analysis is available <a href="../../Requirements%20Analysis/Requirements%20analysis.html">here</a>.
+    </div>
+
+    <h2 id="first-problem-analysis">First Problem Analysis</h2>
+    <div class="remark">
+    A First Problem analysis is available <a href="../../First%20Problem%20Analysis/userDocs/First%20Problem%20Analysis.html">here</a>.
+    </div>
+
+    <h2 id="sprint-1">Sprint 1</h2>
+    <div class="remark">
+    Sprint 1 is available <a href="../../Sprint%201%20-%20TransportTrolley/userDocs/sprint1.html">here</a>.
+    </div>
+
+    <h2 id="sprint-2">Sprint 2</h2>
+    <div class="remark">
+    Sprint 2 is available <a href="../../Sprint%202%20-%20Car%20Parking/userDocs/sprint2.html">here</a>.
+    </div>
+
+    <h2 id="sprint-backlog">Sprint Backlog</h2>
+    <div class="remark">
+      <h3>Car Pick Up</h3>
+      The goals of this sprint are the following:
+      <table>
+        <tr>
+          <th>Description</th>
+          <th>Requirements</th>
+        </tr>
+        <tr>
+          <td>
+            The outSonar is able to detect the presence of a car in the outdoor area.
+          </td>
+          <td>
+            <a href="../../Requirements%20Analysis/Requirements%20analysis.html#F17">F17</a>, <a href="../../Requirements%20Analysis/Requirements%20analysis.html#NF2">NF2</a>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            The system is able to manage a pick up car request.
+          </td>
+          <td>
+            <a href="../../Requirements%20Analysis/Requirements%20analysis.html#F6">F6</a>, <a href="../../Requirements%20Analysis/Requirements%20analysis.html#F7">F7</a>, <a href="../../Requirements%20Analysis/Requirements%20analysis.html#F8">F8</a>, <a href="../../Requirements%20Analysis/Requirements%20analysis.html#F9">F9</a>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            The system is able to notify about the DTFREE time limit in the outdoor area.
+          </td>
+          <td>
+            <a href="../../Requirements%20Analysis/Requirements%20analysis.html#F15">F15</a> (partially)
+          </td>
+        </tr>
+        <tr>
+          <td>
+            The system provides the ParkServiceGUI to handle the client's car pick up requests.
+          </td>
+          <td>
+            <a href="../../Requirements%20Analysis/Requirements%20analysis.html#F6">F6</a>, <a href="../../Requirements%20Analysis/Requirements%20analysis.html#F9">F9</a>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            The status of the system must survive after a system reboot.
+          </td>
+          <td>
+            <a href="../../Requirements%20Analysis/Requirements%20analysis.html#NF3">NF3</a>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            Should be possible to analyze the behaviour of the system.
+          </td>
+          <td>
+            <a href="../../Requirements%20Analysis/Requirements%20analysis.html#NF4">NF4</a>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <h2 id="summary">Summary</h2>
+    <div class="remark">
+      <ol>
+        <li>
+          <a href="#problem-analysis">Problem Analysis</a>
+          <ol>
+            <li>
+              <a href="#starting-point">Starting point</a>
+            </li>
+            <li>
+              <a href="#out-sonar-analysis">Out Sonar Analysis</a>
+            </li>
+            <li>
+              <a href="#outdoor-controller-analysis">Outdoor Controller Analysis</a>
+            </li>
+            <li>
+              <a href="#park-service-controller-analysis">Park Service Controller Analysis</a>
+            </li>
+            <li>
+              <a href="#parking-slot-controller-analysis">Parking Slot Controller Analysis</a>
+            </li>
+            <li>
+              <a href="#park-service-gui-analysis">Park Service GUI Analysis</a>
+            </li>
+            <li>
+              <a href="#security-analysis">Security Considerations</a>
+            </li>
+            <li>
+              <a href="#interactions">Interactions</a>
+            </li>
+            <li>
+              <a href="#logical-architecture">Logical Architecture</a>
+            </li>
+          </ol>
+          <li>
+            <a href="#test-plan">Test Plan</a>
+          </li>
+          <li>
+            <a href="#project">Project</a>
+          </li>
+          <li>
+            <a href="#testing">Testing</a>
+          </li>
+          <li>
+            <a href="#deployment">Deployment</a>
+          </li>
+          <li>
+            <a href="#sprint-review">Sprint Review</a>
+          </li>
+        </li>
+      </ol>
+    </div>
+
+    <h2 id="problem-analysis">Problem Analysis</h2>
+    <div class="remark">
+
+      <h3 id="starting-point">General Considerations and Starting Point</h3>
+      For this third sprint, the initial logical architecture is:
+      <p align="center"><a href="./img/legenda.png">Legenda</a></p>
+      <div class="interactions__image">
+        <center>
+          <img src="./img/sprint3_starting_logical_architecture.png" alt="sprint3_starting_logical_architecture.png"/>
+        </center>
+      </div>
+      <br><br>
+      This sprint will be focused on <b>Car Pick Up</b> action. So it will cover the Business Logic** and the Transport Trolley section that interacts with it, in addition to the Out Sonar part. It will also provide a final Park Service GUI.
+      <br>
+      We refer to "<b>Business Logic**</b>" as the remaining part of the Business Logic that does not involve the transport trolley actor, the Indoor Controller actor and the Parking Slot Controller actor.
+      <br>
+
+      <h4 id="introductions">Introduction</h4>
+      <div>
+        In this sprint we will focus on the following interactions.
+        <ul>
+          <li>the user expresses his interest in picking up his car from the PMS, sending the tokenid received during the car park phase (a "car_pick_up request" will be associated to this action);</li>
+          <li>The PMS checks, thanks to the Parking Slot Controller, if the TOKENID is correct ("validate_tokenid request")</li>
+          <li>if the TOKENID is valid ("valid_tokenid reply"), the PMS uses the transport trolley to take the car to the outdoor area. When the out sonar detects that car, the PMS informs the user ("accept_out_success" reply) that he can take his car away. </li>
+        </ul>
+      </div>
+
+      <h3 id="out-sonar-analysis">Out Sonar Analysis</h3>
+      <div>
+        The task of the out sonar is to measure the distance detected within the outdoor area of ​​the PMS, to understand:
+        <ul>
+          <li>if the transport trolley has actually release a car in the outdoor area;</li>
+          <li>if the user has actually taken the car from the outdoor area.</li>
+        </ul>
+        From the requirements <b>the out sonar is real</b>, but to increase the utility of the PMS, it would be appropriate to let the system <b>configurable</b> in order to choose between a virtual or real outsonar. In this sprint, we focus on the <b>virtual out sonar</b>, while the real out sonar will be analyzed and deployed in a later sprint.
+        <br><br>
+        In the case of a virtual out sonar, it is necessary to <b>have a 'mock' interface</b> that allows you to check and modify the value of the out sonar at any time.
+        <br><br>
+        It was also decided to <b>insert no logic inside the out sonar</b> in order to make it as reusable as possible: the out sonar is therefore limited only and exclusively to measure the distance.
+        <br><br>
+        The outsonar is model as a <k>QActor</k>. It should be notified about the current distance via a proper <k>input_distance</k> dispatch independently from the underlying virtual or real configuration.
+        <br>
+        <h4>Observable State</h4>
+        <div>
+          After a careful analysis, it was decided to make the out sonar an <a href="#observation-analysis">observable entity</a>; in particular the outsonar QActor exposes in its observable status the information about the current distance measured in the outdoor area. <br>
+        </div>
+      </div>
+      <h3>Outdoor Controller and Park Service Controller</h3>
+      <div>
+        From a careful analysis, it was necessary for this sprint to introduce two new entities: <k>Outdoor Controller</k> and <k>Park Service Controller</k>.
+      </div>
+
+      <h3 id="outdoor-controller-analysis">Outdoor Controller Analysis</h3>
+      <div>
+        The goal of the <k>Outdoor Controller</k> is to handle the <k>car pick up phase</k> requirement. In particular: it manages client <k>car_pick_up</k> request, it interacts with the Parking Slot Controller and the Transport Trolley and it <k>observes</k> the Out Sonar.
+        <br><br>
+        Our domain contains a single Outdoor Area. However, thanks to the <a href="../../Sprint%201%20-%20TransportTrolley/userDocs/sprint1.html#transport-trolley-tasks">Transport Trolley Communication Protocol</a> flexibility is possible to add new Outdoor Area in the future. For this reason at each Outdoor Area should be assigned a unique <b>DOOR NAME</b> that is mapped to a given position in the parking area map (known by the Transport Trolley). So, each Outdoor Controller is associated to a single Outdoor Area characterized by its unique DOOR NAME; this DOOR NAME is used during the car pick up phase to move the Transport Trolley to the correct outdoor area.
+        <br>
+        Since our domain contains a single Outdoor Area the prototype will have a single Outdoor Controller.
+        <br><br>
+        To the Outdoor Controller is associated a status that coincides with the current status of the Outdoor Area: free, reserved or occupied.
+        <ul>
+          <li><b>free</b>: it means that currently <a href="#out-sonar-observation">the outsonar is not being observed</a> (and therefore it is assumed that the outdoor area is free);</li>
+          <li><b>reserved</b>: it means that currently the Outdoor Controller is handling a car pick up request, but the out sonar is either not observed or measures a distance greater than or equal to DMIN;</li>
+          <li><b>occupied</b>: the outdoor area is occupied by a car (the out sonar measure a distance lower than DMIN).</li>
+        </ul>
+        <br>
+        The Outdoor Controller has been modeled as <k>QActor</k>. <br>
+        <br>
+        In particular it interacts with the Parking Slot Controller to <b>validate</b> the TOKENID, received from the user, and to <b>free</b> a parking slot.
+        <ul>
+          <li>a <k>validate_tokenid</k> request is made at the moment that a <k>car_pick_up</k> request is received.<br>
+          There can be two possible cases:
+            <ul>
+              <li><tt>valid_tokenid</tt> reply: the car pick up phase continue regurarly, the transport trolley handles the car pick up task and,  when the car is detected in the outdoor area, the Outdoor Controller will send an <b>accept_out_success</b> reply to the user. </li>
+              <li><tt>invalid_tokenid</tt> reply: the car pick up phase ends with failure. An <b>accept_out_failure</b> response is sent immediately from the Outdoor Controller to the user.</li>
+            </ul>
+          </li>
+          <li>a <k>free_parking_slot</k> dispatch is sent at the moment the TOKENID received from the user is valid and the transport trolley takes over the car from the parking slot.</li>
+        </ul>
+
+        <h4 id="outdoor-controller-analysis-timer">Timer</h4>
+        From requirements, it is necessary to use a timer in a specific situation, to limit user misbehavior.
+        This situation can occur when, after receiving an accept_out_success response, the user does not take the car from the outdoor area.<br>
+        To avoid this case, a <ks>DTFREE timer</ks> has been designed (with a configurable duration) and it starts as soon as the accept_out_success response is sent to the user and it is stopped as soon as the out sonar no longer detects any car. <br>In case the timer goes off/rings, the manager must be notified and he has to intervene to help the user to take over the car.</li>
+        <br>
+        Note: the notification to the manager <b>must remain asserted</b> until the situation is resolved.
+        <br><br>
+        For the DTFREE timer, it can be used the <a href="../itunibo.qakutils/src/itunibo/qakutils/watchdog">watchdog utility</a> created and used in the sprint 1.
+
+        <h4 id="sprint3-analysis-assumptions">Assumptions</h4>
+        Despite the presence of a timer, some assumptions are necessary for a correct system behavior:
+        <ul>
+          <li>it is assumed that the user is not allowed to take the car from the outdoor area until he receives an accept_out_success response;</li>
+          <li>it is assumed that the outdoor area cannot be occupied by anything other than a car managed by the PMS.</li>
+          <!-- the last one is the BLACK CAT assumption-->
+        </ul>
+
+        <h4 id="sprint3-analysis-limitations">Limitations</h4>
+        Since in our domain there is only one transport trolley <b>the car pick up and car park requests must be handle sequentially</b>. Moreover <b>at most one car</b> is allowed to stay in the Outdoor Area in a given moment.
+
+        <h4 id="out-sonar-observation">Out sonar observation</h4>
+        <div>
+          As already analyzed in the <a href="../../First%20Problem%20Analysis/userDocs/First%20Problem%20Analysis.html#out-sonar-costs">first problem analysis</a>, thanks to our <a href="../../First%20Problem%20Analysis/it.unibo.qakobserver/userDocs/Documentation.html">qakobserver framework</a>, it is possible to observe on necessity an entity, to minimize the bandwidth usage.
+          <br>
+          In particular, the Outdoor Controller can start to observe the out sonar when the transport trolley releases a car in the outdoor area and stop it when the car exits from the outdoor area (with or without the manager's help).
+          <br><br>
+          This process can save the system from a lot of useless interactions and optimize the use of the available bandwidth (e.g. during the "idle" phase between two Car Pick Up requests the outsonar is not observed and this leads our system to consume less bandwidth).
+        </div>
+
+        <h4 id="transport-trolley-communication">Transport trolley communication</h4>
+        <div>
+          As already said in the <a href="../../Sprint 1%20-%20TransportTrolley/userDocs/sprint1.html#sprint-review">Sprint 1 review</a>, the <a href="../../Sprint%201%20-%20TransportTrolley/userDocs/sprint1.html#transport-trolley-tasks">Transport Trolley Communication Protocol</a> is encapsulated by a <ks>DSL</ks>. In particular the Outdoor Controller takes advantage of the Transport Trolley <b>Car Pick Up Task</b>.
+        </div>
+
+        <h4 id="startup-configuration">Startup Configuration</h4>
+        <div>
+          At each system's boot there is the need to let the <b>Outdoor Controller</b> aware of some parameters, like:
+          <ul>
+            <li><b>DMIN</b>: distance threshold. If the distance detected by the out sonar is lower than DMIN, it means that a car is inside the outdoor area;</li>
+            <li><b>DTFREE duration</b>: duration of the DTFREE timer;</li>
+            <li><b>DOOR NAME</b>: the name of the outdoor area as explained <a href="#outdoor-controller-analysis">above</a>.</li>
+          </ul>
+        </div>
+
+        <h4>Observable state</h4>
+        <div>
+          After a careful analysis, it was decided to make the Outdoor Controller an <a href="#observation-analysis">observable entity</a>. <br>
+          The information that has to be observable must contain the <b>status of the outdoor area</b> (free, reserved, occupied) and a flag that is asserted since the DTFREE timeout expires to the moment a proper action is taken.
+        </div>
+      </div>
+
+      <h3 id="park-service-controller-analysis">Park Service Controller Analysis</h3>
+      <div>
+        The task of the Park Service Controller is to be an intermediary between the Park Service GUI and the Indoor/Outdoor Controllers. It is the Domain Logic entry point for the car park and car pick up phases.
+        <br>
+        In this way, the Park Service GUI has to communicate only with the Park Service Controller, that will propagate the messages (in both directions) to the appropriate entities.
+        <br><br>
+        The Park Service Controller has been modeled as a <k>QActor</k>.
+      </div>
+
+
+      <h3 id="parking-slot-controller-analysis">Parking Slot Controller Analysis</h3>
+      <div>
+        In addition to the considerations made in the <a href="../../Sprint%202%20-%20Car%20Parking/userDocs/sprint2.html#parking-slot-controller-analysis">Sprint 2</a>, in this sprint the Parking Slot Controller has also to <b>validate the TOKENID</b> received from the Outdoor Controller and to <b>free a parking slot</b> when the transport trolley picks up a parked car from the parking slot itself.
+      </div>
+
+      <h3 id="observation-analysis">About Observation</h3>
+      <div>
+        The <a href="../../First%20Problem%20Analysis/it.unibo.qakobserver/userDocs/Documentation.html">qakobserver framework</a> has to be used for each observable entity.
+        <br>
+        As analysts, we suggest to use <b>JSON</b> as data format, to improve the interaction and the communication, as we indicated also for the sprint 2. Moreover, thanks to <b>Gson or Jackson libraries</b> there's no abstraction gap.
+      </div>
+
+      <h3 id="park-service-gui-analysis">Park Service GUI</h3>
+      <div>
+        The Park Service GUI must be an interface that guides the user step by step during the car park phase and the car pick up phase.
+        <br>
+        The same considerations made in the <a href="../../Sprint%202%20-%20Car%20Parking/userDocs/sprint2.html#park-service-gui-analysis">Sprint 2</a> apply here.
+        <br>
+        In particular, the TOKENID persistence is important for the car pick up interface, because it permits to auto-fill the input text field with the last registered TOKENID. In this way, the user is partially relieved of the burden of remembering it.
+        <br>
+        However, the GUI must give the user the opportunity to insert/change manually the TOKENID (e.g. in case he opens the Park Service GUI from a different device).
+      </div>
+
+      <h3 id="mock-data-gui-analysis">Mock Data GUI</h3>
+      <div>
+        In addition to the considerations made in the <a href="../../Sprint%202%20-%20Car%20Parking/userDocs/sprint2.html#mock-data-gui-analysis">Sprint 2</a>, the <b>Mock Data GUI</b> should allow the manager to change also the distance measured by the out sonar, in case the out sonar is virtual.
+        <br><br>
+        This GUI is not specified as a requirement and it is useless in case of a finished product with all real sensors. For that reason no in-depth analysis will be performed.
+      </div>
+
+
+
+      <h3 id="security-analysis">Security Considerations</h3>
+      <div>
+        The same considerations made in the <a href="../../Sprint%202%20-%20Car%20Parking/userDocs/sprint2.html#security-analysis">sprint 2</a> apply.
+
+      </div>
+
+      <h3 id="interactions">Interactions</h3>
+      <div>
+        <!-- interaction image -->
+        <div class="interactions__image" style="margin-top: 50px;">
+          <center>
+            <img src="./img/outdoor_controller_interaction_1.png" alt="outdoor_controller_interaction_1.png"/>
+          </center>
+        </div>
+        <table class="table_interactions_messages">
+          <tr>
+            <th>Message</th>
+            <th>Payload</th>
+            <th>Semantic</th>
+            <th>Description</th>
+          </tr>
+          <tr>
+            <td>transport_trolley_new_job</td>
+            <td>X</td>
+            <td>request</td>
+            <td>Ask to start a new job</td>
+          </tr>
+          <tr>
+            <td>transport_trolley_job_accepted</td>
+            <td>X</td>
+            <td>reply</td>
+            <td>The transport trolley accepts the job</td>
+          </tr>
+          <tr>
+            <td>transport_trolley_go_to</td>
+            <td>indoor | outdoor | slotnum | home</td>
+            <td>request</td>
+            <td>Ask the transport trolley to go to a specific place</td>
+          </tr>
+          <tr>
+            <td>transport_trolley_arrived_at</td>
+            <td>indoor | outdoor | slotnum | home</td>
+            <td>reply</td>
+            <td>Success</td>
+          </tr>
+          <tr>
+            <td>transport_trolley_take_over_car</td>
+            <td>X</td>
+            <td>request</td>
+            <td>Ask the transport trolley to take over a car</td>
+          </tr>
+          <tr>
+            <td>transport_trolley_car_taken_over</td>
+            <td>X</td>
+            <td>reply</td>
+            <td>Success</td>
+          </tr>
+          <tr>
+            <td>transport_trolley_release_car</td>
+            <td>X</td>
+            <td>request</td>
+            <td>Ask the transport trolley to release a car</td>
+          </tr>
+          <tr>
+            <td>transport_trolley_car_released</td>
+            <td>X</td>
+            <td>reply</td>
+            <td>Success</td>
+          </tr>
+          <tr>
+            <td>transport_trolley_error</td>
+            <td>REASON</td>
+            <td>reply</td>
+            <td>Failure, the requested operation cannot be performed</td>
+          </tr>
+          <tr>
+            <td>transport_trolley_job_done</td>
+            <td>X</td>
+            <td>dispatch</td>
+            <td>Inform the transport trolley that the job is finished</td>
+          </tr>
+          <tr>
+            <td>validate_tokenid</td>
+            <td>TOKENID</td>
+            <td>request</td>
+            <td>Ask the Parking Slot Controller if the tokenid is valid</td>
+          </tr>
+          <tr>
+            <td>valid_tokenid</td>
+            <td>SLOTNUM</td>
+            <td>reply</td>
+            <td>The tokenid is valid and it is associated to slotnum</td>
+          </tr>
+          <tr>
+            <td>invalid_tokenid</td>
+            <td>X</td>
+            <td>reply</td>
+            <td>The tokenid is not valid</td>
+          </tr>
+          <tr>
+            <td>free_parking_slot</td>
+            <td>SLOTNUM, TOKENID</td>
+            <td>dispatch</td>
+            <td>Declare the parking slot free</td>
+          </tr>
+
+        </table>
+
+        <!-- interaction image -->
+        <div class="interactions__image" style="margin-top: 70px;">
+          <center>
+            <img src="./img/indoor_controller_interaction.png" alt="indoor_controller_interaction.png" style="width: 100%;"/>
+          </center>
+        </div>
+        <table class="table_interactions_messages">
+          <tr>
+            <th>Message</th>
+            <th>Payload</th>
+            <th>Semantic</th>
+            <th>Description</th>
+          </tr>
+          <tr>
+            <td>parking_car_interest</td>
+            <td>X</td>
+            <td>request</td>
+            <td>The user ask to park the car</td>
+          </tr>
+          <tr>
+            <td>inform_in</td>
+            <td>SLOTNUM</td>
+            <td>reply</td>
+            <td>The system reply with a slotnum [0..6]</td>
+          </tr>
+          <tr>
+            <td>car_enter</td>
+            <td>SLOTNUM</td>
+            <td>request</td>
+            <td>The user click on "car enter" button</td>
+          </tr>
+          <tr>
+            <td>response_car_enter</td>
+            <td>TOKENID</td>
+            <td>reply</td>
+            <td>As explained <a href="../../Sprint%202%20-%20Car%20Parking/userDocs/sprint2.html#indoor-controller-analysis-car-enter">here</a></td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- interaction image -->
+      <div class="interactions__image" style="margin-top: 70px;">
+        <center>
+          <img src="./img/outdoor_controller_interaction_2.png" alt="outdoor_controller_interaction_2.png" style="width: 100%;"/>
+        </center>
+      </div>
+      <table class="table_interactions_messages">
+        <tr>
+          <th>Message</th>
+          <th>Payload</th>
+          <th>Semantic</th>
+          <th>Description</th>
+        </tr>
+        <tr>
+          <td>car_pick_up</td>
+          <td>TOKENID</td>
+          <td>request</td>
+          <td>The user asks to pick up the car</td>
+        </tr>
+        <tr>
+          <td>accept_out_success</td>
+          <td>X</td>
+          <td>reply</td>
+          <td>Success. The system takes out the user car</td>
+        </tr>
+        <tr>
+          <td>accept_out_failure</td>
+          <td>X</td>
+          <td>reply</td>
+          <td>Failure (e.g. the tokenid is not valid)</td>
+        </tr>
+        <tr>
+          <td>input_distance</td>
+          <td>D</td>
+          <td>dispatch</td>
+          <td>Send mock distance to the out sonar</td>
+        </tr>
+      </table>
+
+      <h3 id="parking-slot-status">Parking Slot Status</h3>
+      <div class="interactions__image" style="margin-top: 40px;">
+        <center>
+          <p style="margin-bottom:20px;">
+          This is a <k>state diagram</k> for the parking slot status.
+          <br>
+          Every status change is triggered by a specific message sent by the Indoor/Outdoor Controller to the Parking Slot Controller.
+          </p>
+          <img src="./img/sprint3_parking_slot_status.png" alt="sprint3_parking_slot_status.png" style="margin-top: 40px; width:40%"/>
+
+        </center>
+      </div>
+
+      <h3 id="machine-readable-model">Machine Readable Model</h3>
+<pre>
+/**
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN INDOOR AREA [available parking slot]
+ * ==================================
+ * client using parkservicegui        | request parking_car_interest(X) to parkservicecontroller
+ *                                    |
+ * parkservicecontroller              | request parking_car_interest(X) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | observe weightsensor
+ *                                    | -- wait until measured weight in indoor area is lower than or equal to a given WMAX threshold --
+ *                                    | request reserve_parking_slot(X) to parkingslotscontroller
+ *                                    | -- set indoor area reserved --
+ *                                    |
+ * parkingslotscontroller             | replyTo reserve_parking_slot with parking_slot_reserved(SLOTNUM,TOKENID)
+ *                                    |
+ * indoorcontroller                   | -- save received SLOTNUM --
+ *                                    | -- save received TOKENID --
+ *                                    | start dtoccupied timer
+ *                                    | replyTo parking_car_interest with inform_in(SLOTNUM)
+ *                                    |
+ * parkservicecontroller              | replyTo parking_car_interest with inform_in(SLOTNUM)
+ *                                    |
+ * indoorcontroller                   | -- wait until measured weight in indoor area is greater than a given WMAX threshold --
+ *                                    | stop dtoccupied timer
+ *                                    | start dtcarenter timer
+ *                                    | -- set indoor area engaged by car --
+ *
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN INDOOR AREA [unavailable parking slot]
+ * ==================================
+ * client using parkservicegui        | request parking_car_interest(X) to parkservicecontroller
+ *                                    |
+ * parkservicecontroller              | request parking_car_interest(X) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | observe weightsensor
+ *                                    | -- set indoor area reserved --
+ *                                    | -- wait until measured weight in indoor area is lower than or equal to a given WMAX threshold --
+ *                                    | request reserve_parking_slot(X) to parkingslotscontroller
+ *                                    |
+ * parkingslotscontroller             | replyTo reserve_parking_slot with no_available_parking_slots(X)
+ *                                    |
+ * indoorcontroller                   | replyTo parking_car_interest with inform_in(0)
+ *                                    | cancel weightsensor observation
+ *                                    | -- set indoor area free --
+ *                                    |
+ * parkservicecontroller              | replyTo parking_car_interest with inform_in(0)
+ *
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN PARKING AREA [indoor area free]
+ * ==================================
+ * client using parkservicegui        | request car_enter(SLOTNUM) to parkservicecontroller
+ *                                    |
+ * parkservicecontroller              | request car_enter(SLOTNUM) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | replyTo car_enter with response_car_enter(IndoorAreaNotReserved)
+ *                                    |
+ * parkservicecontroller              | replyTo car_enter with response_car_enter(IndoorAreaNotReserved)
+ *
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN PARKING AREA [indoor area reserved - weight <= WMAX]
+ * ==================================
+ * client using parkservicegui        | request car_enter(SLOTNUM) to parkservicecontroller
+ *                                    |
+ * parkservicecontroller              | request car_enter(SLOTNUM) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | replyTo car_enter with response_car_enter(IndoorAreaNotEngagedByCar)
+ *                                    |
+ * parkservicecontroller              | replyTo car_enter with response_car_enter(IndoorAreaNotEngagedByCar)
+ *                                    |
+ *
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN PARKING AREA [invalid slotnum - indoor area engaged by car]
+ * ==================================
+ * client using parkservicegui        | request car_enter(SLOTNUM) to parkservicecontroller
+ *                                    |
+ * parkservicecontroller              | request car_enter(SLOTNUM) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | replyTo car_enter with response_car_enter(InvalidSlotnum)
+ *                                    |
+ * parkservicecontroller              | replyTo car_enter with response_car_enter(InvalidSlotnum)
+ *                                    |
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN PARKING AREA [valid slotnum - indoor area engaged by car]
+ * ==================================
+ * client using parkservicegui        | request car_enter(SLOTNUM) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | stop dtcarenter timer
+ *                                    | -- disable dtcarenter alarm if enabled --
+ *                                    | [transporttrolley DSL] takeOverCar at INDOOR
+ *                                    | replyTo car_enter with response_car_enter(TOKENID)
+ *                                    | -- set indoor area free --
+ *                                    | cancel weightsensor observation
+ *                                    |
+ * parkservicecontroller              | replyTo car_enter with response_car_enter(TOKENID)
+ *                                    |
+ * indoorcontroller                   | [transporttrolley DSL] releaseCar at SLOTNUM
+ *                                    | forward confirm_parking_slot(SLOTNUM, TOKENID) to parkingslotscontroller
+ *                                    |
+ * parkingslotscontroller             | -- move parking slot SLOTNUM from status RESERVED to OCCUPIED --
+ *                                    | -- persist information about occupied parking slot SLOTNUM mapped to tokenid TOKENID --
+ *
+ * ==================================
+ * ================================== | ROUTINE CAR EXITS FROM INDOOR AREA
+ * ==================================
+ * indoorcontroller                   | stop dtcarenter timer
+ *                                    | cancel weightsensor observation
+ *                                    | -- set indoor area free --
+ *                                    | -- disable dtcarenter alarm if enabled --
+ *                                    | forward undone_reservation(SLOTNUM, TOKENID) to parkingslotscontroller
+ *
+ * parkingslotscontroller             | -- move parking slot SLOTNUM from status RESERVED to FREE --
+ *                                    | -- persist information about free parking slot SLOTNUM --
+ *
+ * ==================================
+ * ================================== | ROUTINE DTOCCUPIED TIMEOUT
+ * ==================================
+ * indoorcontroller                   | stop dtoccupied timer
+ *                                    | -- set indoor area free --
+ *                                    | cancel weightsensor observation
+ *                                    | forward undone_reservation(SLOTNUM, TOKENID) to parkingslotscontroller
+ *                                    |
+ * parkingslotscontroller             | -- move parking slot SLOTNUM from status RESERVED to FREE --
+ *                                    | -- persist information about free parking slot SLOTNUM --
+ *
+ * ==================================
+ * ================================== | ROUTINE DTCARENTER TIMEOUT
+ * ==================================
+ * indoorcontroller                   | stop dtcarenter timer
+ *                                    | -- enable dtcarenter alarm --
+ *
+ * ==================================
+ * ================================== | ROUTINE WEIGHTSENSOR MEASURE WEIGHT
+ * ==================================
+ * weightsensor                       | received input_weight(W)
+ *                                    | update observers with new weight W
+ *
+ * ==================================
+ * ================================== | CLIENT ASKS TO PICK UP THE CAR [invalid tokenid]
+ * ==================================
+ * client using parkservicegui        | request car_pick_up(TOKENID) to parkservicecontroller
+ *                                    |
+ * parkservicecontroller              | request car_pick_up(TOKENID) to outdoorcontroller
+ *                                    |
+ * outdoorcontroller                  | request validate_tokenid(TOKENID) to parkingslotscontroller
+ *                                    | -- set outdoor area reserved --
+ *                                    |
+ * parkingslotscontroller             | replyTo validate_tokenid with invalid_tokenid(X)
+ *                                    |
+ * outdoorcontroller                  | replyTo car_pick_up with accept_out_failure(X)
+ *                                    | -- set outdoor area free --
+ *                                    |
+ * parkservicecontroller              | replyTo car_pick_up with accept_out_failure(X)
+ *                                    |
+ * ==================================
+ * ================================== | CLIENT ASKS TO PICK UP THE CAR [valid tokenid]
+ * ==================================
+ * client using parkservicegui        | request car_pick_up(TOKENID) to parkservicecontroller
+ *                                    |
+ * parkservicecontroller              | request car_pick_up(TOKENID) to outdoorcontroller
+ *                                    |
+ * outdoorcontroller                  | request validate_tokenid(TOKENID) to parkingslotscontroller
+ *                                    | -- set outdoor area reserved --
+ *                                    |
+ * parkingslotscontroller             | replyTo validate_tokenid with valid_tokenid(SLOTNUM)
+ *                                    |
+ * outdoorcontroller                  | [transporttrolley DSL] takeOverCar at SLOTNUM
+ *                                    | forward free_parking_slot(SLOTNUM, TOKENID) to parkingslotscontroller
+ *                                    |
+ * parkingslotscontroller             | -- move parking slot SLOTNUM from status OCCUPIED to FREE --
+ *                                    | -- persist information about free parking slot SLOTNUM--
+ *                                    |
+ * outdoorcontroller                  | [transporttrolley DSL] releaseCar at OUTDOOR
+ *                                    | observe outsonar
+ *                                    | -- wait until the measured distance is lower than DMIN --
+ *                                    | -- set outdoor area engaged by car --
+ *                                    | start dtfree timer
+ *                                    | replyTo car_pick_up with accept_out_success(X)
+ *                                    |
+ * parkservicecontroller              | replyTo car_pick_up with accept_out_success(X)
+ *                                    |
+ * ==================================
+ * ================================== | ROUTINE CAR EXITS FROM OUTDOOR AREA (observed distance D >= DMIN)
+ * ==================================
+ * outdoorcontroller                  | stop dtfree timer
+ *                                    | cancel outsonar observation
+ *                                    | -- set outdoor area free --
+ *                                    | -- disable dtfree alarm if enabled --
+ *
+ * ==================================
+ * ================================== | ROUTINE DTFREE TIMEOUT
+ * ==================================
+ * outdoorcontroller                  | stop dtfree timer
+ *                                    | -- enable dtfree alarm --
+ *
+ * ==================================
+ * ================================== | ROUTINE OUTSONAR MEASURE DISTANCE
+ * ==================================
+ * outsonar                           | received input_distance(D)
+ *                                    | update observers with new distance D
+ *
+ */
+</pre>
+      <p align="center">The QAK models can be found <a href="../model/">here</a></p>
+      <h3 id="logical-architecture">Logical Architecture</h3>
+      <p align="center"><a href="./img/legenda.png">Legenda</a></p>
+      <div class="interactions__image">
+        <center>
+          <img src="./img/sprint3_final_logical_architecture.png" alt="sprint3_final_logical_architecture.png"/>
+        </center>
+      </div>
+
+
+  </div><!-- End Problem Analysis section [end class="remark"] -->
+
+<h2 id="test-plan">Test Plans</h2>
+<div class="remark">
+  <h4>TestTripOneCar</h4>
+  <ul>
+    <li>
+      <b>Description</b>: A car enter in the parking-area and then exit from the parking-area.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          Empty indoor-area
+        </li>
+        <li>
+          At least one parking-slot free.
+        </li>
+        <li>
+          Empty outdoor-area.
+        </li>
+        <li>
+          The transportTrolley is not stopped.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Expectations</b>:
+      <ol>
+        <li>
+          The car enter in the parking-area.
+        </li>
+        <li>
+          On pick up phase the TOKENID is valid and the car exits from the parking-area.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested requirements</b>: F1, F2, F3, F4, F5, F6, F7, F8, F9, F16, F17, F20, F21
+    </li>
+  </ul>
+  <h4>TestInvalidTokenId</h4>
+  <ul>
+    <li>
+      <b>Description</b>: The client when asks to pick up the car receives an error due to an invalid TOKENID.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          The outdoor area is free.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Expectations</b>:
+      <ol>
+        <li>
+          The TOKENID inserted by the client is not valid. The ParkServiceGUI shows to the client an error.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested requirements</b>: F6, F7, F8, F9
+    </li>
+  </ul>
+  <h4>TestOccupiedOutdoorArea</h4>
+  <ul>
+    <li>
+      <b>Description</b>: The client waits for a reasonable amount of time a response from the ParkServiceGUI in order to pick up the car. This response does not arrive.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          The outdoor area is occupied.
+        </li>
+        <li>
+          The transportTrolley is not stopped.
+        </li>
+        <li>
+          The transportTrolley is not serving other requests.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Expectations</b>:
+      <ol>
+        <li>
+          The client does not receive a response in 15 seconds.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested requirements</b>: F6, F7, F17
+    </li>
+  </ul>
+  <h4>TestOutSonarDetectCar</h4>
+  <ul>
+    <li>
+      <b>Description</b>: The outSonar is able to detect when a car enter the outdoor area.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          The outdoor area is free.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Expectations</b>:
+      <ol>
+        <li>
+          By observing the outdoorcontroller is noticed that the outdoor area becomes occupied (after the transport trolley released the car in the outdoor area).
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested requirements</b>: F17
+    </li>
+  </ul>
+  <h4>TestDtfreeAlarm</h4>
+  <ul>
+    <li>
+      <b>Description</b>: Check if the manager receives the alarm when a car stays in the outdoor area for more time than the DTFREE time limit.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          The outdoor area is free.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Expectations</b>:
+      <ol>
+        <li>
+          After a car pick up request the car remains enough time in the outdoor area in order to receive the DTFREE alarm by means of outdoorcontroller status observation.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested requirements</b>: F15
+    </li>
+  </ul>
+</div>
+
+<h2 id="project">Project</h2>
+<div class="remark">
+  <h3 id="project-outsonar-configuration">About OutSonar configurability</h3>
+  <p>
+    In this sprint the outsonar is a mock (virtual) one and the input distance is received by an external dispatch sent by the MockDataGUI. However, it is planned to deploy a final system that uses a real outsonar, so we decided to develop a small support able to handle both the real outsonar and the virtual (mock) outsonar. In particular, the class <a href="../it.unibo.automatedcarparking.outsonar/resources/itunibo/automatedcarparking/outsonar/OutSonarSupport.kt">OutSonarSupport.kt</a> can be <k>configured</k> to work with a <k>real</k> outsonar or a <k>virtual</k> one by reading the mode from a configuration file.
+    <br><br>
+    The system administrator can configure the system in order to use the virtual outsonar or the real one by tweak the mode parameter ("virtual" or "real") in the configuration file <a href="../it.unibo.automatedcarparking.outsonar/config_outsonar.json">config_outsonar.json</a>.
+    <br><br>
+    In both cases (virtual or real mode) the <k>outsonar</k> QActor receives the current distance by a <k>input_distance</k> dispatch. <br>
+    In case of real outsonar the dispatch could be generated and sent in form of <b>autoMsg()</b> by a thread or coroutine internal to the outsonar. This autoMsg() should be sent by means of <a href="../it.unibo.automatedcarparking.outsonar/resources/itunibo/automatedcarparking/outsonar/RealOutSonarSupport.kt">RealOutSonarSupport.kt</a> (instantiated by the OutSonarSupport.kt) each time a new distance is measured in the Outdoor Area.
+    <br><br>
+    However, at the time of writing only the <k>virtual</k> mode has been implemented. The real mode support will be added in a later sprint.
+
+    <h4>About observable JSON status</h4>
+    <p>
+      The same considerations made <a href="#project-about-json-status">here</a> apply. The  Kotlin data class <a href="../it.unibo.automatedcarparking.outsonar/resources/itunibo/automatedcarparking/outsonar/Distance.kt">Distance.kt</a> contains the representation of the JSON status exposed by outsonar.
+    </p>
+  </p>
+  <h3 id="project-outdoorcontroller">About outdoorcontroller</h3>
+  <p>
+    The outdoorcontroller is designed as an observable QActor. It interacts with the other entities in the same way as explained in the <a href="#outdoor-controller-analysis">problem analysis</a>. The system administrator can configure the outdoorcontroller by tweaking the parameters of the configuration file <a href="../it.unibo.automatedcarparking.businesslogic/config_outdoor_area.json">config_outdoor_area.json</a>.
+    <br><br>
+    Notes:
+    <ol>
+      <li>
+        the parameter "doorName" (e.g. OUTDOOR) should be the same name of a position in the map known by the TransportTrolley actor.
+      </li>
+      <li>
+        the parameter "DMIN" must be expressed in centimeters (cm)
+      </li>
+      <li>
+        the parameter "DTFREE" must be expressed in milliseconds
+      </li>
+    </ol>
+    <h4>About observable JSON status</h4>
+    <p>
+      The same considerations made <a href="#project-about-json-status">here</a> apply. The  Kotlin data class <a href="../it.unibo.automatedcarparking.businesslogic/resources/itunibo/automatedcarparking/parkingarea/OutdoorAreaStatus.kt">OutdoorAreaStatus.kt</a> contains the representation of the JSON status exposed by outdoorcontroller.
+    </p>
+  </p>
+  <h3 id="project-parkservicecontroller">About parkservicecontroller</h3>
+  <p>
+    The parkservicecontroller is designed as a QActor. It acts like a small indirection layer between the ParkServiceGUI Web Server and the domain logic actors (indoorcontroller and outdoorcontroller). Its main behaviour is to propagate messages (in both directions) between the entities cited above. It also performs safety checks on the messages received from the Web Server in order to protect the car park/car pick up logic from malformed inputs.
+  </p>
+  <h3 id="project-parkingslotscontroller">About parkingslotscontroller</h3>
+  <p>
+    The considerations done in <a href="../../Sprint%202%20-%20Car%20Parking/userDocs/sprint2.html#project-parkingslotscontroller">Sprint 2</a> are yet valid.
+    <br><br>
+    In this sprint the parkingslotscontroller QActor gained the "validate_tokenid" and "free_parking_slot" functionalities. The "validate_tokenid" (request) is sent by the outdoorcontroller when a car_pick_up request arrives and a valid_tokenid or invalid_tokenid response is returned. The "free_parking_slot" (dispatch) is sent by the outdoorcontroller when the transporttrolley takes over the car from the parking slot, this message triggers a parking slot status transition from OCCUPIED to FREE.
+    <br><br>
+    The new functionalities have been implemented mainly as new methods in the <a href="../it.unibo.automatedcarparking.businesslogic/resources/itunibo/automatedcarparking/parkingarea/ParkingSlotController.kt">ParkingSlotController.kt</a> singleton object.
+  </p>
+  <h4 id="project-parkingslotscontroller-tokenid">About TokenID validation</h4>
+  <p>
+    To validate the TokenID a string comparison (character-by-character) is performed. The TokenID is valid only if one of the TokenIDs known by the parkingslotscontroller matches with it. <br>
+    If the TokenID is valid, a "valid_tokenid" response is returned (with the associated SLOTNUM as payload), otherwise a "invalid_tokenid" response is returned.
+  </p>
+  <h4 id="project-parkingslotscontroller-persistence">About persistence</h4>
+  <p>
+    The same considerations made in <a href="../../Sprint%202%20-%20Car%20Parking/userDocs/sprint2.html#project-parkingslotscontroller-persistence">Sprint 2</a> apply.
+  </p>
+  <h4>About observable JSON status</h4>
+  <p>
+    The same considerations made in <a href="../../Sprint%202%20-%20Car%20Parking/userDocs/sprint2.html#project-parkingslotscontroller">Sprint 2</a> apply.
+  </p>
+  <h3 id='project-about-json-status'>Considerations about observable JSON status</h4>
+  <p>
+    The considerations done in <a href="../../Sprint%202%20-%20Car%20Parking/userDocs/sprint2.html#project-about-json-status">Sprint 2</a> are yet valid.
+  </p>
+  <h3 id="project-parkservicegui-server">ParkServiceGUI Server</h3>
+  <p>
+    It is basically the same GUI/WebServer developed in <a href="../../Sprint%202%20-%20Car%20Parking/userDocs/sprint2.html#project-parkservicegui-server">Sprint 2</a>. The difference are those relating to the communication with the parkservicecontroller QActor instead of indoorcontroller QActor. A new POST API (documented below) has been implemented to map the car pick up functionality to the parkservicecontroller car_pick_up request.
+    <table>
+      <tr>
+        <th>POST API</th>
+        <th>Input</th>
+        <th>Output</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>/car_pick_up</td>
+        <td>TokenID</td>
+        <td>Success/Failure</td>
+        <td>The client requests to pick up the car. The server responds with "ok" if the car pick up request has been successfully completed, otherwise a "failure" response is returned (e.g. the TokenID was not correct).</td>
+      </tr>
+    </table>
+  </p>
+  <h3 id="project-parkservicegui-client">ParkServiceGUI Client</h3>
+  <p>
+    The considerations done in <a href="../../Sprint%202%20-%20Car%20Parking/userDocs/sprint2.html#project-parkservicegui-client">Sprint 2</a> are yet valid. In this sprint the ParkServiceGUI gained the "Car Pick Up" functionality, so the GUI now presents a new welcome page where the user can choose between "Car Park" and "Car Pick Up". The Car Pick Up functionality lets the user to enter a TokenID or use the persistent one (stored after a successful car park request).
+    <br><br>
+    Below are reported some images related to the ParkServiceGUI.
+    <table class="table_no_border">
+      <tr>
+        <td>
+          <img src="./img/parkservicegui_welcome_page.png" alt="parkservicegui_welcome_page.png"
+          style="width:100%"/>
+        </td>
+        <td>
+          <img src="./img/parkservicegui_car_pick_up_page.png" alt="parkservicegui_car_pick_up_page.png"
+          style="width:100%"/>
+        </td>
+        <td>
+          <img src="./img/parkservicegui_car_pick_up_done_page.png" alt="parkservicegui_car_pick_up_done_page.png"
+          style="width:100%"/>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          Welcome page.
+        </td>
+        <td>
+          Car Pick Up page. The user needs to insert the TokenID in the proper text box; the persistent one will be shown and used if not overridden by the user.
+        </td>
+        <td>
+          The car pick up has been completed, now the user should take the car from the outdoor area.
+        </td>
+      </tr>
+    </table>
+  </p>
+  <h3 id="project-mockdatagui">MockDataGUI</h3>
+  <p>
+    It is basically the same GUI/WebServer developed in <a href="../../Sprint%202%20-%20Car%20Parking/userDocs/sprint2.html#project-mockdatagui">Sprint 2</a>. <br>
+    In this sprint we just added the possibility to send an <k>input_distance</k> dispatch to the outsonar QActor. This dispatch is properly mapped to a POST request sent by the GUI client. <br><br>
+    Below are reported some images related to the MockDataGUI.
+
+<center>
+  <table class="table_no_border">
+    <tr>
+      <td style="text-align: center">
+        <img src="./img/mockdatagui_outsonar_950.png" alt="mockdatagui_outsonar_950.png"
+        style="width:60%"/>
+      </td>
+    </tr>
+    <tr>
+      <td style="text-align: center">
+        The OUTSONAR "slider" can be used to set the distance to the desired value, which is shown below the slider itself. <br>
+      </td>
+    </tr>
+  </table>
+</center>
+  </p>
+  <h3 id="project-transporttrolleygui">TransportTrolleyGUI</h3>
+  <p>
+    It is the same component, without additions, as explained in <a href="../../Sprint%202%20-%20Car%20Parking/userDocs/sprint2.html#project-transporttrolleygui">Sprint 2</a>.
+  </p>
+  <h3 id="project-security">About security</h3>
+  <p>
+    Same considerations of <a href="../../Sprint%202%20-%20Car%20Parking/userDocs/sprint2.html#project-security">Sprint 2</a>.
+  </p>
+  <h3 id="project-configuration-files">About configuration files</h3>
+  <p>
+    <table>
+      <tr>
+        <th>
+          File Name
+        </th>
+        <th>
+          Description
+        </th>
+      </tr>
+      <tr>
+        <td>
+          <a href="../it.unibo.automatedcarparking.outsonar/systemoutsonar.pl">systemoutsonar.pl</a>
+        </td>
+        <td>
+          Can be used to configure the listening port of the <k>ctxoutsonar</k>.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <a href="../it.unibo.automatedcarparking.outsonar/config_outsonar.json">config_outsonar.json</a>
+        </td>
+        <td>
+          Contains the mode ("virtual" or "real") of the outsonar.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <a href="../it.unibo.automatedcarparking.businesslogic/systembusinesslogic.pl">systembusinesslogic.pl</a>
+        </td>
+        <td>
+          Can be used to configure the hostname and port of the:
+          <k>ctxweightsensor</k>, <k>ctxoutsonar</k> and <k>ctxbasicrobot</k>. Moreover you can configure the listening port of the <k>ctxbusinesslogic</k>.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <a href="../it.unibo.automatedcarparking.businesslogic/config_outdoor_area.json">config_outdoor_area.json</a>
+        </td>
+        <td>
+          Contains the informations to properly configure the outdoor area as explained <a href="#project-outdoorcontroller">here</a>.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <a href="../it.unibo.automatedcarparking.parkservicegui/src/main/resources/application.properties">application.properties</a>
+        </td>
+        <td>
+          Can be used to configure the hostname and port of the <k>ctxbusinesslogic</k>.
+          Moreover you can configure the listening port of the <k>ParkServiceGUI Web Server</k>.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <a href="../it.unibo.automatedcarparking.mockdatagui/src/main/resources/application.properties">application.properties</a>
+        </td>
+        <td>
+          Can be used to configure the hostname and port of the <k>ctxbusinesslogic</k>, <k>ctxweightsensor</k> and <k>ctxoutsonar</k>.
+          Moreover you can configure the listening port of the <k>MockDataGUI Web Server</k>.
+        </td>
+      </tr>
+    </table>
+  </p>
+  <h3 id="project-qak-outsonar">OutSonar QAK</h3>
+  <div class="interaction_qak_example" style="width:90%;">
+    <p align="center">
+      The QAK below contains the implementation of the outsonar QActor.
+    </p>
+    <a href="../it.unibo.automatedcarparking.outsonar/src/outsonar.qak">
+    <div class="interaction_qak_example_link">
+      outsonar.qak
+    </div>
+    </a>
+  </div>
+  <h3 id="project-qak-businesslogic">BusinessLogic QAK</h3>
+  <div class="interaction_qak_example" style="width:90%;">
+    <p align="center">
+      The QAK below contains the implementation of the domain logic actors. In this sprint we focues on the following entities: outdoorcontroller, parkservicecontroller and parkingslotscontroller.
+    </p>
+    <a href="../it.unibo.automatedcarparking.businesslogic/src/businesslogic.qak">
+    <div class="interaction_qak_example_link">
+      businesslogic.qak
+    </div>
+    </a>
+  </div>
+
+
+</div><!-- End Project section [end class="remark"] -->
+
+<h2 id="testing">Testing</h2>
+<div class="remark">
+  <p>
+    The tests have been described in the <a href="#test-plan">above sections</a> and have been implemented <a href="../it.unibo.sprint3.test/test/it/unibo/sprint3/test/TestPlan.kt">here</a>. Each test interacts with the webservers by means of POST requests, so each test simulates the client behaviour.
+  </p>
+  <h4>How to run</h4>
+  <p>
+    <ol>
+      <li>
+        Open a terminal inside the "Sprint 3 - Car Pick Up" directory
+      </li>
+      <li>
+        Build all the libraries with:
+        <pre>[WINDOWS] .\rebuild_for_docker.bat</pre>
+        or
+        <pre>[LINUX]   ./rebuild_for_docker.bash</pre>
+      </li>
+      <li>
+        Build the docker images with:
+        <pre>docker-compose -f sprint3.yaml build</pre>
+      </li>
+      <li>
+        Launch the docker images with:
+        <pre>docker-compose -f basicrobotVirtual.yaml -f sprint3.yaml up</pre>
+      </li>
+      <li>
+        Wait until all the docker images are running...
+      </li>
+      <li>
+        Open the <a href="http://localhost:8081" target="_blank">TransportTrolleyGUI</a> and monitor it
+        while the tests are running in order to catch and handle "move fail" errors.
+      </li>
+      <li>
+        Open a new terminal inside the "it.unibo.sprint3.test" directory
+      </li>
+      <li>
+        Launch the tests with:
+        <pre>gradle test --tests it.unibo.sprint3.test.TestPlan</pre>
+      </li>
+    </ol>
+  </p>
+</div><!-- End Testing section [end class="remark"] -->
+
+<h2 id="deployment">Deployment</h2>
+<div class="remark">
+<p>
+  We used Docker to deploy the software developed during this sprint.
+</p>
+<h4>How to run</h4>
+<p>
+  <ol>
+    <li>
+      Open a terminal inside the "Sprint 3 - Car Pick Up" directory
+    </li>
+    <li>
+      Build all the libraries with:
+      <pre>[WINDOWS] .\rebuild_for_docker.bat</pre>
+      or
+      <pre>[LINUX]   ./rebuild_for_docker.bash</pre>
+    </li>
+    <li>
+      Build the docker images with:
+      <pre>docker-compose -f sprint3.yaml build</pre>
+    </li>
+    <li>
+      Launch the docker images with:
+      <pre>docker-compose -f basicrobotVirtual.yaml -f sprint3.yaml up</pre>
+    </li>
+    <li>
+      Wait until all the docker images are running...
+    </li>
+    <li>
+      Open the <a href="http://localhost:8100" target="_blank">ParkServiceGUI</a>, <a href="http://localhost:8099" target="_blank">MockDataGUI</a>, <a href="http://localhost:8081" target="_blank">TransportTrolleyGUI</a> and use them.
+    </li>
+  </ol>
+</p>
+<h4>Logging</h4>
+<ul>
+  <li>
+    <p>weightsensor</p>
+    <pre>docker logs --timestamps -f sprint3-carpickup_weightsensor_1</pre>
+  </li>
+  <li>
+    <p>outsonar</p>
+    <pre>docker logs --timestamps -f sprint3-carpickup_outsonar_1</pre>
+  </li>
+  <li>
+    <p>businesslogic</p>
+    <pre>docker logs --timestamps -f sprint3-carpickup_businesslogic_1</pre>
+  </li>
+  <li>
+    <p>parkservicegui</p>
+    <pre>docker logs --timestamps -f sprint3-carpickup_parkservicegui_1</pre>
+  </li>
+</ul>
+<h4>Example GUIs usage</h4>
+<center>
+  <video width="750" autoplay loop muted>
+      <source src="./img/parkservicegui_task_one_car.mp4"
+              type="video/mp4">
+  </video>
+</center>
+
+
+</div><!-- End Deployment section [end class="remark"] -->
+
+<div class="contact-us" id="contact-us">
+  <table>
+    <tr>
+      <td colspan="2"><h3>By:</h3></td>
+    </tr>
+    <tr>
+      <td>
+        <div class="student__image">
+          <center>
+            <img src="./img/students/lorenzo_persampieri.jpg" alt="lorenzo_persampieri.jpg"/>
+          </center>
+        </div>
+      </td>
+      <td>
+        <div class="student__image">
+          <center>
+            <img src="./img/students/gianluca_soavi.jpg" alt="gianluca_soavi.jpg"/>
+          </center>
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <th>Lorenzo Persampieri</th>
+      <th>Gianluca Soavi</th>
+    </tr>
+    <tr style="padding-bottom: 10px;">
+      <td>lorenzo.persampieri@studio.unibo.it</td>
+      <td>gianluca.soavi@studio.unibo.it</td>
+    </tr>
+    <tr>
+      <th colspan="2" style="border-top: 1px solid black; padding-top: 10px;">Github Repository</th>
+    </tr>
+    <tr>
+      <td colspan="2"><a href="https://github.com/lorepersa/Automated-Car-Parking">https://github.com/lorepersa/Automated-Car-Parking</a></td>
+    </tr>
+  </table>
+</div><!-- End Contact Us class remark -->
+
+
+</body>
+</html>

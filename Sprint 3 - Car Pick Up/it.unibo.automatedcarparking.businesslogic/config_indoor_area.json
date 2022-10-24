@@ -1,0 +1,6 @@
+{
+  "doorName": "INDOOR",
+  "WMAX": 500,
+  "DTOCCUPIED": 30000,
+  "DTCARENTER": 30000
+}

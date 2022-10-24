@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ParkServiceGUI</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <script src="/parkservicegui.js"></script>
+    <style>
+      body {
+        margin: 0; padding: 0; box-sizing: border-box;
+      }
+      /* BUTTONS */
+      button {
+        width: 150px; height: auto; background-color: transparent; border: 4px solid red; border-radius: 25px; padding: 5px; font-size: 16px; font-weight: bold; text-transform: uppercase; margin: 10px;
+      }
+      button:hover { background-color: red; color: white; cursor: pointer;}
+      button:active { background-color: darkred; border-color: darkred; color: white; cursor: pointer;}
+      button:disabled { background-color: transparent; border-color: lightgrey; color: lightgrey; cursor: default; }
+      /* TITLE */
+      .title { font-size: 45px; height: 8vh; margin-top: 5vh; margin-bottom: 1vh; text-align: center; text-transform: uppercase;  }
+      /* GUI */
+      .gui { width: 100%; height: 100%; text-align: center; }
+      /* SECTIONS */
+      .section {
+          opacity: 0;
+          -webkit-transition: all 0.8s ease-in-out;
+          -moz-transition: all 0.8s ease-in-out;
+          -ms-transition: all 0.8s ease-in-out;
+          -o-transition: all 0.8s ease-in-out;
+          transition: all 0.8s ease-in-out;
+      }
+      /* HIDDEN */
+      .hidden { visibility: hidden; display: none; }
+      /* LOADER ROTATING */
+      .loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 120px;
+            height: 120px;
+            margin:-60px 0 0 -60px;
+            -webkit-animation:spin 3s linear infinite;
+            -moz-animation:spin 3s linear infinite;
+            animation:spin 3s linear infinite;
+        }
+        @-moz-keyframes spin {
+            100% { -moz-transform: rotate(360deg); }
+        }
+        @-webkit-keyframes spin {
+            100% { -webkit-transform: rotate(360deg); }
+        }
+        @keyframes spin {
+            100% {
+                -webkit-transform: rotate(360deg);
+                transform:rotate(360deg);
+            }
+        }
+
+      input { width: 35%; height: auto; border: 1px solid black; border-radius: 25px; font-size: 14px; margin-bottom: 25px; margin-top: 10px; text-align: center; padding: 5px; }
+      table { border: none; width: 100%; height: 95vh; }
+      tr { margin-bottom: 20px;}
+      td { border: none; }
+      td:nth-child(1) { width: 35%; }
+      .buttons { margin-right: 25px; text-align: center; }
+      .section {
+        border: 1px solid black; border-radius: 25px; padding: 20px 0; margin-bottom: 25px; margin-top: 25px;
+      }
+      .error { background-color: tomato; border: 1px solid red; border-radius: 15px; color: black; margin-left: 20%; margin-right: 20%; padding: 10px 10px; }
+      .success { background-color: lightgreen; border: 1px solid green; border-radius: 15px; color: black; margin-left: 20%; margin-right: 20%; padding: 10px 10px; }
+
+    </style>
+</head>
+<body>
+  <h1 class="title">Parking Manager System</h1>
+  <div class="gui" id="gui">
+    <div id="welcome_section" class="section hidden">
+      <h2>Welcome to our parking service</h2>
+      <p>Please, select an action:</p>
+      <button type="button" id="car_park_section_button">Park Car</button>
+      <button type="button" id="car_pick_up_section_button">Pick Up Car</button>
+    </div>
+    <!-- PARK CAR SECTIONS -->
+    <div id="park_interest_section" class="section hidden">
+      <h3>Welcome new customer!</h3>
+      <p>Click here if you want to enter the car</p>
+      <button type="button" id="park_interest_button">Park Interest</button>
+    </div>
+    <div id="loader_section" class="hidden">
+      <canvas id="loader" style="width: 96vw; height: 80vh; border: 2px solid black;"></canvas>
+      <!-- <img class="loader" src="transport_trolley.png" alt="" width="120" height="120"> -->
+    </div>
+    <div id="car_enter_section" class="section hidden">
+      <p class="success">Request accepted!</p>
+      <h3>Slotnum assigned n.</h3>
+      <h2 id="slotnum"></h2>
+      <p>Please move the car in the indoor-area and press car enter</p>
+      <button type="button" id="car_enter_button">Car enter</button>
+    </div>
+    <div id="car_park_done_section" class="section hidden">
+      <p>We are parking your car!</p>
+      <h3>Tokenid assigned n.</h3>
+      <h2 id="tokenid"></h2>
+      <br>
+      <button type="button" class="back_home_button" id="car_park_done_back_home">Back to Homepage</button>
+    </div>
+    <!-- PICK UP CAR SECTIONS -->
+    <div id="car_pick_up_section" class="section hidden">
+      <h3>Welcome back my friend!</h3>
+      <p>Please insert the TOKENID to pick up your car.</p>
+      <input type="text" id="tokenid_input" placeholder="Insert here your TokenID"></input>
+      <br>
+      <button type="button" id="pick_up_car_button">Pick Up My Car</button>
+    </div>
+    <div id="car_pick_up_done_section" class="section hidden">
+      <h3>Car Pick Up DONE!</h3>
+      <p>Please, take the car from the outdoor area.</p>
+      <p>Have a good day!</p>
+      <br>
+      <button type="button" class="back_home_button" id="car_pick_up_done_back_home">Back to Homepage</button>
+    </div>
+    <!-- RETRY SECTION -->
+    <div id="retry_section" class="section hidden">
+      <p class="error">Request not accepted!</p>
+      <h3>Sorry, an error occurs!</h3>
+      <p>Please, try again!<br>Maybe you'll be luckier next time!</p>
+      <br>
+      <button type="button" class="back_home_button" id="retry_back_home">Back to Homepage</button>
+    </div>
+  </div>
+
+</body>
+</html>

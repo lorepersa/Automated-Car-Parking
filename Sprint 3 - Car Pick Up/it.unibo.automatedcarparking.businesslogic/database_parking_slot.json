@@ -1,0 +1,58 @@
+{
+  "parkingSlots": [
+    {
+      "parkingSlot": {
+        "number": 1,
+        "status": {
+          "status": "FREE"
+        }
+      },
+      "tokenid": ""
+    },
+    {
+      "parkingSlot": {
+        "number": 2,
+        "status": {
+          "status": "FREE"
+        }
+      },
+      "tokenid": ""
+    },
+    {
+      "parkingSlot": {
+        "number": 3,
+        "status": {
+          "status": "FREE"
+        }
+      },
+      "tokenid": ""
+    },
+    {
+      "parkingSlot": {
+        "number": 4,
+        "status": {
+          "status": "FREE"
+        }
+      },
+      "tokenid": ""
+    },
+    {
+      "parkingSlot": {
+        "number": 5,
+        "status": {
+          "status": "FREE"
+        }
+      },
+      "tokenid": ""
+    },
+    {
+      "parkingSlot": {
+        "number": 6,
+        "status": {
+          "status": "FREE"
+        }
+      },
+      "tokenid": ""
+    }
+  ]
+}
