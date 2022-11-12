@@ -1,0 +1,1655 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+    <!--
+<link rel="stylesheet" type="text/css" href="../css/issStyle1.css">
+<script type="text/javascript" src="../css/issStyle.js"></script>
+-->
+
+<head>
+  <link href="style/style.css" rel="stylesheet" type="text/css">
+
+  <title>Sprint 4 - Parking Manager</title>
+  </head>
+
+  <body>
+  <div id="top">
+  <h1>LABORATORIO DI INGEGNERIA DEI SISTEMI SOFTWARE <font size="5"></font> </h1>
+  </div>
+
+  <div class="body">
+    <h2>Introduction</h2>
+
+
+    <h2 id="requirements">Requirements</h2>
+    <div class="remark">
+    Customer's requirements are available <a href="https://raw.githubusercontent.com/anatali/issLab2021/main/it.unibo.issLabStart/userDocs/TFBO21ISS.pdf">here</a>.
+    </div>
+
+    <h2 id="requirement-analysis">Requirement analysis</h2>
+    <div class="remark">
+    Requirements analysis is available <a href="../../Requirements%20Analysis/Requirements%20analysis.html">here</a>.
+    </div>
+
+    <h2 id="first-problem-analysis">First Problem Analysis</h2>
+    <div class="remark">
+    A First Problem analysis is available <a href="../../First%20Problem%20Analysis/userDocs/First%20Problem%20Analysis.html">here</a>.
+    </div>
+
+    <h2 id="sprint-1">Sprint 1</h2>
+    <div class="remark">
+    Sprint 1 is available <a href="../../Sprint%201%20-%20TransportTrolley/userDocs/sprint1.html">here</a>.
+    </div>
+
+    <h2 id="sprint-2">Sprint 2</h2>
+    <div class="remark">
+    Sprint 2 is available <a href="../../Sprint%202%20-%20Car%20Parking/userDocs/sprint2.html">here</a>.
+    </div>
+
+    <h2 id="sprint-3">Sprint 3</h2>
+    <div class="remark">
+    Sprint 3 is available <a href="../../Sprint%203%20-%20Car%20Pick%20Up/userDocs/sprint3.html">here</a>.
+    </div>
+
+
+        <h2 id="sprint-backlog">Sprint Backlog</h2>
+        <div class="remark">
+          <h3>Parking Manager</h3>
+          The goals of this sprint are the following:
+          <table>
+            <tr>
+              <th>Description</th>
+              <th>Requirements</th>
+            </tr>
+            <tr>
+              <td>
+                The thermometer is able to measure the temperature inside the parking area.
+              </td>
+              <td>
+                <a href="../../Requirements%20Analysis/Requirements%20analysis.html#F19">F19</a>, <a href="../../Requirements%20Analysis/Requirements%20analysis.html#NF2">NF2</a>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                The system is able to manage the fan.
+              </td>
+              <td>
+                <a href="../../Requirements%20Analysis/Requirements%20analysis.html#F12">F12</a> (partially), <a href="../../Requirements%20Analysis/Requirements%20analysis.html#F13">F13</a> (partially), <a href="../../Requirements%20Analysis/Requirements%20analysis.html#F14">F14</a>, <a href="../../Requirements%20Analysis/Requirements%20analysis.html#NF2">NF2</a>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                The parking area status is observable by the manager.
+              </td>
+              <td>
+                <a href="../../Requirements%20Analysis/Requirements%20analysis.html#F10">F10</a> (partially)
+              </td>
+            </tr>
+            <tr>
+              <td>
+                The system provides the ParkServiceStatusGUI to the parking manager.
+              </td>
+              <td>
+                <a href="../../Requirements%20Analysis/Requirements%20analysis.html#F10">F10</a>, <a href="../../Requirements%20Analysis/Requirements%20analysis.html#F11">F11</a>, <a href="../../Requirements%20Analysis/Requirements%20analysis.html#F12">F12</a>, <a href="../../Requirements%20Analysis/Requirements%20analysis.html#F13">F13</a>, <a href="../../Requirements%20Analysis/Requirements%20analysis.html#F15">F15</a>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                The status of the system must survive after a system reboot.
+              </td>
+              <td>
+                <a href="../../Requirements%20Analysis/Requirements%20analysis.html#NF3">NF3</a>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                Should be possible to analyze the behaviour of the system.
+              </td>
+              <td>
+                <a href="../../Requirements%20Analysis/Requirements%20analysis.html#NF4">NF4</a>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <h2 id="summary">Summary</h2>
+        <div class="remark">
+          <ol>
+            <li>
+              <a href="#problem-analysis">Problem Analysis</a>
+              <ol>
+                <li>
+                  <a href="#starting-point">Starting point</a>
+                </li>
+                <li>
+                  <a href="#thermometer-analysis">Thermometer Analysis</a>
+                </li>
+                <li>
+                  <a href="#thermometer-filter-analysis">Thermometer Filter Analysis</a>
+                </li>
+                <li>
+                  <a href="#fan-analysis">Fan Analysis</a>
+                </li>
+                <li>
+                  <a href="#fan-controller-analysis">Fan Controller Analysis</a>
+                </li>
+                <li>
+                  <a href="#status-aggregator-analysis">Status Aggregator Analysis</a>
+                </li>
+                <li>
+                  <a href="#manager-controller-analysis">Manager Controller Analysis</a>
+                </li>
+                <li>
+                  <a href="#park-service-status-gui-analysis">Park Service Status GUI Analysis</a>
+                </li>
+                <li>
+                  <a href="#observation-analysis">Observation</a>
+                </li>
+                <li>
+                  <a href="#security-analysis">Security Considerations</a>
+                </li>
+                <li>
+                  <a href="#interactions">Interactions</a>
+                </li>
+                <li>
+                  <a href="#logical-architecture">Logical Architecture</a>
+                </li>
+              </ol>
+              <li>
+                <a href="#test-plan">Test Plan</a>
+              </li>
+              <li>
+                <a href="#project">Project</a>
+              </li>
+              <li>
+                <a href="#testing">Testing</a>
+              </li>
+              <li>
+                <a href="#deployment">Deployment</a>
+              </li>
+              <li>
+                <a href="#sprint-review">Sprint Review</a>
+              </li>
+            </li>
+          </ol>
+        </div>
+
+        <h2 id="problem-analysis">Problem Analysis</h2>
+        <div class="remark">
+
+          <h3 id="starting-point">General Considerations and Starting Point</h3>
+          For this fourth sprint, the initial logical architecture is:
+          <p align="center"><a href="./img/legenda.png">Legenda</a></p>
+          <div class="interactions__image">
+            <center>
+              <img src="./img/sprint4_starting_logical_architecture.png" alt="sprint4_starting_logical_architecture.png"/>
+            </center>
+          </div>
+          <br><br>
+          This sprint will be focused on the <b>Parking Manager</b> actions. So it will cover the entire Park Manager System. It will also provide a Park Service Status GUI.
+          <br>
+          We refer to "<b>Business Logic***</b>" as the remaining part of the Business Logic that does not involve the transport trolley actor, the Indoor/Outdoor Controller actors, the Parking Slot Controller actor and the Park Service actor.
+          <br>
+
+          <h4 id="introductions">Introduction</h4>
+          <div>
+            For Parking Manager actions we intend:
+            <ul>
+              <li>the monitoring of the entire system;</li>
+              <li>the start/stop of the transport trolley;</li>
+              <li>the handling of the fan, based on the temperature measured;</li>
+              <li>the handling of the alarms notified.</li>
+            </ul>
+          </div>
+
+          <h3 id="thermometer-analysis">Thermometer Analysis</h3>
+          <div>
+            The task of the thermometer is to measure the temperature inside the parking area to understand:
+            <ul>
+              <li>if the temperature is higher or lower than the configurable threshold <b>TMAX</b>;</li>
+            </ul>
+            From the requirements <b>the thermometer is virtual</b>, but to increase the utility of the PMS, it would be appropriate to let the system <b>configurable</b> in order to choose between a virtual or real thermometer. In this sprint, we focus on the <b>virtual thermometer</b>.
+            <br><br>
+            In the case of a virtual thermometer, it is necessary to <b>have a 'mock' interface</b> that allows you to check and modify the value of the temperature at any time.
+            <br><br>
+            It was also decided to <b>insert no logic inside the thermometer</b> in order to make it as reusable as possible: the thermometer is therefore limited only and exclusively to measure the temperature.
+            <br><br>
+            The thermometer is model as a <k>QActor</k>. It should be notified about the current temperature via a proper <k>input_temperature</k> dispatch independently from the underlying virtual or real configuration.
+            <br>
+            <h4>Observable State</h4>
+            <div>
+              After a careful analysis, it was decided to make the thermometer an <a href="#observation-analysis">observable entity</a>; in particular the thermometer QActor exposes in its observable status the information about the current temperature measured in the parking area. <br>
+            </div>
+          </div>
+
+          <h3 id="thermometer-filter-analysis">Thermometer Filter</h3>
+          <div>
+            Considering the absence of logic within the thermometer qactor, it is necessary to have within the domain logic an entity in charge of checking whether the temperature measured at each instant is greater than the TMAX threshold.
+            <br>
+            For these reasons, we introduce the <b>Thermometer Filter</b>. An entity that is responsible for <tt>observing</tt> the temperature measured by the thermometer and checking every time a new temperature is measured whether or not it exceeds the TMAX threshold.
+            <br><br>
+            Despite the weight sensor/out sonar observation made by the Indoor/Outdoor Controller, the Thermometer Filter observes the Thermometer continuously, since the manager should be notified any time the temperature measured is greater or lower than TMAX, to take the necessary actions for the correct functioning of the system (e.g. power on/off the fan, stop/start the transport trolley).
+            <br>
+            The Thermometer Filter is model as a <k>QActor</k>.
+            <br>
+            <h4>Startup Configuration</h4>
+            <div>
+              At each system's boot there is the need to let the Thermometer Filter aware of some parameters, like:
+              <ul>
+                <li><b>TMAX</b>: temperature threshold which, if exceeded, means that the temperature is too high.</li>
+              </ul>
+            </div>
+
+            <h4>Observable State</h4>
+            <div>
+              After a careful analysis, it was decided to make the thermometer filter an <a href="#observation-analysis">observable entity</a>; in particular the thermometer filter QActor exposes in its observable status the information about whether or not the TMAX threshold is exceeded (in boolean form). <br>
+            </div>
+          </div>
+
+          <h3 id="fan-analysis">Fan Analysis</h3>
+          <div>
+            The task of the fan is to lower the parking area temperature when it exceeds the TMAX threshold.
+            <br><br>
+            From the requirements and as already said in the <a href="../../First%20Problem%20Analysis/userDocs/First%20Problem%20Analysis.html#fan">first problem analysis</a>, the fan can be manual or automatic. In the first case, it should be activated by the manager through the Park Service Status GUI, while in the second case it is up to the system to activate the fan at the appropriate time, that is, when the temperature measured by the thermometer is greater than TMAX.
+            <br><br>
+            From the requirements <b>the fan is virtual</b>, but to increase the utility of the PMS, it would be appropriate to let the system <b>configurable</b> in order to choose between a virtual or real fan. In this sprint, we focus on the <b>virtual fan</b>.
+            <br><br>
+            It was also decided to <b>insert no logic inside the fan</b> in order to make it as reusable as possible: the fan is therefore limited only and exclusively to be powered on or off.
+            <br><br>
+            The fan is model as a <k>QActor</k>. It should be activated or disactivated via a proper <k>fan_on</k> or <k>fan_off</k> request independently from the underlying virtual or real configuration. The outcome of this operation is given by the answer <k>fan_done</k> or <k>fan_fail</k>.
+          </div>
+
+          <h3 id="fan-controller-analysis">Fan Controller</h3>
+          <div>
+            Considering the absence of logic in the fan qactor, it is necessary to have within the domain logic an entity responsible for setting the fan in manual or automatic mode and adopting different behaviors depending on the mode set.
+            <br><br>
+            The Fan Controller is modeled as a <k>QActor</k>. It should be set in automatic/manual mode via a proper <k>manager_fan_automatic_mode</k> or <k>manager_fan_manual_mode</k> dispatch.
+            <br>
+            The two modes are mutually exclusive.
+            <br><br>
+            <ul>
+              <li>In case of <b>manual mode</b>, the fan controller should be able to receive the power on/off command via a proper <k>manager_fan_on</k>/<k>manager_fan_off</k> dispatch.</li>
+              <li>In case of <b>automatic mode</b>, the fan controller should be able to <b>observe the Thermometer Filter</b> to understand when is the right time to turn the fan on or off, based on the information exposed by the Thermometer Filter itself. (e.g. when the Thermometer Filter status changes, a proper command should be sent to the fan by the Fan Controller).</li>
+            </ul>
+            <br>
+            In both modes (manual or automatic), the fan controller should be able to communicate with the fan via the right request/response mode.
+            <h4>Observable State</h4>
+            <div>
+              After a careful analysis, it was decided to make the Fan Controller an <a href="#observation-analysis">observable entity</a>; in particular the fan controller QActor exposes in its observable status the fan information about the manual/automatic mode, the on/off status and a failure string which assumes significance if there is any failure during the turning on or off of the fan.<br>
+            </div>
+          </div>
+
+          <h3>Status Aggregator and Manager Controller</h3>
+          <div>
+            From a careful analysis, it was necessary for this sprint to introduce other two new entities: <k>Status Aggregator</k> and <k>Manager Controller</k>.
+          </div>
+
+          <h3 id="status-aggregator-analysis">Status Aggregator</h3>
+          <div>
+            The goal of the <k>Status Aggregator</k> is to group the information about all observable statuses of the system into a single entity, in order to have a global view of the system and allow the manager to monitor each individual aspect, as asked in the requirements.
+            <br>
+            To achieve this goal, the Status Aggregator <b>observes each observable entity of the system</b>.
+            <br>
+            For this reason the Status Aggregator has been modeled as <k>QActor</k>.
+            <br><br>
+            As already said in the First Problem Analysis for the <a href="../../First%20Problem%20Analysis/userDocs/First%20Problem%20Analysis.html#weight-sensor-costs">weight sensor</a> and for the <a href="../../First%20Problem%20Analysis/userDocs/First%20Problem%20Analysis.html#out-sonar-costs">out sonar</a>, the observation of weight sensor and out sonar entities should be configurable: the managere should be able to start/stop the observation depending on his needs. This configurable observation does not interfer with the observation made by the Indoor Controller and Outdoor Controller.
+            <br>
+            <b>Note</b> that the moment the weight sensor is observed from both Indoor Controller and Status Aggregator, there are conceptually two observations on the same entity at the same time. But since the Status Aggregator and the Indoor Controller reside in the same qak context, thanks to our <a href="../../First%20Problem%20Analysis/it.unibo.qakobserver/userDocs/Documentation.html">QakObserver framework</a>, the <b>remote observation is <k>AT MOST</k> one</b>, depending on whether there is at least one local entity observing the remote entity. In this way the bandwidth usage is optimized.
+            <br>
+            The same considerations also apply to outsonar and Outdoor Controller.
+
+            <h4>Observable state</h4>
+            <div>
+              After a careful analysis, it was decided to make the Status Aggregator an <a href="#observation-analysis">observable entity</a>. <br>
+              The information that has to be observable must contain the <b>status of the entire system</b>.
+            </div>
+          </div>
+
+          <h3 id="manager-controller-analysis">Manager Controller</h3>
+          <div>
+            The task of the Manager Controller is to be an intermediary between the Park Service Status GUI and the domain logic actors like the Transport Trolley, the Fan Controller and the Status Aggregator.
+            <br>
+            In this way, the Park Service Status GUI has to communicate only with the Manager Controller, that will propagate the messages to the appropriate entities.
+            <br><br>
+            The Manager Controller has been modeled as a <k>QActor</k>.
+          </div>
+
+          <h3 id="park-service-status-gui-analysis">Park Service Status GUI</h3>
+          <div>
+            The <b>Park Service Status GUI</b> must be an interface that should be used by the manager to administer the PMS.
+            <br><br>
+            As already analyzed in the <a href="../../First%20Problem%20Analysis/userDocs/First%20Problem%20Analysis.html#park-service-status-gui">First Problem Analysis</a>, a web application can be a valid solution for the realization of the Park Service Status GUI.
+            <br><br>
+            <div class="in-depth-content">
+              So, from this moment, we will analyze the Park Service Status GUI taking into consideration the presence of a <k>web server</k>, which will take care of the communication with the domain logic, and a <k>GUI</k> that will collect manager inputs.
+            </div>
+            <br>
+            The Park Service Status GUI should display the information regarding the <b>status of the system</b>, which should contain:
+            <ul>
+              <li>the status of the parking slots (free/reserved/occupied);</li>
+              <li>the indoor-area status (free/reserved/occupied, weightsensor on/off, weight measured, DTCARENTER alarm);</li>
+              <li>the outdoor-area status (free/reserved/occupied, outsonar on/off, distance measured, DTFREE alarm);</li>
+              <li>the thermometer status (temperature measured, higher/lower than TMAX);</li>
+              <li>the fan status (on/off, manual/automatic, failure);</li>
+              <li>the transport trolley status (idle/working/stopped, transportrolley position, move failed);</li>
+            </ul>
+            In order to be informed every time a change occurs, the Park Service Status GUI should <b>observe</b> the Status Aggregator which contains all the necessary information.
+            <br><br>
+            Regarding the <k>transfer of the system status between web server and GUI</k>, we have identified several ways. In particular:
+            <ul>
+              <li><b>Request/response</b>: to obtain the entire system status at once (e.g. a snapshot of the current system situation);</li>
+              <li><b>Publish/subscribe</b>: to obtain information only on topics of interest among those listed above.</li>
+            </ul>
+            <b>Note</b>: from an efficiency point of view, as analysts, we suggest the use of the publish/subscribe pattern, in order to reduce the bandwidth usage (since it only receives updates on topics that are actually changed).
+            <br><br>
+            The GUI should have a button for each operation such as:
+            <ul>
+              <li>turn the fan on/off;</li>
+              <li>set the fan in automatic/manual mode;</li>
+              <li>start/stop the Transport Trolley;</li>
+            </ul>
+            In addition, the manager, using this GUI, must be able to <b>monitor the status of the system</b> and <b>take the proper action when an alarm occurs</b>. For these reasons, the GUI should have also an area where the transport trolley can be visualized (both in terms of WEnv and map form) and an area to display the alarms. The alarm must be clearly visible to the manager and must remain asserted until the issue is handled. A <b>sound</b> can improve the visibility of an alarm.
+            <br><br>
+            The whole interface must be easy for the manager to understand and use.
+          </div>
+
+          <h3 id="mock-data-gui-analysis">Mock Data GUI</h3>
+          <div>
+            In addition to the considerations made in the <a href="../../Sprint%202%20-%20Car%20Parking/userDocs/sprint2.html#mock-data-gui-analysis">Sprint 2</a>, the <b>Mock Data GUI</b> should allow the manager to change also the temperature measured by the thermometer, in case the thermometer is virtual.
+            <br><br>
+            This GUI is not specified as a requirement and it is useless in case of a finished product with all real sensors. For that reason no in-depth analysis will be performed.
+          </div>
+
+          <h3 id="observation-analysis">About Observation</h3>
+          <div>
+            The <a href="../../First%20Problem%20Analysis/it.unibo.qakobserver/userDocs/Documentation.html">QakObserver Framework</a> has to be used for each observable entity.
+            <br>
+            As analysts, we suggest to use <b>JSON</b> as data format, to improve the interaction and the communication, as we indicated also for the sprint 2. Moreover, thanks to <b>Gson or Jackson libraries</b> there's no abstraction gap.
+            <br><br>
+            Thanks to our <a href="../../First%20Problem%20Analysis/it.unibo.qakobserver/userDocs/Documentation.html">QakObserver Framework</a>, we analyzed <b>three types of observation</b> differentiated by the subject that interrupts the observation itself:
+            <ul>
+              <li><b>Continuous observation</b>: an entity observes an other entity always;</li>
+              <li><b>Component's logic observation</b>: observation started and stopped by a component's logic. An entity observes an other entity only on specific circumstances dictated by the logic of the entity and for limited period of time (e.g. the weight sensor observation made by the Indoor Controller);</li>
+              <li><b>Manager input observation</b>: observation initiated and stopped by the manager. Once initialized, the observation is continuous until it is stopped by the manager.</li>
+            </ul>
+            <br>
+            Existing observations are now classified as:
+            <table style="width:70%" width="70%">
+              <tbody>
+                <tr>
+                  <th>Observer</th>
+                  <th>Resource</th>
+                  <th>Type</th>
+                </tr>
+                <tr>
+                  <td>Indoor Controller</td>
+                  <td>Weight Sensor</td>
+                  <td><k>Component's logic observation</k></td>
+                </tr>
+                <tr>
+                  <td>Outdoor Controller</td>
+                  <td>Out Sonar</td>
+                  <td><k>Component's logic observation</k></td>
+                </tr>
+                <tr>
+                  <td>Status Aggregator</td>
+                  <td>Indoor Controller</td>
+                  <td><tt>Continuous observation</tt></td>
+                </tr>
+                <tr>
+                  <td>Status Aggregator</td>
+                  <td>Outdoor Controller</td>
+                  <td><tt>Continuous observation</tt></td>
+                </tr>
+                <tr>
+                  <td>Status Aggregator</td>
+                  <td>Parking Slot Controller</td>
+                  <td><tt>Continuous observation</tt></td>
+                </tr>
+                <tr>
+                  <td>Status Aggregator</td>
+                  <td>Transport Trolley</td>
+                  <td><tt>Continuous observation</tt></td>
+                </tr>
+                <tr>
+                  <td>Status Aggregator</td>
+                  <td>Weight Sensor</td>
+                  <td><ks>Manager input observation</ks></td>
+                </tr>
+                <tr>
+                  <td>Status Aggregator</td>
+                  <td>Out Sonar</td>
+                  <td><ks>Manager input observation</ks></td>
+                </tr>
+                <tr>
+                  <td>Status Aggregator</td>
+                  <td>Thermometer</td>
+                  <td><tt>Continuous observation</tt></td>
+                </tr>
+                <tr>
+                  <td>Status Aggregator</td>
+                  <td>Thermometer Filter</td>
+                  <td><tt>Continuous observation</tt></td>
+                </tr>
+                <tr>
+                  <td>Status Aggregator</td>
+                  <td>Fan Controller</td>
+                  <td><tt>Continuous observation</tt></td>
+                </tr>
+                <tr>
+                  <td>Fan Controller</td>
+                  <td>Thermometer Filter</td>
+                  <td><ks>Manager input observation</ks></td>
+                </tr>
+                <tr>
+                  <td>Park Service Status GUI (web server)</td>
+                  <td>Status Aggregator</td>
+                  <td><tt>Continuous observation</tt></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="interactions__image" style="margin-top: 70px;">
+              <center>
+                <img src="./img/observations.png" alt="observations.png"/>
+              </center>
+            </div>
+
+          </div>
+
+          <h3 id="security-analysis">Security Considerations</h3>
+          <div>
+            For the Park Service Status GUI, an <b>encrypted communication</b> (e.g. based on the HTTPS protocol) between web server and gui is recommended.
+          </div>
+
+          <h3 id="interactions">Interactions</h3>
+          <div>
+            <!-- interaction image -->
+            <div class="interactions__image" style="margin-top: 50px;">
+              <center>
+                <img src="./img/manager_controller_interaction.png" alt="manager_controller_interaction.png"/>
+              </center>
+            </div>
+            <table class="table_interactions_messages">
+              <tr>
+                <th>Message</th>
+                <th>Payload</th>
+                <th>Semantic</th>
+                <th>Description</th>
+              </tr>
+              <tr>
+                <td>manager_transport_trolley_start</td>
+                <td>X</td>
+                <td>dispatch</td>
+                <td>Start a the transport trolley</td>
+              </tr>
+              <tr>
+                <td>manager_transport_trolley_stop</td>
+                <td>X</td>
+                <td>dispatch</td>
+                <td>Stop a the transport trolley</td>
+              </tr>
+              <tr>
+                <td>manager_fan_automatic_mode</td>
+                <td>X</td>
+                <td>dispatch</td>
+                <td>Set the fan in automatic mode</td>
+              </tr>
+              <tr>
+                <td>manager_fan_manual_mode</td>
+                <td>X</td>
+                <td>dispatch</td>
+                <td>Set the fan in manual mode</td>
+              </tr>
+              <tr>
+                <td>manager_fan_on</td>
+                <td>X</td>
+                <td>dispatch</td>
+                <td>Power on the fan</td>
+              </tr>
+              <tr>
+                <td>manager_fan_off</td>
+                <td>X</td>
+                <td>dispatch</td>
+                <td>Power off the fan</td>
+              </tr>
+              <tr>
+                <td>ousonar_info_on</td>
+                <td>X</td>
+                <td>dispatch</td>
+                <td>Power on the outsonar observation</td>
+              </tr>
+              <tr>
+                <td>outsonar_info_off</td>
+                <td>X</td>
+                <td>dispatch</td>
+                <td>Power off the outsonar observation</td>
+              </tr>
+              <tr>
+                <td>weightsensor_info_on</td>
+                <td>X</td>
+                <td>dispatch</td>
+                <td>Power on the weightsensor observation</td>
+              </tr>
+              <tr>
+                <td>weightsensor_info_off</td>
+                <td>X</td>
+                <td>dispatch</td>
+                <td>Power off the weightsensor observation</td>
+              </tr>
+
+            </table>
+
+            <!-- interaction image -->
+            <div class="interactions__image" style="margin-top: 70px;">
+              <center>
+                <img src="./img/fan_thermometer_interaction.png" alt="fan_thermometer_interaction.png"/>
+              </center>
+            </div>
+            <table class="table_interactions_messages">
+              <tr>
+                <th>Message</th>
+                <th>Payload</th>
+                <th>Semantic</th>
+                <th>Description</th>
+              </tr>
+              <tr>
+                <td>input_temperature</td>
+                <td>T</td>
+                <td>dispatch</td>
+                <td>Send mock temperature to the Thermometer</td>
+              </tr>
+              <tr>
+                <td>fan_on</td>
+                <td>X</td>
+                <td>request</td>
+                <td>Power on the fan</td>
+              </tr>
+              <tr>
+                <td>fan_off</td>
+                <td>X</td>
+                <td>request</td>
+                <td>Power off the fan</td>
+              </tr>
+              <tr>
+                <td>fan_done</td>
+                <td>X</td>
+                <td>reply</td>
+                <td>The fan has been powered on/off correctly</td>
+              </tr>
+              <tr>
+                <td>fan_fail</td>
+                <td>REASON</td>
+                <td>reply</td>
+                <td>The power on/off of the fan has encountered a problem</td>
+              </tr>
+            </table>
+          </div>
+
+          <h3 id="machine-readable-model">Machine Readable Model</h3>
+    <pre>
+/**
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN INDOOR AREA [available parking slot]
+ * ==================================
+ * client using parkservicegui        | request parking_car_interest(X) to parkservicecontroller
+ *                                    |
+ * parkservicecontroller              | request parking_car_interest(X) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | observe weightsensor
+ *                                    | -- wait until measured weight in indoor area is lower than or equal to a given WMAX threshold --
+ *                                    | request reserve_parking_slot(X) to parkingslotscontroller
+ *                                    | -- set indoor area reserved --
+ *                                    |
+ * parkingslotscontroller             | replyTo reserve_parking_slot with parking_slot_reserved(SLOTNUM,TOKENID)
+ *                                    |
+ * indoorcontroller                   | -- save received SLOTNUM --
+ *                                    | -- save received TOKENID --
+ *                                    | start dtoccupied timer
+ *                                    | replyTo parking_car_interest with inform_in(SLOTNUM)
+ *                                    |
+ * parkservicecontroller              | replyTo parking_car_interest with inform_in(SLOTNUM)
+ *                                    |
+ * indoorcontroller                   | -- wait until measured weight in indoor area is greater than a given WMAX threshold --
+ *                                    | stop dtoccupied timer
+ *                                    | start dtcarenter timer
+ *                                    | -- set indoor area engaged by car --
+ *
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN INDOOR AREA [unavailable parking slot]
+ * ==================================
+ * client using parkservicegui        | request parking_car_interest(X) to parkservicecontroller
+ *                                    |
+ * parkservicecontroller              | request parking_car_interest(X) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | observe weightsensor
+ *                                    | -- set indoor area reserved --
+ *                                    | -- wait until measured weight in indoor area is lower than or equal to a given WMAX threshold --
+ *                                    | request reserve_parking_slot(X) to parkingslotscontroller
+ *                                    |
+ * parkingslotscontroller             | replyTo reserve_parking_slot with no_available_parking_slots(X)
+ *                                    |
+ * indoorcontroller                   | replyTo parking_car_interest with inform_in(0)
+ *                                    | cancel weightsensor observation
+ *                                    | -- set indoor area free --
+ *                                    |
+ * parkservicecontroller              | replyTo parking_car_interest with inform_in(0)
+ *
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN PARKING AREA [indoor area free]
+ * ==================================
+ * client using parkservicegui        | request car_enter(SLOTNUM) to parkservicecontroller
+ *                                    |
+ * parkservicecontroller              | request car_enter(SLOTNUM) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | replyTo car_enter with response_car_enter(IndoorAreaNotReserved)
+ *                                    |
+ * parkservicecontroller              | replyTo car_enter with response_car_enter(IndoorAreaNotReserved)
+ *
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN PARKING AREA [indoor area reserved - weight <= WMAX]
+ * ==================================
+ * client using parkservicegui        | request car_enter(SLOTNUM) to parkservicecontroller
+ *                                    |
+ * parkservicecontroller              | request car_enter(SLOTNUM) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | replyTo car_enter with response_car_enter(IndoorAreaNotEngagedByCar)
+ *                                    |
+ * parkservicecontroller              | replyTo car_enter with response_car_enter(IndoorAreaNotEngagedByCar)
+ *                                    |
+ *
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN PARKING AREA [invalid slotnum - indoor area engaged by car]
+ * ==================================
+ * client using parkservicegui        | request car_enter(SLOTNUM) to parkservicecontroller
+ *                                    |
+ * parkservicecontroller              | request car_enter(SLOTNUM) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | replyTo car_enter with response_car_enter(InvalidSlotnum)
+ *                                    |
+ * parkservicecontroller              | replyTo car_enter with response_car_enter(InvalidSlotnum)
+ *                                    |
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN PARKING AREA [valid slotnum - indoor area engaged by car]
+ * ==================================
+ * client using parkservicegui        | request car_enter(SLOTNUM) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | stop dtcarenter timer
+ *                                    | -- disable dtcarenter alarm if enabled --
+ *                                    | [transporttrolley DSL] takeOverCar at INDOOR
+ *                                    | replyTo car_enter with response_car_enter(TOKENID)
+ *                                    | -- set indoor area free --
+ *                                    | cancel weightsensor observation
+ *                                    |
+ * parkservicecontroller              | replyTo car_enter with response_car_enter(TOKENID)
+ *                                    |
+ * indoorcontroller                   | [transporttrolley DSL] releaseCar at SLOTNUM
+ *                                    | forward confirm_parking_slot(SLOTNUM, TOKENID) to parkingslotscontroller
+ *                                    |
+ * parkingslotscontroller             | -- move parking slot SLOTNUM from status RESERVED to OCCUPIED --
+ *                                    | -- persist information about occupied parking slot SLOTNUM mapped to tokenid TOKENID --
+ *
+ * ==================================
+ * ================================== | ROUTINE CAR EXITS FROM INDOOR AREA
+ * ==================================
+ * indoorcontroller                   | stop dtcarenter timer
+ *                                    | cancel weightsensor observation
+ *                                    | -- set indoor area free --
+ *                                    | -- disable dtcarenter alarm if enabled --
+ *                                    | forward undone_reservation(SLOTNUM, TOKENID) to parkingslotscontroller
+ *
+ * parkingslotscontroller             | -- move parking slot SLOTNUM from status RESERVED to FREE --
+ *                                    | -- persist information about free parking slot SLOTNUM --
+ *
+ * ==================================
+ * ================================== | ROUTINE DTOCCUPIED TIMEOUT
+ * ==================================
+ * indoorcontroller                   | stop dtoccupied timer
+ *                                    | -- set indoor area free --
+ *                                    | cancel weightsensor observation
+ *                                    | forward undone_reservation(SLOTNUM, TOKENID) to parkingslotscontroller
+ *                                    |
+ * parkingslotscontroller             | -- move parking slot SLOTNUM from status RESERVED to FREE --
+ *                                    | -- persist information about free parking slot SLOTNUM --
+ *
+ * ==================================
+ * ================================== | ROUTINE DTCARENTER TIMEOUT
+ * ==================================
+ * indoorcontroller                   | stop dtcarenter timer
+ *                                    | -- enable dtcarenter alarm --
+ *
+ * ==================================
+ * ================================== | ROUTINE WEIGHTSENSOR MEASURE WEIGHT
+ * ==================================
+ * weightsensor                       | received input_weight(W)
+ *                                    | update observers with new weight W
+ *
+ * ==================================
+ * ================================== | CLIENT ASKS TO PICK UP THE CAR [invalid tokenid]
+ * ==================================
+ * client using parkservicegui        | request car_pick_up(TOKENID) to parkservicecontroller
+ *                                    |
+ * parkservicecontroller              | request car_pick_up(TOKENID) to outdoorcontroller
+ *                                    |
+ * outdoorcontroller                  | request validate_tokenid(TOKENID) to parkingslotscontroller
+ *                                    | -- set outdoor area reserved --
+ *                                    |
+ * parkingslotscontroller             | replyTo validate_tokenid with invalid_tokenid(X)
+ *                                    |
+ * outdoorcontroller                  | replyTo car_pick_up with accept_out_failure(X)
+ *                                    | -- set outdoor area free --
+ *                                    |
+ * parkservicecontroller              | replyTo car_pick_up with accept_out_failure(X)
+ *                                    |
+ * ==================================
+ * ================================== | CLIENT ASKS TO PICK UP THE CAR [valid tokenid]
+ * ==================================
+ * client using parkservicegui        | request car_pick_up(TOKENID) to parkservicecontroller
+ *                                    |
+ * parkservicecontroller              | request car_pick_up(TOKENID) to outdoorcontroller
+ *                                    |
+ * outdoorcontroller                  | request validate_tokenid(TOKENID) to parkingslotscontroller
+ *                                    | -- set outdoor area reserved --
+ *                                    |
+ * parkingslotscontroller             | replyTo validate_tokenid with valid_tokenid(SLOTNUM)
+ *                                    |
+ * outdoorcontroller                  | [transporttrolley DSL] takeOverCar at SLOTNUM
+ *                                    | forward free_parking_slot(SLOTNUM, TOKENID) to parkingslotscontroller
+ *                                    |
+ * parkingslotscontroller             | -- move parking slot SLOTNUM from status OCCUPIED to FREE --
+ *                                    | -- persist information about free parking slot SLOTNUM--
+ *                                    |
+ * outdoorcontroller                  | [transporttrolley DSL] releaseCar at OUTDOOR
+ *                                    | observe outsonar
+ *                                    | -- wait until the measured distance is lower than DMIN --
+ *                                    | -- set outdoor area engaged by car --
+ *                                    | start dtfree timer
+ *                                    | replyTo car_pick_up with accept_out_success(X)
+ *                                    |
+ * parkservicecontroller              | replyTo car_pick_up with accept_out_success(X)
+ *                                    |
+ * ==================================
+ * ================================== | ROUTINE CAR EXITS FROM OUTDOOR AREA (observed distance D >= DMIN)
+ * ==================================
+ * outdoorcontroller                  | stop dtfree timer
+ *                                    | cancel outsonar observation
+ *                                    | -- set outdoor area free --
+ *                                    | -- disable dtfree alarm if enabled --
+ *
+ * ==================================
+ * ================================== | ROUTINE DTFREE TIMEOUT
+ * ==================================
+ * outdoorcontroller                  | stop dtfree timer
+ *                                    | -- enable dtfree alarm --
+ *
+ * ==================================
+ * ================================== | ROUTINE OUTSONAR MEASURE DISTANCE
+ * ==================================
+ * outsonar                           | received input_distance(D)
+ *                                    | update observers with new distance D
+ *
+ * ==================================
+ * ================================== | ROUTINE THERMOMETER MEASURE TEMPERATURE
+ * ==================================
+ * thermometer                        | received input_temperature(T)
+ *                                    | update observers with new temperature T
+ *
+ * ==================================
+ * ================================== | TRANSPORT TROLLEY START
+ * ==================================
+ * manager using parkservicestatusgui | forward manager_transport_trolley_start(X) to managercontroller
+ *                                    |
+ * managercontroller                  | forward transport_trolley_start(X) to transporttrolley
+ *                                    |
+ * transporttrolley                   | -- resume behaviour --
+ *
+ * ==================================
+ * ================================== | TRANSPORT TROLLEY STOP
+ * ==================================
+ * manager using parkservicestatusgui | forward manager_transport_trolley_stop(X) to managercontroller
+ *                                    |
+ * managercontroller                  | forward transport_trolley_stop(X) to transporttrolley
+ *                                    |
+ * transporttrolley                   | -- stop behaviour --
+ *
+ * ==================================
+ * ================================== | ROUTINE FAN ON [success]
+ * ==================================
+ * fancontroller                      | request fan_on(X) to fan
+ *                                    |
+ * fan                                | replyTo fan_on with fan_done(X)
+ *                                    |
+ * fancontroller                      | -- set status fan on --
+ *
+ * ==================================
+ * ================================== | ROUTINE FAN ON [failure]
+ * ==================================
+ * fancontroller                      | request fan_on(X) to fan
+ *                                    |
+ * fan                                | replyTo fan_on with fan_fail(REASON)
+ *                                    |
+ * fancontroller                      | -- set failure REASON into the observable status --
+ *
+ * ==================================
+ * ================================== | ROUTINE FAN OFF [success]
+ * ==================================
+ * fancontroller                      | request fan_off(X) to fan
+ *                                    |
+ * fan                                | replyTo fan_off with fan_done(X)
+ *                                    |
+ * fancontroller                      | -- set status fan off --
+ *
+ * ==================================
+ * ================================== | ROUTINE FAN OFF [failure]
+ * ==================================
+ * fancontroller                      | request fan_off(X) to fan
+ *                                    |
+ * fan                                | replyTo fan_off with fan_fail(REASON)
+ *                                    |
+ * fancontroller                      | -- set failure REASON into the observable status --
+ *
+ * ==================================
+ * ================================== | SWITCH FAN TO MANUAL MODE
+ * ==================================
+ * manager using parkservicestatusgui | forward manager_fan_manual_mode(X) to managercontroller
+ *                                    |
+ * managercontroller                  | forward manager_fan_manual_mode(X) to fancontroller
+ *                                    |
+ * fancontroller                      | cancel thermometerfilter observation
+ *                                    | -- set status manual mode --
+ *
+ * ==================================
+ * ================================== | MANAGER SETS FAN ON [only manual mode]
+ * ==================================
+ * manager using parkservicestatusgui | forward manager_fan_on(X) to managercontroller
+ *                                    |
+ * managercontroller                  | forward manager_fan_on(X) to fancontroller
+ *                                    |
+ * #                                  | ROUTINE FAN ON [success/failure]
+ *
+ * ==================================
+ * ================================== | MANAGER SETS FAN OFF [only manual mode]
+ * ==================================
+ * manager using parkservicestatusgui | forward manager_fan_off(X) to managercontroller
+ *                                    |
+ * managercontroller                  | forward manager_fan_off(X) to fancontroller
+ *                                    |
+ * #                                  | ROUTINE FAN OFF [success/failure]
+ *
+ * ==================================
+ * ================================== | SWITCH FAN TO AUTOMATIC MODE
+ * ==================================
+ * manager using parkservicestatusgui | forward manager_fan_automatic_mode(X) to managercontroller
+ *                                    |
+ * managercontroller                  | forward manager_fan_automatic_mode(X) to fancontroller
+ *                                    |
+ * fancontroller                      | observe thermometerfilter
+ *                                    | -- set status automatic mode --
+ *
+ * ==================================
+ * ================================== | TEMPERATURE BECOMES HIGH [fan automatic] [ T > TMAX ]
+ * ==================================
+ * thermometer                        | received input_temperature(T)
+ *                                    | update observers with new temperature T
+ *                                    |
+ * thermometerfilter                  | -- update status with temperature level HIGH --
+ *                                    |
+ * fancontroller                      | -- observe new temperature level HIGH --
+ *                                    |
+ * #                                  | ROUTINE FAN ON [success/failure]
+ *
+ * ==================================
+ * ================================== | TEMPERATURE BECOMES LOW [fan automatic] [ T <= TMAX ]
+ * ==================================
+ * thermometer                        | received input_temperature(T)
+ *                                    | update observers with new temperature T
+ *                                    |
+ * thermometerfilter                  | -- update status with temperature level LOW --
+ *                                    |
+ * fancontroller                      | -- observe new temperature level LOW --
+ *                                    |
+ * #                                  | ROUTINE FAN OFF [success/failure]
+ *
+ * ==================================
+ * ================================== | ROUTINE STATUSAGGREGATOR UPDATE
+ * ==================================
+ * statusaggregator                   | -- receive autoMsg() about observed resource update --
+ *                                    | -- update observers with new status --
+ *
+ * ==================================
+ * ================================== | STATUSAGGREGATOR WEIGHTSENSOR INFO ON
+ * ==================================
+ * manager using parkservicestatusgui | forward weightsensor_info_on(X) to managercontroller
+ *                                    |
+ * managercontroller                  | forward weightsensor_info_on(X) to statusaggregator
+ *                                    |
+ * statusaggregator                   | observe weightsensor
+ *
+ * ==================================
+ * ================================== | STATUSAGGREGATOR WEIGHTSENSOR INFO OFF
+ * ==================================
+ * manager using parkservicestatusgui | forward weightsensor_info_off(X) to managercontroller
+ *                                    |
+ * managercontroller                  | forward weightsensor_info_off(X) to statusaggregator
+ *                                    |
+ * statusaggregator                   | cancel weightsensor observation
+ *
+ * ==================================
+ * ================================== | STATUSAGGREGATOR OUTSONAR INFO ON
+ * ==================================
+ * manager using parkservicestatusgui | forward outsonar_info_on(X) to managercontroller
+ *                                    |
+ * managercontroller                  | forward outsonar_info_on(X) to statusaggregator
+ *                                    |
+ * statusaggregator                   | observe outsonar
+ *
+ * ==================================
+ * ================================== | STATUSAGGREGATOR OUTSONAR INFO OFF
+ * ==================================
+ * manager using parkservicestatusgui | forward outsonar_info_off(X) to managercontroller
+ *                                    |
+ * managercontroller                  | forward outsonar_info_off(X) to statusaggregator
+ *                                    |
+ * statusaggregator                   | cancel outsonar observation
+ *
+ */
+    </pre>
+          <p align="center">The QAK models can be found <a href="../model/">here</a></p>
+          <h3 id="logical-architecture">Logical Architecture</h3>
+          <p align="center"><a href="./img/legenda2.png">Legenda</a></p>
+          <div class="interactions__image">
+            <center>
+              <img src="./img/sprint4_final_logical_architecture.png" alt="sprint4_final_logical_architecture.png"/>
+            </center>
+          </div>
+
+
+      </div><!-- End Problem Analysis section [end class="remark"] -->
+
+<h2 id="test-plan">Test Plans</h2>
+<div class="remark">
+
+
+  <h4>TestThermometerTemperatureHigh</h4>
+  <ul>
+    <li>
+      <b>Description</b>: The thermometerfilter is able to switch the logical temperature state from LOW to HIGH when the temperature becomes greater than TMAX.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          The temperature measured by the thermometer is lower than or equal to TMAX.
+        </li>
+        <li>
+          The logical temperature measured by the thermometerfilter is LOW.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Expectations</b>:
+      <ol>
+        <li>
+          The status exposed by the ParkServiceStatusGUI regarding the logical temperature becomes HIGH.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested requirements</b>: F19
+    </li>
+  </ul>
+  <h4>TestThermometerTemperatureLow</h4>
+  <ul>
+    <li>
+      <b>Description</b>: The thermometerfilter is able to switch the logical temperature state from HIGH to LOW when the temperature becomes lower than or equal to TMAX.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          The temperature measured by the thermometer is greater than TMAX.
+        </li>
+        <li>
+          The logical temperature measured by the thermometerfilter is HIGH.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Expectations</b>:
+      <ol>
+        <li>
+          The status exposed by the ParkServiceStatusGUI regarding the logical temperature becomes LOW.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested requirements</b>: F19
+    </li>
+  </ul>
+  <h4>TestParkServiceStatusGuiSetFanManualMode</h4>
+  <ul>
+    <li>
+      <b>Description</b>: After setting the fan in manual mode the manager starts and stops the fan.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          The fan is in automatic mode.
+        </li>
+        <li>
+          The fan is OFF.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Expectations</b>:
+      <ol>
+        <li>
+          The status exposed by the ParkServiceStatusGUI regarding the fan mode becomes MANUAL.
+        </li>
+        <li>
+          The status exposed by the ParkServiceStatusGUI regarding the fan status becomes ON after the manager's input.
+        </li>
+        <li>
+          The status exposed by the ParkServiceStatusGUI regarding the fan status becomes OFF after the manager's input.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested requirements</b>: F10, F12, F13
+    </li>
+  </ul>
+  <h4>TestParkServiceStatusGuiSetFanAutomaticMode</h4>
+  <ul>
+    <li>
+      <b>Description</b>: After setting the fan in automatic mode the fan switch its status between ON and OFF depending on the logical temperature measured by the thermometer in the parking-area.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          The fan is in manual mode.
+        </li>
+        <li>
+          The fan is OFF.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Expectations</b>:
+      <ol>
+        <li>
+          The status exposed by the ParkServiceStatusGUI regarding the fan mode becomes AUTOMATIC.
+        </li>
+        <li>
+          The status exposed by the ParkServiceStatusGUI regarding the fan status becomes ON when the logical temperature is HIGH.
+        </li>
+        <li>
+          The status exposed by the ParkServiceStatusGUI regarding the fan status becomes ON when the logical temperature is LOW.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested requirements</b>: F10, F12, F13
+    </li>
+  </ul>
+  <h4>TestParkServiceStatusGuiResumeTransportTrolley</h4>
+  <ul>
+    <li>
+      <b>Description</b>: As a manager start and stop the transport trolley.
+    </li>
+    <li>
+      <b>Initial conditions</b>:
+      <ol>
+        <li>
+          The transport trolley is not stopped.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Expectations</b>:
+      <ol>
+        <li>
+        The status exposed by the ParkServiceStatusGUI regarding the transport trolley status becomes idle/working when the transport trolley is resumed and stopped when the transport trolley is stopped.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Tested requirements</b>: F11
+    </li>
+  </ul>
+</div>
+
+<h2 id="project">Project</h2>
+<div class="remark">
+  <h3 id="project-thermometer-configuration">About Thermometer configurability</h3>
+  <p>
+    In our domain the thermometer is a mock (virtual) one and the input temperature is received by an external dispatch sent by the MockDataGUI. However, since in the future the customer might ask to use a real thermometer we decided to develop a small support able to handle both the real thermometer and the virtual (mock) thermometer. In particular, the class <a href="../it.unibo.automatedcarparking.thermometer/resources/itunibo/automatedcarparking/thermometer/ThermometerSupport.kt">ThermometerSupport.kt</a> can be <k>configured</k> to work with a <k>real</k> thermometer or a <k>virtual</k> one by reading the mode from a configuration file.
+    <br><br>
+    The system administator can configure the system in order to use the virtual thermometer or the real one by tweak the mode parameter ("virtual" or "real") in the configuration file <a href="../it.unibo.automatedcarparking.thermometer/config_thermometer.json">config_thermometer.json</a>.
+    <br><br>
+    In both cases (virtual or real mode) the <k>thermometer</k> QActor receives the current temperature by a <k>input_temperature</k> dispatch. <br>
+    In case of real thermometer the dispatch could be generated and sent in form of <b>autoMsg()</b> by a thread or coroutine internal to the thermometer. This autoMsg() should be sent by means of <a href="../it.unibo.automatedcarparking.thermometer/resources/itunibo/automatedcarparking/thermometer/RealThermometerSupport.kt">RealThermometerSupport.kt</a> (instantiated by the ThermometerSupport.kt) each time a new temperature is measured in the Parking Area.
+    <br><br>
+    However, at the time of writing, as per requirements, only the <k>virtual</k> mode has been implemented.
+
+  <h4>About observable JSON status</h4>
+  <p>
+    The same considerations made <a href="#project-about-json-status">here</a> apply. The  Kotlin data class <a href="../it.unibo.automatedcarparking.thermometer/resources/itunibo/automatedcarparking/thermometer/Temperature.kt">Temperature.kt</a> contains the representation of the JSON status exposed by thermometer.
+  </p>
+</p>
+<h3 id="project-fan-configuration">About Fan configurability</h3>
+<p>
+  In our domain the fan is a mock (virtual) one. However, since in the future the customer might ask to use a real fan we decided to develop a small support able to handle both the real fan and the virtual (mock) fan. In particular, the class <a href="../it.unibo.automatedcarparking.fan/resources/itunibo/automatedcarparking/fan/FanSupport.kt">FanSupport.kt</a> can be <k>configured</k> to work with a <k>real</k> fan or a <k>virtual</k> one by reading the mode from a configuration file.
+  <br><br>
+  The system administator can configure the system in order to use the virtual fan or the real one by tweak the mode parameter ("virtual" or "real") in the configuration file <a href="../it.unibo.automatedcarparking.fan/config_fan.json">config_fan.json</a>.
+  <br><br>
+  In both cases (virtual or real mode) the <k>fan</k> QActor propagates the on/off command to the underlying support and receives the result by means of an <k>auto_fan_done</k> or <k>auto_fan_fail</k> (autoMsg()) dispatch. <br>
+  In case of real fan this autoMsg() should be sent by means of <a href="../it.unibo.automatedcarparking.fan/resources/itunibo/automatedcarparking/fan/RealFanSupport.kt">RealFanSupport.kt</a>
+  <br><br>
+  However, at the time of writing, as per requirements, only the <k>virtual</k> mode has been implemented.
+</p>
+  <h3 id="project-thermometerfilter">About thermometerfilter</h3>
+  <p>
+    The thermometerfilter is designed as an observable QActor. It interacts with the other entities in the same way as explained in the <a href="#thermometer-filter-analysis">problem analysis</a>. The system administrator can configure the <k>TMAX</k> threshold (in °C) by tweaking the parameter of the configuration file <a href="../it.unibo.automatedcarparking.businesslogic/config_temperature.json">config_temperature.json</a>.
+    <h4>About observable JSON status</h4>
+    <p>
+      The same considerations made <a href="#project-about-json-status">here</a> apply. The  Kotlin data class <a href="../it.unibo.automatedcarparking.businesslogic/resources/itunibo/automatedcarparking/parkingarea/TemperatureStatus.kt">TemperatureStatus.kt</a> contains the representation of the JSON status exposed by thermometerfilter.
+    </p>
+  </p>
+  <h3 id="project-fancontroller">About fancontroller</h3>
+  <p>
+    The fancontroller is designed as an observable QActor. It interacts with the other entities in the same way as explained in the <a href="#fan-controller-analysis">problem analysis</a>.
+    <h4>About observable JSON status</h4>
+    <p>
+      The same considerations made <a href="#project-about-json-status">here</a> apply. The  Kotlin data class <a href="../it.unibo.automatedcarparking.businesslogic/resources/itunibo/automatedcarparking/parkingarea/FanControllerStatus.kt">FanControllerStatus.kt</a> contains the representation of the JSON status exposed by fancontroller.
+    </p>
+  </p>
+  <h3 id="project-statusaggregator">About statusaggregator</h3>
+  <p>
+    The statusaggregator is designed as an observable QActor. It observes all the observable entities in the Automated Car Parking in order to aggregate the observable status. <br> It makes great use of the <k>qakobserver framework</k>. In particular, as already described in the <a href="#status-aggregator-analysis">problem analysis</a>, thanks to the framework itself, the Proxy resources avoid to duplicate CoAP observation with remote entities (e.g. sensors) - that is, we have multiple observers to remote entities, like weightsensor (e.g. also indoorcontroller observes it), but there is a single CoAP observation shared by all observers (of a given resource) in the ctxbusinesslogic. This feature keeps the required bandwidth constant. <br><br>
+    The observation of entities like weightsensor and outsonar is disabled at default but can be enabled/disabled by the manager (through the ParkServiceStatusGUI) at any moment.
+    <h4>About observable JSON status</h4>
+    <p>
+      The same considerations made <a href="#project-about-json-status">here</a> apply. The  Kotlin data class <a href="../it.unibo.automatedcarparking.businesslogic/resources/itunibo/automatedcarparking/parkingarea/AggregateStatus.kt">AggregateStatus.kt</a> contains the representation of the JSON status exposed by statusaggregator.
+    </p>
+  </p>
+  <h3 id="project-managercontroller">About managercontroller</h3>
+  <p>
+      The managercontroller is designed as a QActor. It acts like a small indirection layer between the ParkServiceStatusGUI Web Server and the others domain logic actors. Its main behaviour is to forward the dispatches from the ParkServiceStatusGUI to the appropriate domain logic entity.
+  </p>
+  <h3 id='project-about-json-status'>Considerations about observable JSON status</h4>
+  <p>
+    The considerations done in <a href="../../Sprint%202%20-%20Car%20Parking/userDocs/sprint2.html#project-about-json-status">Sprint 2</a> are yet valid.
+  </p>
+  <h3 id="project-parkservicestatusgui-server">ParkServiceStatusGUI Server</h3>
+  <p>
+    We chose to use <k>Spring Boot</k> to implement the web server that hosts the ParkServiceStatusGUI. The WebServer acts like an intermediate layer between the client and the (domain logic) managercontroller; it is also in charge to <k>observe</k> (via CoAP) the statusaggregator. <br>
+    In particular, the WebServer exposes <k>POST APIs</k> that permit to the manager to interact with the (domain logic) managercontroller. If not specified otherwise, each POST API is mapped to a message (dispatch) of those accepted by the managercontroller itself.
+    <table>
+      <tr>
+        <th>POST API</th>
+        <th>Input</th>
+        <th>Output</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>/manager_fan_on</td>
+        <td></td>
+        <td></td>
+        <td>The manager wants to start the fan. Meaningful only if the fan is in manual mode.</td>
+      </tr>
+      <tr>
+        <td>/manager_fan_off</td>
+        <td></td>
+        <td></td>
+        <td>The manager wants to stop the fan. Meaningful only if the fan is in manual mode.</td>
+      </tr>
+      <tr>
+        <td>/manager_fan_manual_mode</td>
+        <td></td>
+        <td></td>
+        <td>The manager wants to take manual control of the fan in order to start/stop it.</td>
+      </tr>
+      <tr>
+        <td>/manager_fan_automatic_mode</td>
+        <td></td>
+        <td></td>
+        <td>The manager wants to leave the control of the fan to the domain logic.</td>
+      </tr>
+      <tr>
+        <td>/manager_transport_trolley_start</td>
+        <td></td>
+        <td></td>
+        <td>The manager wants to resume the transporttrolley behaviour.</td>
+      </tr>
+      <tr>
+        <td>/manager_transport_trolley_stop</td>
+        <td></td>
+        <td></td>
+        <td>The manager wants to stop the transporttrolley behaviour.</td>
+      </tr>
+      <tr>
+        <td>/weightsensor_info_on</td>
+        <td></td>
+        <td></td>
+        <td>The manager wants to receive updates about the measured weight by the weightsensor.</td>
+      </tr>
+      <tr>
+        <td>/weightsensor_info_off</td>
+        <td></td>
+        <td></td>
+        <td>The manager wants to stop the reception of updates about the measured weight by the weightsensor.</td>
+      </tr>
+      <tr>
+        <td>/outsonar_info_on</td>
+        <td></td>
+        <td></td>
+        <td>The manager wants to receive updates about the measured distance by the outsonar.</td>
+      </tr>
+      <tr>
+        <td>/outsonar_info_off</td>
+        <td></td>
+        <td></td>
+        <td>The manager wants to stop the reception of updates about the measured distance by the outsonar.</td>
+      </tr>
+      <tr>
+        <td>/wenv_url</td>
+        <td></td>
+        <td>URL</td>
+        <td>Get the URL of the WEnv. This request is handled by the WebServer itself.</td>
+      </tr>
+      <tr>
+        <td>/status</td>
+        <td></td>
+        <td>JSON</td>
+        <td>Retrieve the latest status of the statusaggregator (in the same format as encoded by the statusaggregator itself). Useful to initialize the GUI. This request is handled by the WebServer itself.</td>
+      </tr>
+    </table>
+    As already discussed, the current status of the Automated Car Parking could be retrieved by means of the <k>/status</k> POST API. However, thanks to the <a href="https://docs.spring.io/spring-integration/reference/html/stomp.html">STOMP framework</a> we also offer a way to <k>subscribe</k> to specific sub-topics in order to receive updates when a status change occurs. It basically works as like as a <k>publish/subscribe</k> model. The broker is mapped to the <k>/ws</k> URL. <br>
+    Below are reported the topics URL and their meaning.
+    <table>
+      <tr>
+        <th>TOPIC URL</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>/topic/indoorareastatus</td>
+        <td>Receive informations (in JSON format) about the status of the indoorarea. The <a href="../itunibo.automatedcarparking.parkservicestatusgui/src/main/kotlin/it/unibo/automatedcarparking/parkservicestatusgui/status/IndoorAreaStatus.kt">IndoorAreaStatus.kt</a> Kotlin Data Class is the one that is encoded in JSON format and sent to the subscriber of this topic each time a change occurs.</td>
+      </tr>
+      <tr>
+        <td>/topic/outdoorareastatus</td>
+        <td>Receive informations (in JSON format) about the status of the outdoorarea. The <a href="../itunibo.automatedcarparking.parkservicestatusgui/src/main/kotlin/it/unibo/automatedcarparking/parkservicestatusgui/status/OutdoorAreaStatus.kt">OutdoorAreaStatus.kt</a> Kotlin Data Class is the one that is encoded in JSON format and sent to the subscriber of this topic each time a change occurs.</td>
+      </tr>
+      <tr>
+        <td>/topic/temperaturestatus</td>
+        <td>Receive informations (in JSON format) about the status of the temperature in the parking area. The <a href="../itunibo.automatedcarparking.parkservicestatusgui/src/main/kotlin/it/unibo/automatedcarparking/parkservicestatusgui/status/TemperatureStatus.kt">TemperatureStatus.kt</a> Kotlin Data Class is the one that is encoded in JSON format and sent to the subscriber of this topic each time a change occurs.</td>
+      </tr>
+      <tr>
+        <td>/topic/fanstatus</td>
+        <td>Receive informations (in JSON format) about the status of the fan. The <a href="../itunibo.automatedcarparking.parkservicestatusgui/src/main/kotlin/it/unibo/automatedcarparking/parkservicestatusgui/status/FanStatus.kt">FanStatus.kt</a> Kotlin Data Class is the one that is encoded in JSON format and sent to the subscriber of this topic each time a change occurs.</td>
+      </tr>
+      <tr>
+        <td>/topic/transporttrolleystatus</td>
+        <td>Receive informations (in JSON format) about the status of the transportrolley. The <a href="../itunibo.automatedcarparking.parkservicestatusgui/src/main/kotlin/it/unibo/automatedcarparking/parkservicestatusgui/status/TransportTrolleyStatus.kt">TransportTrolleyStatus.kt</a> Kotlin Data Class is the one that is encoded in JSON format and sent to the subscriber of this topic each time a change occurs.</td>
+      </tr>
+      <tr>
+        <td>/topic/parkingslotsstatus</td>
+        <td>Receive informations (in JSON format) about the status of the parking slots. The <a href="../itunibo.automatedcarparking.parkservicestatusgui/src/main/kotlin/it/unibo/automatedcarparking/parkservicestatusgui/status/ParkingSlotsStatus.kt">ParkingSlotsStatus.kt</a> Kotlin Data Class is the one that is encoded in JSON format and sent to the subscriber of this topic each time a change occurs.</td>
+      </tr>
+    </table>
+    Note that a client might prefer to register to these topics instead of polling the /status request. This also leads to preserve some bandwidth because the client receives updates only when a status change effectively occurs and moreover it receives updates only about the sub-topic that has been changed in a given moment. <br>
+    <p>
+      The class <a href="../itunibo.automatedcarparking.parkservicestatusgui/src/main/kotlin/it/unibo/automatedcarparking/parkservicestatusgui/ParkServiceStatusGuiController.kt">ParkServiceStatusGuiController.kt</a> implements those mappings between POST requests and domain logic interactions using the Spring Framework. It also splits the aggregate status into STOMP Topics. <br> Moreover the ParkServiceGuiController uses the classes <a href="../itunibo.automatedcarparking.parkservicestatusgui/src/main/kotlin/it/unibo/automatedcarparking/parkservicestatusgui/qakutil/RemoteQakContext.kt">RemoteQakContext.kt</a> and <a href="../itunibo.automatedcarparking.parkservicestatusgui/src/main/kotlin/it/unibo/automatedcarparking/parkservicestatusgui/qakutil/RemoteQactor.kt">RemoteQActor.kt</a> in order to perform request (and receive response) to/from the domain logic actors. A TCP connection is created in order to communicate with the <k>ctxbusinesslogic</k>.
+    </p>
+  </p>
+  <h3 id="project-parkservicestatusgui-client">ParkServiceStatusGUI Client</h3>
+  <p>
+    A <a href="../it.unibo.automatedcarparking.parkservicestatusgui/src/main/resources/static/parkservicestatusgui.js">JavaScript frontend</a> is used to perform the mapping between GUI buttons and POST requests. It also subscribe to all the STOMP topics exposed by the Web Server. Each time a status notification arrives the GUI is updated accordingly. Note that in the status are contained also those <k>alarm</k> information: the DTCARENTER timeout, the DTFREE timeout and the TransportTrolley move fail. Each time an alarm becomes asserted we need to properly notify the manager by means of a <k>sound notification</k> and a visible <k>warning message</k> in the GUI itself. The warning message should remain visible until the proper situation has been handled or the manager manually removes it.
+    <br><br>
+    Below are reported some images related to the ParkServiceStatusGUI.
+    <table class="table_no_border">
+      <tr>
+        <td>
+          <img src="./img/parkservicestatusgui_idle.png" alt="parkservicestatusgui_idle.png"
+          style="width:100%"/>
+        </td>
+        <td>
+          <img src="./img/parkservicestatusgui_temperature_high_alarm.png" alt="parkservicestatusgui_temperature_high_alarm.png"
+          style="width:100%"/>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          ParkServiceStatusGUI idle.
+        </td>
+        <td>
+          Alarm message: Temperature high.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <img src="./img/parkservicestatusgui_car_enter_alarm.png" alt="parkservicestatusgui_car_enter_alarm.png"
+          style="width:100%"/>
+        </td>
+        <td>
+          <img src="./img/parkservicestatusgui_dtfree_alarm.png" alt="parkservicestatusgui_dtfree_alarm.png"
+          style="width:100%"/>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          Alarm message: DTCARENTER timer expired.
+        </td>
+        <td>
+          Alarm message: DTFREE timer expired.
+        </td>
+      </tr>
+    </table>
+  </p>
+  <h3 id="project-mockdatagui">MockDataGUI</h3>
+  <p>
+    It is basically the same GUI/WebServer developed in <a href="../../Sprint%203%20-%20Car%Pick%20Up/userDocs/sprint3.html#project-mockdatagui">Sprint 3</a>. <br>
+    In this sprint we just added the possibility to send an <k>input_temperature</k> dispatch to the thermometer QActor. This dispatch is properly mapped to a POST request sent by the GUI client. <br><br>
+    Below are reported some images related to the MockDataGUI.
+
+<center>
+  <table class="table_no_border">
+    <tr>
+      <td style="text-align: center">
+        <img src="./img/mockdatagui_thermometer.png" alt="mockdatagui_thermometer.png"
+        style="width:60%"/>
+      </td>
+    </tr>
+    <tr>
+      <td style="text-align: center">
+        The THERMOMETER "slider" can be used to set the temperature to the desired value, which is shown below the slider itself. <br>
+      </td>
+    </tr>
+  </table>
+</center>
+  </p>
+  <h3 id="project-security">About security</h3>
+  <p>
+    We should use a secure connection in order to exchange data between the ParkServiceStatusGUI and the WebServer. A perfect match could be a secure <k>HTTPS</k> connection.
+    <br>
+    For the sake of simplicity we do not handle security issues in this first prototype.
+  </p>
+  <h3 id="project-configuration-files">About configuration files</h3>
+  <p>
+    <table>
+      <tr>
+        <th>
+          File Name
+        </th>
+        <th>
+          Description
+        </th>
+      </tr>
+      <tr>
+        <td>
+          <a href="../it.unibo.automatedcarparking.thermometer/thermometer.pl">systemthermometer.pl</a>
+        </td>
+        <td>
+          Can be used to configure the listening port of the <k>ctxthermometer</k>.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <a href="../it.unibo.automatedcarparking.thermometer/config_thermometer.json">config_thermometer.json</a>
+        </td>
+        <td>
+          Contains the mode ("virtual" or "real") of the thermometer.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <a href="../it.unibo.automatedcarparking.fan/fan.pl">systemfan.pl</a>
+        </td>
+        <td>
+          Can be used to configure the listening port of the <k>ctxfan</k>.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <a href="../it.unibo.automatedcarparking.fan/config_fan.json">config_fan.json</a>
+        </td>
+        <td>
+          Contains the mode ("virtual" or "real") of the fan.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <a href="../it.unibo.automatedcarparking.businesslogic/systembusinesslogic.pl">systembusinesslogic.pl</a>
+        </td>
+        <td>
+          Can be used to configure the hostname and port of the:
+          <k>ctxweightsensor</k>, <k>ctxoutsonar</k>, <k>ctxthermometer</k>, <k>ctxfan</k> and <k>ctxbasicrobot</k>. Moreover you can configure the listening port of the <k>ctxbusinesslogic</k>.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <a href="../it.unibo.automatedcarparking.businesslogic/config_temperature.json">config_temperature.json</a>
+        </td>
+        <td>
+          Contains the informations to properly configure the TMAX threshold as explained <a href="#project-thermometerfilter">here</a>.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <a href="../itunibo.automatedcarparking.parkservicestatusgui/src/main/resources/application.properties">application.properties</a>
+        </td>
+        <td>
+          Can be used to configure the hostname and port of the <k>ctxbusinesslogic</k> and also the URL of the <k>WEnv</k> (virtual basicrobot).
+          Moreover you can configure the listening port of the <k>ParkServiceStatusGUI Web Server</k>.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <a href="../itunibo.automatedcarparking.mockdatagui/src/main/resources/application.properties">application.properties</a>
+        </td>
+        <td>
+          Can be used to configure the hostname and port of the <k>ctxbusinesslogic</k>, <k>ctxweightsensor</k>, <k>ctxoutsonar</k> and <k>ctxthermometer</k>.
+          Moreover you can configure the listening port of the <k>MockDataGUI Web Server</k>.
+        </td>
+      </tr>
+    </table>
+  </p>
+  <h3 id="project-qak-thermometer">Thermometer QAK</h3>
+  <div class="interaction_qak_example" style="width:90%;">
+    <p align="center">
+      The QAK below contains the implementation of the thermometer QActor.
+    </p>
+    <a href="../it.unibo.automatedcarparking.thermometer/src/thermometer.qak">
+    <div class="interaction_qak_example_link">
+      thermometer.qak
+    </div>
+    </a>
+  </div>
+  <h3 id="project-qak-fan">Fan QAK</h3>
+  <div class="interaction_qak_example" style="width:90%;">
+    <p align="center">
+      The QAK below contains the implementation of the fan QActor.
+    </p>
+    <a href="../it.unibo.automatedcarparking.fan/src/fan.qak">
+    <div class="interaction_qak_example_link">
+      fan.qak
+    </div>
+    </a>
+  </div>
+  <h3 id="project-qak-businesslogic">BusinessLogic QAK</h3>
+  <div class="interaction_qak_example" style="width:90%;">
+    <p align="center">
+      The QAK below contains the implementation of the domain logic actors. In this sprint we focues on the following entities: thermometerfilter, fancontroller, managercontroller and statusaggregator.
+    </p>
+    <a href="../it.unibo.automatedcarparking.businesslogic/src/businesslogic.qak">
+    <div class="interaction_qak_example_link">
+      businesslogic.qak
+    </div>
+    </a>
+  </div>
+
+
+</div><!-- End Project section [end class="remark"] -->
+
+<h2 id="testing">Testing</h2>
+<div class="remark">
+  <p>
+    The tests have been described in the <a href="#test-plan">above sections</a> and have been implemented <a href="../it.unibo.sprint4.test/test/it/unibo/sprint4/test/TestPlan.kt">here</a>. Each test interacts with the webservers by means of POST requests, so each test simulates the client behaviour.
+    <br><br>
+    In this sprint we also updated the tests described in <a href="../../Sprint%202%20-%20Car%20Parking/userDocs/sprint2.html#test-plan">Sprint 2</a> and <a href="../../Sprint%203%20-%20Car%20Pick%20Up/userDocs/sprint3.html#test-plan">Sprint 3</a> in order to interact with the Automated Car Parking entities through the ParkServiceStatusGUI. The changes are only those regarding how we send commands to entities and how we retrieve their status; the tests behaviour remain unchanged.
+  </p>
+  <h4>How to run</h4>
+  <p>
+    <ol>
+      <li>
+        Open a terminal inside the "Sprint 4 - Parking Manager" directory
+      </li>
+      <li>
+        Build all the libraries with:
+        <pre>[WINDOWS] .\rebuild_for_docker.bat</pre>
+        or
+        <pre>[LINUX]   ./rebuild_for_docker.bash</pre>
+      </li>
+      <li>
+        Build the docker images with:
+        <pre>docker-compose -f sprint4.yaml build</pre>
+      </li>
+      <li>
+        Launch the docker images with:
+        <pre>docker-compose -f basicrobotVirtual.yaml -f sprint4.yaml up</pre>
+      </li>
+      <li>
+        Wait until all the docker images are running...
+      </li>
+      <li>
+        Open the <a href="http://localhost:8200" target="_blank">ParkServiceStatusGUI</a> and monitor it while the tests are running in order to catch and handle "move fail" errors.
+      </li>
+      <li>
+        Open a new terminal inside the "it.unibo.sprint4.test" directory
+      </li>
+      <li>
+        Launch the tests with:
+        <pre>gradle test --tests it.unibo.sprint2.test.TestPlan</pre>
+        <pre>gradle test --tests it.unibo.sprint3.test.TestPlan</pre>
+        <pre>gradle test --tests it.unibo.sprint4.test.TestPlan</pre>
+      </li>
+    </ol>
+  </p>
+</div><!-- End Testing section [end class="remark"] -->
+
+<h2 id="deployment">Deployment</h2>
+<div class="remark">
+<p>
+  We used Docker to deploy the software developed during this sprint.
+</p>
+<h4>How to run</h4>
+<p>
+  <ol>
+    <li>
+      Open a terminal inside the "Sprint 4 - Parking Manager" directory
+    </li>
+    <li>
+      Build all the libraries with:
+      <pre>[WINDOWS] .\rebuild_for_docker.bat</pre>
+      or
+      <pre>[LINUX]   ./rebuild_for_docker.bash</pre>
+    </li>
+    <li>
+      Build the docker images with:
+      <pre>docker-compose -f sprint4.yaml build</pre>
+    </li>
+    <li>
+      Launch the docker images with:
+      <pre>docker-compose -f basicrobotVirtual.yaml -f sprint4.yaml up</pre>
+    </li>
+    <li>
+      Wait until all the docker images are running...
+    </li>
+    <li>
+      Open the <a href="http://localhost:8100" target="_blank">ParkServiceGUI</a>, <a href="http://localhost:8200" target="_blank">ParkServiceStatusGUI</a>, <a href="http://localhost:8099" target="_blank">MockDataGUI</a> and use them.
+    </li>
+  </ol>
+</p>
+<h4>Logging</h4>
+<ul>
+  <li>
+    <p>weightsensor</p>
+    <pre>docker logs --timestamps -f sprint4-parkingmanager_weightsensor_1</pre>
+  </li>
+  <li>
+    <p>outsonar</p>
+    <pre>docker logs --timestamps -f sprint4-parkingmanager_outsonar_1</pre>
+  </li>
+  <li>
+    <p>thermometer</p>
+    <pre>docker logs --timestamps -f sprint4-parkingmanager_thermometer_1</pre>
+  </li>
+  <li>
+    <p>fan</p>
+    <pre>docker logs --timestamps -f sprint4-parkingmanager_fan_1</pre>
+  </li>
+  <li>
+    <p>businesslogic</p>
+    <pre>docker logs --timestamps -f sprint4-parkingmanager_businesslogic_1</pre>
+  </li>
+  <li>
+    <p>parkservicegui</p>
+    <pre>docker logs --timestamps -f sprint4-parkingmanager_parkservicegui_1</pre>
+  </li>
+  <li>
+    <p>parkservicestatusgui</p>
+    <pre>docker logs --timestamps -f sprint4-parkingmanager_parkservicestatusgui_1</pre>
+  </li>
+</ul>
+<h4>Example ParkServiceStatusGUI</h4>
+<center>
+  <video width="750" autoplay loop muted>
+      <source src="./img/parkservicestatusgui.mp4"
+              type="video/mp4">
+  </video>
+</center>
+
+
+</div><!-- End Deployment section [end class="remark"] -->
+
+<div class="contact-us" id="contact-us">
+  <table>
+    <tr>
+      <td colspan="2"><h3>By:</h3></td>
+    </tr>
+    <tr>
+      <td>
+        <div class="student__image">
+          <center>
+            <img src="./img/students/lorenzo_persampieri.jpg" alt="lorenzo_persampieri.jpg"/>
+          </center>
+        </div>
+      </td>
+      <td>
+        <div class="student__image">
+          <center>
+            <img src="./img/students/gianluca_soavi.jpg" alt="gianluca_soavi.jpg"/>
+          </center>
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <th>Lorenzo Persampieri</th>
+      <th>Gianluca Soavi</th>
+    </tr>
+    <tr style="padding-bottom: 10px;">
+      <td>lorenzo.persampieri@studio.unibo.it</td>
+      <td>gianluca.soavi@studio.unibo.it</td>
+    </tr>
+    <tr>
+      <th colspan="2" style="border-top: 1px solid black; padding-top: 10px;">Github Repository</th>
+    </tr>
+    <tr>
+      <td colspan="2"><a href="https://github.com/lorepersa/Automated-Car-Parking">https://github.com/lorepersa/Automated-Car-Parking</a></td>
+    </tr>
+  </table>
+</div><!-- End Contact Us class remark -->
+
+
+</body>
+</html>

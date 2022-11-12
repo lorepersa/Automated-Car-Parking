@@ -1,0 +1,55 @@
+/*
+ * ==================================
+ * ================================== | ROUTINE WEIGHTSENSOR MEASURE WEIGHT
+ * ==================================
+ * weightsensor                       | received input_weight(W)
+ *                                    | update observers with new weight W
+ * 
+ */
+System systemweightsensor
+
+Dispatch  input_weight  : input_weight(W)
+
+Context ctxweightsensor          ip [host="localhost" port=8060] 
+
+
+QActor weightsensor context ctxweightsensor {
+	
+	[# 
+		val gson = com.google.gson.Gson()
+		val resource = itunibo.qakobserver.FactoryQakResource.create(myself)
+		
+		lateinit var support : itunibo.automatedcarparking.weightsensor.WeightSensorSupport
+		
+		fun getJsonWeight(weight : Int) : String {
+			return gson.toJson(itunibo.automatedcarparking.weightsensor.Weight(weight))
+		}
+	#]
+
+	State init initial {
+		println("[weightsensor] | [State] init | Entry point.")
+		
+		[# resource.notify(getJsonWeight(0)) #]
+		
+		[# support = itunibo.automatedcarparking.weightsensor.WeightSensorSupport(myself) #]
+		
+		println("[weightsensor] | [State] init | Exit point.")
+	} Goto wait
+	
+	State wait {
+		println("[weightsensor] | [State] wait | Entry point.")
+		println("[weightsensor] | [State] wait | Exit point.")
+	} Transition t0
+	whenMsg     input_weight -> updateWeight
+	
+	State updateWeight {
+		println("[weightsensor] | [State] updateWeight | Entry point.")
+		onMsg(input_weight : input_weight(W)) {
+			[# var W = payloadArg(0).toInt() #]
+			println("[weightsensor] | [State] updateWeight | Weight: $W kG.")
+			[# resource.notify(getJsonWeight(W)) #]
+		} // end onMsg
+		
+		println("[weightsensor] | [State] updateWeight | Exit point.")
+	} Goto wait
+}

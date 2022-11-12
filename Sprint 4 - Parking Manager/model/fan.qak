@@ -1,0 +1,99 @@
+/*
+ * ==================================
+ * ================================== | ROUTINE FAN ON [success]
+ * ==================================
+ * fan                                | -- receive request fan_on(X) --
+ *                                    | -- handle fan on command --
+ *                                    | replyTo fan_on with fan_done(X)
+ * 
+ * ==================================
+ * ================================== | ROUTINE FAN ON [failure]
+ * ==================================
+ * fan                                | -- receive request fan_on(X) --
+ *                                    | -- handle fan on command --
+ *                                    | replyTo fan_on with fan_fail(REASON)
+ * 
+ * ==================================
+ * ================================== | ROUTINE FAN OFF [success]
+ * ==================================
+ * fan                                | -- receive request fan_off(X) --
+ *                                    | -- handle fan off command --
+ *                                    | replyTo fan_off with fan_done(X)
+ * 
+ * ==================================
+ * ================================== | ROUTINE FAN OFF [failure]
+ * ==================================
+ * fan                                | -- receive request fan_off(X) --
+ *                                    | -- handle fan off command --
+ *                                    | replyTo fan_off with fan_fail(REASON)
+ * 
+ */
+System systemfan
+
+Request   fan_on                                   : fan_on(X)
+Request   fan_off                                  : fan_off(X)
+Reply     fan_done                                 : fan_done(X)
+Reply     fan_fail                                 : fan_fail(REASON)
+
+Dispatch  auto_fan_done                            : auto_fan_done(X)
+Dispatch  auto_fan_fail                            : auto_fan_fail(REASON)
+
+Context ctxfan                   ip [host="localhost" port=8063]
+
+
+QActor fan context ctxfan {   
+	
+	[# 
+		var message_on = true
+	#]
+
+	State init initial {	 
+		println("[fan] | [State] init | Entry point.")
+            // TODO need to configure real or virtual mode ...
+		println("[fan] | [State] init | Exit point.")
+   	} Goto wait  
+   	
+   	State wait {
+   		println("[fan] | [State] wait | Entry point.")
+   		println("[fan] | [State] wait | Exit point.")
+   	} Transition t0
+   	whenRequest   fan_on ->  turnOnFan
+   	whenRequest   fan_off ->  turnOffFan
+   	
+   	State turnOnFan {
+   		println("[fan] | [State] turnOnFan | Entry point.")
+   		[# message_on = true #]
+            // TODO here we should send the command to the real or virtual support ...
+   		println("[fan] | [State] turnOnFan | Exit point.")
+   	} Transition t1
+   	whenMsg auto_fan_done -> handleCommand
+   	whenMsg auto_fan_fail -> handleCommand
+   	   		
+   	State turnOffFan {
+   		println("[fan] | [State] turnOffFan | Entry point.")
+   		[# message_on = false #]
+            // TODO here we should send the command to the real or virtual support ...
+   		println("[fan] | [State] turnOffFan | Exit point.")
+   	} Transition t2
+   	whenMsg auto_fan_done -> handleCommand
+   	whenMsg auto_fan_fail -> handleCommand
+   	
+   	State handleCommand {
+   		printCurrentMessage
+   		onMsg(auto_fan_done : auto_fan_done(X)) {
+   			if [# message_on #] {
+   				replyTo fan_on with fan_done : fan_done(X)
+   			} else {
+   				replyTo fan_off with fan_done : fan_done(X)
+   			}
+   		}
+   		onMsg(auto_fan_fail : auto_fan_fail(REASON)) {
+   			[# val REASON = payloadArg(0) #]
+   			if [# message_on #] {
+   				replyTo fan_on with fan_fail : fan_fail($REASON)
+   			} else {
+   				replyTo fan_off with fan_fail : fan_fail($REASON)
+   			}
+   		}
+   	} Goto wait
+}	

@@ -1,0 +1,63 @@
+version: '3'
+services:
+  weightsensor:
+    build: ./it.unibo.automatedcarparking.weightsensor
+    image: sprint4/weightsensor
+    ports:
+      - 8060:8060/tcp
+      - 8060:8060/udp
+  outsonar:
+    build: ./it.unibo.automatedcarparking.outsonar
+    image: sprint4/outsonar
+    ports:
+      - 8061:8061/tcp
+      - 8061:8061/udp
+  thermometer:
+    build: ./it.unibo.automatedcarparking.thermometer
+    image: sprint4/thermometer
+    ports:
+      - 8062:8062/tcp
+      - 8062:8062/udp
+  fan:
+    build: ./it.unibo.automatedcarparking.fan
+    image: sprint4/fan
+    ports:
+      - 8063:8063/tcp
+      - 8063:8063/udp
+  businesslogic:
+    build: ./it.unibo.automatedcarparking.businesslogic
+    image: sprint4/businesslogic
+    ports:
+      - 8065:8065/tcp
+      - 8065:8065/udp
+    depends_on:
+      - weightsensor
+      - outsonar
+      - thermometer
+      - fan
+  parkservicegui:
+    build: ./itunibo.automatedcarparking.parkservicegui
+    image: sprint4/parkservicegui
+    ports:
+      - 8100:8100/tcp
+      - 8100:8100/udp
+    depends_on:
+      - businesslogic
+  parkservicestatusgui:
+    build: ./itunibo.automatedcarparking.parkservicestatusgui
+    image: sprint4/parkservicestatusgui
+    ports:
+      - 8200:8200/tcp
+      - 8200:8200/udp
+    depends_on:
+      - businesslogic
+  mockdatagui:
+    build: ./itunibo.automatedcarparking.mockdatagui
+    image: sprint4/mockdatagui
+    ports:
+      - 8099:8099/tcp
+      - 8099:8099/udp
+    depends_on:
+      - weightsensor
+      - outsonar
+      - thermometer

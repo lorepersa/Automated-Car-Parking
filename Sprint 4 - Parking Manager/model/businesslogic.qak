@@ -1,0 +1,1853 @@
+/**
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN INDOOR AREA [available parking slot]
+ * ==================================
+ * client using parkservicegui        | request parking_car_interest(X) to parkservicecontroller
+ *                                    |
+ * parkservicecontroller              | request parking_car_interest(X) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | observe weightsensor
+ *                                    | -- wait until measured weight in indoor area is lower than or equal to a given WMAX threshold --
+ *                                    | request reserve_parking_slot(X) to parkingslotscontroller
+ *                                    | -- set indoor area reserved --
+ *                                    |
+ * parkingslotscontroller             | replyTo reserve_parking_slot with parking_slot_reserved(SLOTNUM,TOKENID)
+ *                                    |
+ * indoorcontroller                   | -- save received SLOTNUM -- 
+ *                                    | -- save received TOKENID -- 
+ *                                    | start dtoccupied timer
+ *                                    | replyTo parking_car_interest with inform_in(SLOTNUM)
+ *                                    |
+ * parkservicecontroller              | replyTo parking_car_interest with inform_in(SLOTNUM)
+ *                                    |
+ * indoorcontroller                   | -- wait until measured weight in indoor area is greater than a given WMAX threshold --
+ *                                    | stop dtoccupied timer
+ *                                    | start dtcarenter timer
+ *                                    | -- set indoor area engaged by car --
+ * 
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN INDOOR AREA [unavailable parking slot]
+ * ==================================
+ * client using parkservicegui        | request parking_car_interest(X) to parkservicecontroller
+ *                                    |
+ * parkservicecontroller              | request parking_car_interest(X) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | observe weightsensor
+ *                                    | -- set indoor area reserved --
+ *                                    | -- wait until measured weight in indoor area is lower than or equal to a given WMAX threshold --
+ *                                    | request reserve_parking_slot(X) to parkingslotscontroller
+ *                                    |
+ * parkingslotscontroller             | replyTo reserve_parking_slot with no_available_parking_slots(X)
+ *                                    |
+ * indoorcontroller                   | replyTo parking_car_interest with inform_in(0)
+ *                                    | cancel weightsensor observation
+ *                                    | -- set indoor area free --
+ *                                    |
+ * parkservicecontroller              | replyTo parking_car_interest with inform_in(0)
+ * 
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN PARKING AREA [indoor area free]
+ * ==================================
+ * client using parkservicegui        | request car_enter(SLOTNUM) to parkservicecontroller
+ *                                    |
+ * parkservicecontroller              | request car_enter(SLOTNUM) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | replyTo car_enter with response_car_enter(IndoorAreaNotReserved)
+ *                                    |
+ * parkservicecontroller              | replyTo car_enter with response_car_enter(IndoorAreaNotReserved)
+ * 
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN PARKING AREA [indoor area reserved - weight <= WMAX]
+ * ==================================
+ * client using parkservicegui        | request car_enter(SLOTNUM) to parkservicecontroller
+ *                                    |
+ * parkservicecontroller              | request car_enter(SLOTNUM) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | replyTo car_enter with response_car_enter(IndoorAreaNotEngagedByCar)
+ *                                    |
+ * parkservicecontroller              | replyTo car_enter with response_car_enter(IndoorAreaNotEngagedByCar)
+ *                                    |
+ * 
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN PARKING AREA [invalid slotnum - indoor area engaged by car]
+ * ==================================
+ * client using parkservicegui        | request car_enter(SLOTNUM) to parkservicecontroller
+ *                                    |
+ * parkservicecontroller              | request car_enter(SLOTNUM) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | replyTo car_enter with response_car_enter(InvalidSlotnum)
+ *                                    |
+ * parkservicecontroller              | replyTo car_enter with response_car_enter(InvalidSlotnum)
+ *                                    |
+ * ==================================
+ * ================================== | CLIENT ASKS TO ENTER IN PARKING AREA [valid slotnum - indoor area engaged by car]
+ * ==================================
+ * client using parkservicegui        | request car_enter(SLOTNUM) to indoorcontroller
+ *                                    |
+ * indoorcontroller                   | stop dtcarenter timer
+ *                                    | -- disable dtcarenter alarm if enabled -- 
+ *                                    | [transporttrolley DSL] takeOverCar at INDOOR
+ *                                    | replyTo car_enter with response_car_enter(TOKENID)
+ *                                    | -- set indoor area free --
+ *                                    | cancel weightsensor observation
+ *                                    |
+ * parkservicecontroller              | replyTo car_enter with response_car_enter(TOKENID)
+ *                                    |
+ * indoorcontroller                   | [transporttrolley DSL] releaseCar at SLOTNUM
+ *                                    | forward confirm_parking_slot(SLOTNUM, TOKENID) to parkingslotscontroller
+ *                                    |
+ * parkingslotscontroller             | -- move parking slot SLOTNUM from status RESERVED to OCCUPIED --
+ *                                    | -- persist information about occupied parking slot SLOTNUM mapped to tokenid TOKENID --
+ *
+ * ==================================
+ * ================================== | ROUTINE CAR EXITS FROM INDOOR AREA
+ * ==================================
+ * indoorcontroller                   | stop dtcarenter timer
+ *                                    | cancel weightsensor observation
+ *                                    | -- set indoor area free --
+ *                                    | -- disable dtcarenter alarm if enabled -- 
+ *                                    | forward undone_reservation(SLOTNUM, TOKENID) to parkingslotscontroller
+ * 
+ * parkingslotscontroller             | -- move parking slot SLOTNUM from status RESERVED to FREE --
+ *                                    | -- persist information about free parking slot SLOTNUM --
+ * 
+ * ==================================
+ * ================================== | ROUTINE DTOCCUPIED TIMEOUT
+ * ==================================
+ * indoorcontroller                   | stop dtoccupied timer
+ *                                    | -- set indoor area free --
+ *                                    | cancel weightsensor observation
+ *                                    | forward undone_reservation(SLOTNUM, TOKENID) to parkingslotscontroller
+ *                                    |
+ * parkingslotscontroller             | -- move parking slot SLOTNUM from status RESERVED to FREE --
+ *                                    | -- persist information about free parking slot SLOTNUM --
+ * 
+ * ==================================
+ * ================================== | ROUTINE DTCARENTER TIMEOUT
+ * ==================================
+ * indoorcontroller                   | stop dtcarenter timer
+ *                                    | -- enable dtcarenter alarm --
+ * 
+ * ==================================
+ * ================================== | ROUTINE WEIGHTSENSOR MEASURE WEIGHT
+ * ==================================
+ * weightsensor                       | received input_weight(W)
+ *                                    | update observers with new weight W
+ * 
+ * ==================================
+ * ================================== | CLIENT ASKS TO PICK UP THE CAR [invalid tokenid]
+ * ==================================
+ * client using parkservicegui        | request car_pick_up(TOKENID) to parkservicecontroller
+ *                                    |
+ * parkservicecontroller              | request car_pick_up(TOKENID) to outdoorcontroller
+ *                                    |
+ * outdoorcontroller                  | request validate_tokenid(TOKENID) to parkingslotscontroller
+ *                                    | -- set outdoor area reserved --
+ *                                    |
+ * parkingslotscontroller             | replyTo validate_tokenid with invalid_tokenid(X)
+ *                                    |
+ * outdoorcontroller                  | replyTo car_pick_up with accept_out_failure(X)
+ *                                    | -- set outdoor area free --
+ *                                    |
+ * parkservicecontroller              | replyTo car_pick_up with accept_out_failure(X)
+ *                                    |
+ * ==================================
+ * ================================== | CLIENT ASKS TO PICK UP THE CAR [valid tokenid]
+ * ==================================
+ * client using parkservicegui        | request car_pick_up(TOKENID) to parkservicecontroller
+ *                                    |
+ * parkservicecontroller              | request car_pick_up(TOKENID) to outdoorcontroller
+ *                                    |
+ * outdoorcontroller                  | request validate_tokenid(TOKENID) to parkingslotscontroller
+ *                                    | -- set outdoor area reserved --
+ *                                    |
+ * parkingslotscontroller             | replyTo validate_tokenid with valid_tokenid(SLOTNUM)
+ *                                    |
+ * outdoorcontroller                  | [transporttrolley DSL] takeOverCar at SLOTNUM
+ *                                    | forward free_parking_slot(SLOTNUM, TOKENID) to parkingslotscontroller
+ *                                    |
+ * parkingslotscontroller             | -- move parking slot SLOTNUM from status OCCUPIED to FREE --
+ *                                    | -- persist information about free parking slot SLOTNUM--
+ *                                    |
+ * outdoorcontroller                  | [transporttrolley DSL] releaseCar at OUTDOOR
+ *                                    | observe outsonar
+ *                                    | -- wait until the measured distance is lower than DMIN --
+ *                                    | -- set outdoor area engaged by car -- 
+ *                                    | start dtfree timer
+ *                                    | replyTo car_pick_up with accept_out_success(X)
+ *                                    |
+ * parkservicecontroller              | replyTo car_pick_up with accept_out_success(X)
+ *                                    |
+ * ==================================
+ * ================================== | ROUTINE CAR EXITS FROM OUTDOOR AREA (observed distance D >= DMIN)
+ * ==================================
+ * outdoorcontroller                  | stop dtfree timer
+ *                                    | cancel outsonar observation
+ *                                    | -- set outdoor area free --
+ *                                    | -- disable dtfree alarm if enabled -- 
+ * 
+ * ==================================
+ * ================================== | ROUTINE DTFREE TIMEOUT
+ * ==================================
+ * outdoorcontroller                  | stop dtfree timer
+ *                                    | -- enable dtfree alarm --
+ * 
+ * ==================================
+ * ================================== | ROUTINE OUTSONAR MEASURE DISTANCE
+ * ==================================
+ * outsonar                           | received input_distance(D)
+ *                                    | update observers with new distance D
+ * 
+ * ==================================
+ * ================================== | ROUTINE THERMOMETER MEASURE TEMPERATURE
+ * ==================================
+ * thermometer                        | received input_temperature(T)
+ *                                    | update observers with new temperature T
+ * 
+ * ==================================
+ * ================================== | TRANSPORT TROLLEY START
+ * ==================================
+ * manager using parkservicestatusgui | forward manager_transport_trolley_start(X) to managercontroller
+ *                                    |
+ * managercontroller                  | forward transport_trolley_start(X) to transporttrolley
+ *                                    |
+ * transporttrolley                   | -- resume behaviour --
+ * 
+ * ==================================
+ * ================================== | TRANSPORT TROLLEY STOP
+ * ==================================
+ * manager using parkservicestatusgui | forward manager_transport_trolley_stop(X) to managercontroller
+ *                                    |
+ * managercontroller                  | forward transport_trolley_stop(X) to transporttrolley
+ *                                    |
+ * transporttrolley                   | -- stop behaviour --
+ * 
+ * ==================================
+ * ================================== | ROUTINE FAN ON [success]
+ * ==================================
+ * fancontroller                      | request fan_on(X) to fan
+ *                                    |
+ * fan                                | replyTo fan_on with fan_done(X)
+ *                                    |
+ * fancontroller                      | -- set status fan on --
+ * 
+ * ==================================
+ * ================================== | ROUTINE FAN ON [failure]
+ * ==================================
+ * fancontroller                      | request fan_on(X) to fan
+ *                                    |
+ * fan                                | replyTo fan_on with fan_fail(REASON)
+ *                                    |
+ * fancontroller                      | -- set failure REASON into the observable status --
+ * 
+ * ==================================
+ * ================================== | ROUTINE FAN OFF [success]
+ * ==================================
+ * fancontroller                      | request fan_off(X) to fan
+ *                                    |
+ * fan                                | replyTo fan_off with fan_done(X)
+ *                                    |
+ * fancontroller                      | -- set status fan off --
+ * 
+ * ==================================
+ * ================================== | ROUTINE FAN OFF [failure]
+ * ==================================
+ * fancontroller                      | request fan_off(X) to fan
+ *                                    |
+ * fan                                | replyTo fan_off with fan_fail(REASON)
+ *                                    |
+ * fancontroller                      | -- set failure REASON into the observable status --
+ * 
+ * ==================================
+ * ================================== | SWITCH FAN TO MANUAL MODE
+ * ==================================
+ * manager using parkservicestatusgui | forward manager_fan_manual_mode(X) to managercontroller
+ *                                    |
+ * managercontroller                  | forward manager_fan_manual_mode(X) to fancontroller
+ *                                    |
+ * fancontroller                      | cancel thermometerfilter observation
+ *                                    | -- set status manual mode --
+ * 
+ * ==================================
+ * ================================== | MANAGER SETS FAN ON [only manual mode]
+ * ==================================
+ * manager using parkservicestatusgui | forward manager_fan_on(X) to managercontroller
+ *                                    |
+ * managercontroller                  | forward manager_fan_on(X) to fancontroller
+ *                                    |
+ * #                                  | ROUTINE FAN ON [success/failure]           
+ * 
+ * ==================================
+ * ================================== | MANAGER SETS FAN OFF [only manual mode]
+ * ==================================
+ * manager using parkservicestatusgui | forward manager_fan_off(X) to managercontroller
+ *                                    |
+ * managercontroller                  | forward manager_fan_off(X) to fancontroller
+ *                                    |
+ * #                                  | ROUTINE FAN OFF [success/failure]           
+ * 
+ * ==================================
+ * ================================== | SWITCH FAN TO AUTOMATIC MODE
+ * ==================================
+ * manager using parkservicestatusgui | forward manager_fan_automatic_mode(X) to managercontroller
+ *                                    |
+ * managercontroller                  | forward manager_fan_automatic_mode(X) to fancontroller
+ *                                    |
+ * fancontroller                      | observe thermometerfilter
+ *                                    | -- set status automatic mode --
+ * 
+ * ==================================
+ * ================================== | TEMPERATURE BECOMES HIGH [fan automatic] [ T > TMAX ]
+ * ==================================
+ * thermometer                        | received input_temperature(T)
+ *                                    | update observers with new temperature T
+ *                                    |
+ * thermometerfilter                  | -- update status with temperature level HIGH --
+ *                                    |
+ * fancontroller                      | -- observe new temperature level HIGH --
+ *                                    |
+ * #                                  | ROUTINE FAN ON [success/failure]
+ * 
+ * ==================================
+ * ================================== | TEMPERATURE BECOMES LOW [fan automatic] [ T <= TMAX ]
+ * ==================================
+ * thermometer                        | received input_temperature(T)
+ *                                    | update observers with new temperature T
+ *                                    |
+ * thermometerfilter                  | -- update status with temperature level LOW --
+ *                                    |
+ * fancontroller                      | -- observe new temperature level LOW --
+ *                                    |
+ * #                                  | ROUTINE FAN OFF [success/failure]
+ * 
+ * ==================================
+ * ================================== | ROUTINE STATUSAGGREGATOR UPDATE
+ * ==================================
+ * statusaggregator                   | -- receive autoMsg() about observed resource update --
+ *                                    | -- update observers with new status --
+ * 
+ * ==================================
+ * ================================== | STATUSAGGREGATOR WEIGHTSENSOR INFO ON
+ * ==================================
+ * manager using parkservicestatusgui | forward weightsensor_info_on(X) to managercontroller
+ *                                    |
+ * managercontroller                  | forward weightsensor_info_on(X) to statusaggregator
+ *                                    |
+ * statusaggregator                   | observe weightsensor
+ * 
+ * ==================================
+ * ================================== | STATUSAGGREGATOR WEIGHTSENSOR INFO OFF
+ * ==================================
+ * manager using parkservicestatusgui | forward weightsensor_info_off(X) to managercontroller
+ *                                    |
+ * managercontroller                  | forward weightsensor_info_off(X) to statusaggregator
+ *                                    |
+ * statusaggregator                   | cancel weightsensor observation
+ * 
+ * ==================================
+ * ================================== | STATUSAGGREGATOR OUTSONAR INFO ON
+ * ==================================
+ * manager using parkservicestatusgui | forward outsonar_info_on(X) to managercontroller
+ *                                    |
+ * managercontroller                  | forward outsonar_info_on(X) to statusaggregator
+ *                                    |
+ * statusaggregator                   | observe outsonar
+ * 
+ * ==================================
+ * ================================== | STATUSAGGREGATOR OUTSONAR INFO OFF
+ * ==================================
+ * manager using parkservicestatusgui | forward outsonar_info_off(X) to managercontroller
+ *                                    |
+ * managercontroller                  | forward outsonar_info_off(X) to statusaggregator
+ *                                    |
+ * statusaggregator                   | cancel outsonar observation
+ * 
+ */
+System systembusinesslogic
+
+// indoor controller
+
+Request   parking_car_interest : parking_car_interest(X)
+Reply     inform_in            : inform_in(SLOTNUM)
+
+Request   car_enter            : car_enter(SLOTNUM)
+Reply     response_car_enter   : response_car_enter(TOKENID)
+
+Dispatch  auto_car_taken_over  : auto_car_taken_over(X)
+Dispatch  auto_car_park_done   : auto_car_park_done(X)
+
+// event auto-sent only to the owner actor...
+Event     auto_indoor_area_weight   : auto_indoor_area_weight(W)
+
+// event auto-sent only to the owner actor...
+Event     auto_dtoccupied_timeout : auto_dtoccupied_timeout(X)
+
+// event auto-sent only to the owner actor...
+Event     auto_dtcarenter_timeout : auto_dtcarenter_timeout(X)
+
+// outdoor controller
+
+Request car_pick_up  : car_pick_up(TOKENID)
+Reply   accept_out_success : accept_out_success(X)
+Reply   accept_out_failure : accept_out_failure(X)
+
+Dispatch  auto_car_pick_up_done   : auto_car_pick_up_done(X)
+
+// event auto-sent only to the owner actor...
+Event    auto_outdoor_area_distance   : auto_outdoor_area_distance(D)
+
+// event auto-sent only to the owner actor...
+Event    auto_dtfree_timeout          : auto_dtfree_timeout(X)
+
+
+Dispatch auto_parking_area_temperature : auto_parking_area_temperature(T)
+
+
+
+// parking slots controller
+
+// car park
+Request   reserve_parking_slot         : reserve_parking_slot(X)
+Reply     parking_slot_reserved        : parking_slot_reserved(SLOTNUM,TOKENID)
+Reply     no_available_parking_slots   : no_available_parking_slots(X)
+
+Dispatch  confirm_parking_slot         : confirm_parking_slot(SLOTNUM,TOKENID) 
+Dispatch  undone_reservation           : undone_reservation(SLOTNUM,TOKENID)
+
+// pick up
+Request   validate_tokenid             : validate_tokenid(TOKENID)
+Reply     valid_tokenid                : valid_tokenid(SLOTNUM)
+Reply     invalid_tokenid              : invalid_tokenid(X)
+
+Dispatch  free_parking_slot          : free_parking_slot(SLOTNUM,TOKENID)
+
+
+// fan
+Dispatch manager_fan_manual_mode : manager_fan_manual_mode(X)
+Dispatch manager_fan_automatic_mode : manager_fan_automatic_mode(X)
+Dispatch manager_fan_on : manager_fan_on(X)
+Dispatch manager_fan_off : manager_fan_off(X)
+Request fan_on : fan_on(X)
+Request fan_off : fan_off(X)
+Reply fan_done : fan_done(X)
+Reply fan_fail : fan_fail(REASON)
+
+Dispatch auto_parking_area_temperature_level : auto_parking_area_temperature_level(LEVEL)
+
+
+Dispatch  reset : reset(X)
+
+
+// transport trolley
+
+Dispatch manager_transport_trolley_start : manager_transport_trolley_start(X)
+Dispatch manager_transport_trolley_stop : manager_transport_trolley_stop(X)
+
+// open session
+Request   transport_trolley_new_job        : transport_trolley_new_job(X)
+Reply     transport_trolley_job_accepted   : transport_trolley_job_accepted(X)
+
+// move transport trolley to destination
+Request   transport_trolley_go_to          : transport_trolley_go_to(DESTINATION)
+Reply     transport_trolley_arrived_at     : transport_trolley_arrived_at(DESTINATION)
+
+// car handling commands
+Request   transport_trolley_take_over_car  : transport_trolley_take_over_car(X)
+Reply     transport_trolley_car_taken_over : transport_trolley_car_taken_over(X)
+Request   transport_trolley_release_car    : transport_trolley_release_car(X)
+Reply     transport_trolley_car_released   : transport_trolley_car_released(X)
+
+// unknown destination, cannot take over car, cannot release car
+Reply     transport_trolley_error          : transport_trolley_error(REASON)
+
+// close session
+Dispatch  transport_trolley_job_done       : transport_trolley_job_done(X)
+
+// resumable behavior
+Dispatch  transport_trolley_start          : transport_trolley_start(X)
+Dispatch  transport_trolley_stop           : transport_trolley_stop(X)
+
+// internal messages
+Dispatch  auto_transport_trolley_go_home      : auto_transport_trolley_go_home(X)
+Dispatch  move_done           : move_done(MOVE)
+Dispatch  move_fail           : move_fail(MOVE,DURATION,CAUSE)
+
+// basicrobot
+Dispatch cmd        : cmd(MOVE)
+Dispatch end        : end(ARG)  
+Request  step       : step( TIME )	
+Reply    stepdone   : stepdone(V)  
+Reply    stepfail   : stepfail(DURATION, CAUSE)
+
+// status aggregator
+Dispatch weightsensor_info_on  : weightsensor_info_on(X)
+Dispatch weightsensor_info_off : weightsensor_info_off(X)
+Dispatch outsonar_info_on      : outsonar_info_on(X)
+Dispatch outsonar_info_off     : outsonar_info_off(X)
+
+Dispatch auto_aggregator_weightsensor : auto_aggregator_weightsensor(W)
+Dispatch auto_aggregator_outsonar     : auto_aggregator_outsonar(D)
+Dispatch auto_aggregator_thermometer  : auto_aggregator_thermometer(T)
+Dispatch auto_aggregator_indoorcontroller : auto_aggregator_indoorcontroller(RESERVED,ENGAGEDBYCAR,CARENTERTIMEOUTALARM)
+Dispatch auto_aggregator_outdoorcontroller : auto_aggregator_outdoorcontroller(RESERVED,ENGAGEDBYCAR,DTFREETIMEOUTALARM)
+Dispatch auto_aggregator_parkingslotscontroller : auto_aggregator_parkingslotscontroller(P1,P2,P3,P4,P5,P6)
+Dispatch auto_aggregator_thermometerfilter : auto_aggregator_thermometerfilter(HIGH)
+Dispatch auto_aggregator_fancontroller : auto_aggregator_fancontroller(ON,AUTOMATIC,FAILUREREASON)
+Dispatch auto_aggregator_transporttrolley : auto_aggregator_transporttrolley(STOPPED,IDLE,MOVEFAILED,COLUMN,ROW,DIRECTION)
+
+Context ctxbusinesslogic     ip [host="localhost"    port=8065]
+Context ctxweightsensor      ip [host="weightsensor" port=8060]
+Context ctxoutsonar          ip [host="outsonar"     port=8061]
+Context ctxthermometer       ip [host="thermometer"  port=8062]
+Context ctxfan               ip [host="fan"          port=8063]
+
+Context ctxbasicrobot        ip [host="robot"        port=8020]  
+
+ExternalQActor weightsensor  context ctxweightsensor
+ExternalQActor outsonar      context ctxoutsonar
+ExternalQActor thermometer   context ctxthermometer
+ExternalQActor fan           context ctxfan
+ExternalQActor basicrobot    context ctxbasicrobot
+
+/*
+ * indoorcontroller status:
+ * FREE: means that the indoorcontroller is not observing the weightsensor, so it assumes that the indoor area is free
+ * RESERVED: means that the indoor area is reserved for a car but the car actually is not in the indoor area
+ * ENGAGED: means that the indoor area is reserved for a car and the car is actually in the indoor area
+ * 
+ */
+ 
+QActor indoorcontroller context ctxbusinesslogic {
+	[#
+		// configurable variables...
+		lateinit var DOOR_NAME : String
+		var WMAX : Long = 0
+		
+		// internal status...
+		var SLOTNUM = 0
+		var TOKENID = ""
+		var CAR_ENTER_SLOTNUM = SLOTNUM
+		var CAR_ENTER_TOKENID = TOKENID
+		var reserved_parking_slot = false
+		var parking_car_interest = false
+		var handling_car_enter = false 
+		var wait_for_take_over = false
+		var need_to_start_dtcarenter_timer = false
+		
+		val resource = itunibo.qakobserver.FactoryQakResource.create(myself)
+		
+		data class Weight(val weight : Int) {}
+		
+		val weightMessageBuilder = object : itunibo.qakobserver.IMessageBuilder {
+			
+			val gson = com.google.gson.Gson()
+			override fun buildMessage(input : String, observerName : String) : ApplMessage {
+				val weight = gson.fromJson(input, Weight::class.java).weight
+				return MsgUtil.buildEvent(observerName, "auto_indoor_area_weight", "auto_indoor_area_weight($weight)")
+			}
+		}
+		
+		val weightsensorObserver = itunibo.qakobserver.FactoryQakObserver.create(myself, "weightsensor", weightMessageBuilder)
+		
+		val parkingAreaRolodex = itunibo.automatedcarparking.rolodex.ParkingAreaRolodex
+		
+		lateinit var dtoccupiedWatchdog : itunibo.qakutils.watchdog.Watchdog 
+		lateinit var dtcarenterWatchdog : itunibo.qakutils.watchdog.Watchdog
+		val status = itunibo.automatedcarparking.parkingarea.IndoorAreaStatus(false, false, false)
+		val gson = com.google.gson.Gson()
+		
+		fun getJsonStatus() : String {
+			return gson.toJson(status) 
+		}
+	#]
+	
+	State init initial {
+		[# val config = itunibo.automatedcarparking.configuration.IndoorAreaConfigurationReader.read(parkingAreaRolodex.filenameIndoorAreaConfiguration) #]
+		[# WMAX = config.WMAX #]  
+		[# DOOR_NAME = config.doorName #]
+		[# val DTOCCUPIED_TIMEOUT = config.DTOCCUPIED #]
+		[# val DTCARENTER_TIMEOUT = config.DTCARENTER #]
+		[# dtoccupiedWatchdog = itunibo.qakutils.watchdog.Watchdog(myself, DTOCCUPIED_TIMEOUT, itunibo.automatedcarparking.parkingarea.IndoorAreaDtoccupiedTimeoutAutoMessage) #]
+		[# dtcarenterWatchdog = itunibo.qakutils.watchdog.Watchdog(myself, DTCARENTER_TIMEOUT, itunibo.automatedcarparking.parkingarea.IndoorAreaDtcarenterTimeoutAutoMessage) #]
+		
+		println("[indoorcontroller] | init | Config - WMAX: $WMAX kG")
+		println("[indoorcontroller] | init | Config - Door Name: $DOOR_NAME")
+		println("[indoorcontroller] | init | Config - DTOCCUPIED Timeout: $DTOCCUPIED_TIMEOUT ms")
+		println("[indoorcontroller] | init | Config - DTCARENTER Timeout: $DTCARENTER_TIMEOUT ms")
+		[# resource.notify(getJsonStatus()) #]
+	} Goto wait
+	
+	State wait {
+
+	} Transition t0
+	whenRequest parking_car_interest and [# !status.reserved #]                 -> handleParkingCarInterest
+	whenRequest car_enter  and [# !handling_car_enter #]                        -> handleCarEnter
+	whenReply   parking_slot_reserved                                           -> handleParkingSlot
+	whenReply   no_available_parking_slots                                      -> handleParkingSlot
+	whenMsg     auto_car_taken_over                                             -> handleCarTakeOver
+	whenMsg     auto_car_park_done                                              -> handleCarParkDone
+	whenEvent   auto_indoor_area_weight and [# weightsensorObserver.isObserving() #]  -> handleWeight // autoMsg by observer
+	whenEvent   auto_dtoccupied_timeout and [# dtoccupiedWatchdog.isRunning() #] -> handleEnterIndoorAreaTimeout // autoMsg by watchdog
+	whenEvent   auto_dtcarenter_timeout and [# dtcarenterWatchdog.isRunning() #] -> handleCarEnterTimeout
+	
+	State handleWeight {
+		
+		[# var update_status = false #]
+		
+		printCurrentMessage
+		onMsg(auto_indoor_area_weight : auto_indoor_area_weight(W)) {
+			[# val W = payloadArg(0).toInt() #]
+			
+			if [# W > WMAX #] {
+				
+				println("[indoorcontroller] | [State] handleWeight | Received Weight > WMAX!")
+				
+				/* stop the first timer */
+				if [# dtoccupiedWatchdog.isRunning() #] {
+					println("[indoorcontroller] | [State] handleWeight | Stop DTOCCUPIED timer...")
+					[# dtoccupiedWatchdog.stop() #]
+					
+					/* start the second timer */
+					if [# !handling_car_enter #] {
+						println("[indoorcontroller] | [State] handleWeight | Start DTCARENTER timer...")
+						[# dtcarenterWatchdog.start() #]
+					} else {
+						println("[indoorcontroller] | [State] handleWeight | Postpone DTCARENTER timer (ongoing car enter request)...")
+						[# need_to_start_dtcarenter_timer = true #] 
+					}
+				}
+				
+				if [# !status.engagedByCar #] {
+					[# update_status = true #]
+				}
+				println("[indoorcontroller] | [State] handleWeight | $DOOR_NAME Area engaged by car!")
+				[# status.engagedByCar = true #]
+			} else {
+				
+				println("[indoorcontroller] | [State] handleWeight | Received Weight <= WMAX!")
+				[# need_to_start_dtcarenter_timer = false #]
+				
+				if [# !wait_for_take_over && reserved_parking_slot && status.engagedByCar #] {
+					println("[indoorcontroller] | [State] handleWeight | Undone parking slot reservation...")
+					forward parkingslotscontroller -m undone_reservation : undone_reservation($SLOTNUM,$TOKENID)
+					[# status.reserved = false #]
+					[# reserved_parking_slot = false #]
+					[# update_status = true #]
+				}
+				
+				if [# status.carEnterTimeoutAlarm #] {
+					println("[indoorcontroller] | [State] handleWeight | DTCARENTER alarm raised...")
+					[# status.carEnterTimeoutAlarm = false #]
+					[# status.reserved = false #]
+					[# update_status = true #]
+				}
+
+				if [# !parking_car_interest && !wait_for_take_over && status.engagedByCar #] {
+					println("[indoorcontroller] | [State] handleWeight | $DOOR_NAME Area free!")
+					println("[indoorcontroller] | [State] handleWeight | Stop DTCARENTER timer...")
+					println("[indoorcontroller] | [State] handleWeight | Stop weightsensor observation...")
+					[# status.reserved = false #]
+					[# dtcarenterWatchdog.stop() #]
+					[# weightsensorObserver.cancel() #]
+					[# update_status = true #]
+				}
+				[# status.engagedByCar = false #]
+				
+				if [# parking_car_interest #] {
+					println("[indoorcontroller] | [State] handleWeight | Reserve parking slot...")
+					[# parking_car_interest = false #]
+					request parkingslotscontroller -m reserve_parking_slot : reserve_parking_slot(X)
+				}
+			}
+		}
+		
+		if [# update_status #] {
+			[# resource.notify(getJsonStatus()) #]
+		}
+	} Goto wait
+	
+	State handleParkingCarInterest {
+		printCurrentMessage
+		onMsg(parking_car_interest : parking_car_interest(X)) {
+			println("[indoorcontroller] | [State] handleParkingCarInterest | Parking car interest!")
+			[# status.reserved = true #]
+			[# parking_car_interest = true #]
+			println("[indoorcontroller] | [State] handleParkingCarInterest | Start weightsensor observation...")
+			[# weightsensorObserver.observe() #]
+			[# resource.notify(getJsonStatus()) #]
+		}
+	} Goto wait
+	
+	State handleParkingSlot {
+		printCurrentMessage
+		onMsg(parking_slot_reserved : parking_slot_reserved(SLOTNUM,TOKENID)) {
+			[# SLOTNUM = payloadArg(0).toInt() #]
+			[# TOKENID = payloadArg(1) #]
+			println("[indoorcontroller] | [State] handleParkingSlot | reserved slotnum $SLOTNUM with tokenid $TOKENID")
+			replyTo parking_car_interest with inform_in : inform_in($SLOTNUM)
+			println("[indoorcontroller] | [State] handleParkingSlot | Start DTOCCUPIED timer...")
+			[# dtoccupiedWatchdog.start() #]
+			[# reserved_parking_slot = true #]
+		}
+		onMsg(no_available_parking_slots : no_available_parking_slots(X)) {
+			println("indoorcontroller | [State] handleParkingSlot | no parking slots available")
+			// inform the client that the parking area is full...
+			replyTo parking_car_interest with inform_in : inform_in(0)
+			[# status.reserved = false #]
+			[# status.engagedByCar = false #]
+			[# parking_car_interest = false #]
+			println("indoorcontroller | [State] handleParkingSlot | Stop weightsensor observation...")
+			[# weightsensorObserver.cancel() #]
+			[# resource.notify(getJsonStatus()) #]
+			[# reserved_parking_slot = false #]
+		}
+	} Goto wait
+	
+	State handleEnterIndoorAreaTimeout {
+		printCurrentMessage
+		onMsg(auto_dtoccupied_timeout : auto_dtoccupied_timeout(X)) {
+			println("[indoorcontroller] | [State] handleEnterIndoorAreaTimeout | DTOCCUPIED timeout, do not consider anymore the $DOOR_NAME AREA reserved...")
+			[# status.reserved = false #]
+			[# status.engagedByCar = false #]
+			println("[indoorcontroller] | [State] handleEnterIndoorAreaTimeout | Stop weightsensor observation...")
+			[# weightsensorObserver.cancel() #]
+			[# dtoccupiedWatchdog.stop() #]
+			println("[indoorcontroller] | [State] handleEnterIndoorAreaTimeout | Undone parking slot reservation...")
+			forward parkingslotscontroller -m undone_reservation : undone_reservation($SLOTNUM,$TOKENID)
+			[# reserved_parking_slot = false #]
+			[# resource.notify(getJsonStatus()) #]
+		}
+	} Goto wait 
+	
+	State handleCarEnterTimeout {
+		printCurrentMessage
+		onMsg(auto_dtcarenter_timeout : auto_dtcarenter_timeout(X)) {
+			println("[indoorcontroller] | [State] handleCarEnterTimeout | DTCARENTER timeout, too much time elapsed, need to inform the manager...")
+			[# dtcarenterWatchdog.stop() #]
+			[# status.carEnterTimeoutAlarm = true #]
+			[# resource.notify(getJsonStatus()) #]
+		}
+	} Goto wait
+	
+	State handleCarEnter {
+		printCurrentMessage
+		[# var ok = true #]
+		if [# ok && !status.reserved #] {
+			replyTo car_enter with response_car_enter : response_car_enter(IndoorAreaNotReserved)
+			println("[indoorcontroller] | [State] handleCarEnter | Received car enter request but the $DOOR_NAME Area is not reserved...")
+			[# ok = false #]
+		}
+		if [# ok && !status.engagedByCar #] {
+			replyTo car_enter with response_car_enter : response_car_enter(IndoorAreaNotEngagedByCar)
+			println("[indoorcontroller] | [State] handleCarEnter | Received car enter request but the $DOOR_NAME Area is not engaged by car...")
+			[# ok = false #]
+		}
+		if [# ok #] {
+			onMsg(car_enter : car_enter(SLOTNUM)) {
+				[# val INPUT_SLOTNUM = payloadArg(0).toInt() #]
+				if [# INPUT_SLOTNUM == SLOTNUM #] {
+				
+					[# handling_car_enter = true #]
+					
+					[# CAR_ENTER_SLOTNUM = SLOTNUM #]
+					[# val CACHED_SLOTNUM = SLOTNUM #]
+					[# CAR_ENTER_TOKENID = TOKENID #]
+					[# val CACHED_TOKENID = TOKENID #]
+				
+					[# wait_for_take_over = true #]
+					
+					[# dtcarenterWatchdog.stop() #]
+					if [# status.carEnterTimeoutAlarm #] {
+						[# status.carEnterTimeoutAlarm = false #]
+						[# resource.notify(getJsonStatus()) #]
+					}
+				
+					println("[indoorcontroller] | [State] handleCarEnter | Handle valid car enter request {SLOTNUM: $CACHED_SLOTNUM, TOKENID: $CACHED_TOKENID}")
+				
+					[# val doorName = DOOR_NAME #]
+					[#
+						myself.scope.launch {
+							itunibo.automatedcarparking.dsl.transporttrolley.transporttrolley {
+								task {
+									println("[indoorcontroller] | Move the transport trolley to $doorName...")
+									takeOverCar at doorName
+								
+									myself.autoMsg("auto_car_taken_over", "auto_car_taken_over(X)")
+
+									println("[indoorcontroller] | Move the transport trolley to SLOTNUM $CACHED_SLOTNUM...")
+									releaseCar at "$CACHED_SLOTNUM"
+								}
+							}
+							myself.autoMsg("auto_car_park_done", "auto_car_park_done(X)")
+						}
+					#]
+				} else {
+					// malicious user ...
+					println("[indoorcontroller] | [State] handleCarEnter | Received car enter request with SLOTNUM $INPUT_SLOTNUM different from expected SLOTNUM $SLOTNUM...")
+					replyTo car_enter with response_car_enter : response_car_enter(InvalidSlotnum)
+				}	
+			}
+		}
+
+	} Goto wait
+	
+	State handleCarTakeOver {
+		println("[indoorcontroller] | [State] handleCarTakeOver")
+		println("[indoorcontroller] | [State] handleCarTakeOver | Send TOKENID $TOKENID to the user...")
+		replyTo car_enter with response_car_enter : response_car_enter($TOKENID)
+		
+		[# wait_for_take_over = false #]
+		[# reserved_parking_slot = false #]
+		
+		if [# !status.engagedByCar #] {
+			println("[indoorcontroller] | [State] handleCarTakeOver | $DOOR_NAME Area free!")
+			[# status.reserved = false #]
+			println("[indoorcontroller] | [State] handleCarTakeOver | Stop weightsensor observation...")
+			[# weightsensorObserver.cancel() #]
+			[# resource.notify(getJsonStatus()) #]
+		}
+		
+	} Goto wait
+	
+	State handleCarParkDone {
+		println("[indoorcontroller] | [State] handleCarParkDone")
+		[# handling_car_enter = false #]
+		println("[indoorcontroller] | [State] handleCarParkDone | Confirm mapping between parking slot $CAR_ENTER_SLOTNUM and TOKENID $CAR_ENTER_TOKENID...")
+		forward parkingslotscontroller -m confirm_parking_slot : confirm_parking_slot($CAR_ENTER_SLOTNUM,$CAR_ENTER_TOKENID)
+	
+		if [# need_to_start_dtcarenter_timer #] {
+			println("[indoorcontroller] | [State] handleCarParkDone | Start DTCARENTER timer...")
+			[# need_to_start_dtcarenter_timer = false #]
+			[# dtcarenterWatchdog.start() #]
+		}
+	} Goto wait
+
+}
+
+QActor outdoorcontroller context ctxbusinesslogic {
+	[#
+		lateinit var DOOR_NAME : String
+		var DMIN : Long = 0
+		
+		var SLOTNUM = 0
+		var TOKENID = ""
+		
+		val resource = itunibo.qakobserver.FactoryQakResource.create(myself)
+		
+		data class Distance(val distance : Int) {}
+		
+		val distanceMessageBuilder = object : itunibo.qakobserver.IMessageBuilder {
+			
+			val gson = com.google.gson.Gson()
+			override fun buildMessage(input : String, observerName : String) : ApplMessage {
+				val distance = gson.fromJson(input, Distance::class.java).distance
+				return MsgUtil.buildEvent(observerName, "auto_outdoor_area_distance", "auto_outdoor_area_distance($distance)")
+			}
+		}
+		
+		val outsonarObserver = itunibo.qakobserver.FactoryQakObserver.create(myself, "outsonar", distanceMessageBuilder)
+		
+		val parkingAreaRolodex = itunibo.automatedcarparking.rolodex.ParkingAreaRolodex
+		
+		lateinit var dtfreeWatchdog : itunibo.qakutils.watchdog.Watchdog 
+		val status = itunibo.automatedcarparking.parkingarea.OutdoorAreaStatus(false, false, false)
+		val gson = com.google.gson.Gson()
+		
+		fun getJsonStatus() : String {
+			return gson.toJson(status) 
+		}
+	#]
+	
+	State init initial {
+		[# val config = itunibo.automatedcarparking.configuration.OutdoorAreaConfigurationReader.read(parkingAreaRolodex.filenameOutdoorAreaConfiguration) #]
+		[# DMIN = config.DMIN #]  
+		[# DOOR_NAME = config.doorName #]
+		[# val DTFREE_TIMEOUT = config.DTFREE #]
+		[# dtfreeWatchdog = itunibo.qakutils.watchdog.Watchdog(myself, DTFREE_TIMEOUT, itunibo.automatedcarparking.parkingarea.OutdoorAreaDtfreeTimeoutAutoMessage) #]
+		
+		println("[outdoorcontroller] | init | Config - DMIN: $DMIN cm")
+		println("[outdoorcontroller] | init | Config - Door Name: $DOOR_NAME")
+		println("[outdoorcontroller] | init | Config - DTFREE Timeout: $DTFREE_TIMEOUT ms")
+		
+		[# resource.notify(getJsonStatus())#]
+	} Goto wait
+	
+	State wait {
+
+	} Transition t0
+	whenRequest car_pick_up and [# !status.reserved #]                               -> handleCarPickUp
+	whenReply   valid_tokenid                                                        -> handleTokenId
+	whenReply   invalid_tokenid                                                      -> handleTokenId
+	whenMsg     auto_car_taken_over                                                  -> handleCarTakeOver
+	whenMsg     auto_car_pick_up_done                                                -> handleCarPickUpDone
+	whenEvent   auto_outdoor_area_distance and [# outsonarObserver.isObserving() #]  -> handleDistance // autoMsg by observer
+	whenEvent   auto_dtfree_timeout and [# dtfreeWatchdog.isRunning() #]             -> handleDtfreeTimeout // autoMsg by watchdog
+	
+	State handleDistance { 
+		
+		[# var update_status = false #]
+		
+		printCurrentMessage
+		onMsg(auto_outdoor_area_distance : auto_outdoor_area_distance(D)) {
+			[# val D = payloadArg(0).toInt() #]
+			
+			if [# D < DMIN #] {
+				println("[outdoorcontroller] | [State] handleDistance | Received Distance < DMIN!")
+				
+				if [# !status.engagedByCar #] {
+					println("[outdoorcontroller] | [State] handleDistance | Car in the $DOOR_NAME Area!")
+					println("[outdoorcontroller] | [State] handleDistance | $DOOR_NAME Area occupied!")
+					println("[outdoorcontroller] | [State] handleDistance | Start DTFREE timer...")
+					[# update_status = true #]
+					[# dtfreeWatchdog.start() #]
+					println("[outdoorcontroller] | [State] handleDistance | Inform the user...")
+					replyTo car_pick_up with accept_out_success : accept_out_success(X)
+				}
+				
+				[# status.engagedByCar = true #]
+			} else { 
+				println("[outdoorcontroller] | [State] handleDistance | Received Distance >= DMIN!")
+				
+				if [# status.engagedByCar #] {
+					println("[outdoorcontroller] | [State] handleDistance | Car leaves the $DOOR_NAME Area!")
+					println("[outdoorcontroller] | [State] handleDistance | $DOOR_NAME Area free!")
+					println("[outdoorcontroller] | [State] handleDistance | Stop outsonar observation...")
+					println("[outdoorcontroller] | [State] handleDistance | Stop DTFREE timer...")
+					[# status.reserved = false #]
+					[# dtfreeWatchdog.stop() #]
+					[# outsonarObserver.cancel() #]
+					[# update_status = true #]
+				}
+				[# status.engagedByCar = false #]
+				
+				if [# status.dtfreeTimeoutAlarm #] {
+					[# update_status = true #] 
+				}
+				[# status.dtfreeTimeoutAlarm = false #]
+			}
+		}
+		
+		if [# update_status #] {
+			[# resource.notify(getJsonStatus()) #]
+		}
+	} Goto wait
+	
+	State handleCarPickUp {
+		printCurrentMessage
+		onMsg(car_pick_up : car_pick_up(TOKENID)) {
+			[# TOKENID = payloadArg(0) #]
+			println("[outdoorcontroller] | [State] handleCarPickUp | Received TOKENID: $TOKENID.")
+			
+			request parkingslotscontroller -m validate_tokenid : validate_tokenid($TOKENID)
+			println("[outdoorcontroller] | [State] handleTokenId | Set $DOOR_NAME Area reserved...")
+			[# status.reserved = true #]
+			[# resource.notify(getJsonStatus()) #]
+		}
+	} Goto wait
+	
+	State handleTokenId {
+		printCurrentMessage
+		onMsg(valid_tokenid : valid_tokenid(SLOTNUM)) {
+			[# SLOTNUM = payloadArg(0).toInt() #]
+			println("[outdoorcontroller] | [State] handleTokenId | TOKENID ($TOKENID) is valid, slotnum: $SLOTNUM.")
+			
+			[# val CACHED_DOOR_NAME = DOOR_NAME #]
+			[# val CACHED_SLOTNUM = SLOTNUM #]
+			[#
+				myself.scope.launch {
+					itunibo.automatedcarparking.dsl.transporttrolley.transporttrolley {
+						task {
+							println("[outdoorcontroller] | [State] handleTokenId | Move the transport trolley to SLOTNUM $CACHED_SLOTNUM...")
+							takeOverCar at "$CACHED_SLOTNUM"
+							myself.autoMsg("auto_car_taken_over", "auto_car_taken_over(X)")
+							println("[outdoorcontroller] | [State] handleTokenId | Move the transport trolley to $CACHED_DOOR_NAME...")
+							releaseCar at CACHED_DOOR_NAME
+						}
+					}
+					myself.autoMsg("auto_car_pick_up_done", "auto_car_pick_up_done(X)")
+				}
+			#]
+		}
+		
+		onMsg(invalid_tokenid : invalid_tokenid(X)) {
+			println("[outdoorcontroller] | [State] handleTokenId | TOKENID ($TOKENID) is not valid.")
+			println("[outdoorcontroller] | [State] handleTokenId | Set $DOOR_NAME Area free...")
+			replyTo car_pick_up with accept_out_failure : accept_out_failure(X)
+			[# status.reserved = false #]
+			[# resource.notify(getJsonStatus()) #]
+		}
+	} Goto wait
+	
+	State handleDtfreeTimeout {
+		printCurrentMessage
+		onMsg(auto_dtfree_timeout : auto_dtfree_timeout(X)) {
+			println("[outdoorcontroller] | [State] handleExitOutdoorAreaTimeout | DTFREE time limit reached.")
+			[# dtfreeWatchdog.stop() #]
+			[# status.dtfreeTimeoutAlarm = true #]
+			[# resource.notify(getJsonStatus()) #]
+		}
+	} Goto wait
+	
+	State handleCarTakeOver {
+		printCurrentMessage
+		println("[outdoorcontroller] | [State] handleCarTakeOver")
+		forward parkingslotscontroller -m free_parking_slot : free_parking_slot($SLOTNUM,$TOKENID)
+	} Goto wait
+	
+	State handleCarPickUpDone {
+		println("[outdoorcontroller] | [State] handleCarPickUpDone")
+		[# outsonarObserver.observe() #]
+	} Goto wait
+}
+
+QActor parkservicecontroller context ctxbusinesslogic {
+	
+	[#
+		var handling_parking_car_interest = false
+		var handling_car_enter = false
+		var handling_car_pick_up = false
+	#]  
+	
+	State init initial {
+		
+	} Goto wait
+	
+	State wait {
+		
+	} Transition t0
+	whenRequest parking_car_interest and [# !handling_parking_car_interest #] -> handleIndoorArea
+	whenRequest car_enter and [# !handling_car_enter #] -> handleIndoorArea
+	whenRequest car_pick_up and [# !handling_car_pick_up #] -> handleOutdoorArea
+	whenReply inform_in -> handleIndoorArea
+	whenReply response_car_enter -> handleIndoorArea
+	whenReply accept_out_success -> handleOutdoorArea
+	whenReply accept_out_failure -> handleOutdoorArea
+	
+	State handleIndoorArea {
+		[# var message_sent = false #]
+		printCurrentMessage
+		onMsg(parking_car_interest : parking_car_interest(X)) { 
+			[# handling_parking_car_interest = true #]
+			request indoorcontroller -m parking_car_interest : parking_car_interest(X)
+			[# message_sent = true #]
+		}
+		onMsg(car_enter : car_enter(SLOTNUM)) {
+			[# var SLOTNUM = -1 #]
+			
+			[# try {
+				SLOTNUM = payloadArg(0).toInt()
+			} catch (e : Exception) {} #]
+			if [# SLOTNUM >= 0 #] {
+				[# handling_car_enter = true #]
+				request indoorcontroller -m car_enter : car_enter($SLOTNUM)
+				[# message_sent = true #]
+			}
+		}
+		
+		onMsg(inform_in : inform_in(SLOTNUM)) {
+			[# handling_parking_car_interest = false #]
+			[# val SLOTNUM = payloadArg(0).toInt() #]
+			replyTo parking_car_interest with inform_in : inform_in($SLOTNUM)
+			[# message_sent = true #]
+		}
+		onMsg(response_car_enter : response_car_enter(TOKENID)) {
+			[# handling_car_enter = false #]
+			[# val TOKENID = payloadArg(0) #]
+			replyTo car_enter with response_car_enter : response_car_enter($TOKENID)
+			[# message_sent = true #]
+		}
+		
+		if [# !message_sent #] {
+			// protection
+			// must be a malformed car_enter request
+			replyTo car_enter with response_car_enter : response_car_enter(InvalidSlotnum)
+		}
+	} Goto wait
+	
+	State handleOutdoorArea {
+		printCurrentMessage
+		[# var message_sent = false #]
+		onMsg(car_pick_up : car_pick_up(TOKENID)) {
+			[# message_sent = true #]
+			[# handling_car_pick_up = true #]
+			[# val TOKENID = payloadArg(0) #]
+			request outdoorcontroller -m car_pick_up : car_pick_up($TOKENID)
+		}
+		
+		onMsg(accept_out_success : accept_out_success(X)) {
+			[# message_sent = true #]
+			[# handling_car_pick_up = false #]
+			replyTo car_pick_up with accept_out_success : accept_out_success(X)
+		}
+		onMsg(accept_out_failure : accept_out_failure(X)) {
+			[# message_sent = true #]
+			[# handling_car_pick_up = false #]
+			replyTo car_pick_up with accept_out_failure : accept_out_failure(X)
+		}
+		
+		if [# !message_sent #] {
+			// protection
+			// must be a malformed car_pick_up request
+			replyTo car_pick_up with accept_out_failure : accept_out_failure(X)
+		}
+	} Goto wait
+}
+
+QActor parkingslotscontroller context ctxbusinesslogic {
+	
+	[# 
+		val controller = itunibo.automatedcarparking.parkingarea.ParkingSlotController
+		val resource = itunibo.qakobserver.FactoryQakResource.create(myself)
+	#]
+
+	State init initial {
+		[#
+			controller.init()
+			resource.notify(controller.getJsonStatus())
+		#]
+	} Goto wait
+	
+	State wait {
+		println("[parkingslotscontroller] | [State] wait") 
+	} Transition t0
+	whenRequest reserve_parking_slot -> handleReserveParkingSlot
+	whenMsg     confirm_parking_slot -> handleConfirmParkingSlot
+	whenMsg     undone_reservation   -> handleUndoneReservation
+	whenRequest validate_tokenid     -> handleValidateTokenId
+	whenMsg     free_parking_slot  -> handleFreeParkingSlot
+	whenMsg     reset                -> handleReset
+	
+	
+	State handleReserveParkingSlot {
+		println("[parkingslotscontroller] | [State] handleReserveParkingSlot | Entry point.") 
+		printCurrentMessage
+		onMsg(reserve_parking_slot : reserve_parking_slot(X)) {
+			if [# !controller.isAvailableParkingSlot() #] {
+				println("[parkingslotscontroller] | [State] handleReserveParkingSlot | Parking area is full...") 
+				replyTo reserve_parking_slot with no_available_parking_slots : no_available_parking_slots(X)
+			} else {
+			[# 
+				val parkingSlot = controller.moveFromFreeToReserved() 
+				val SLOTNUM = parkingSlot.first
+				val TOKENID = parkingSlot.second
+				resource.notify(controller.getJsonStatus())
+			#]
+				println("[parkingslotscontroller] | [State] handleReserveParkingSlot | Reserved SLOTNUM $SLOTNUM - TOKENID $TOKENID") 
+				replyTo reserve_parking_slot with parking_slot_reserved : parking_slot_reserved($SLOTNUM,$TOKENID)
+			}
+		}
+		println("[parkingslotscontroller] | [State] handleReserveParkingSlot | Exit point.") 
+	} Goto wait
+	
+	State handleConfirmParkingSlot {
+		println("[parkingslotscontroller] | [State] handleConfirmParkingSlot | Entry point.") 
+		printCurrentMessage 
+		onMsg(confirm_parking_slot : confirm_parking_slot(SLOTNUM,TOKENID)) {
+		[#
+			val reservedSlotnum = payloadArg(0).toInt()
+			println("[parkingslotscontroller] | [State] handleConfirmParkingSlot | Confirm parking slot $reservedSlotnum...") 
+			controller.moveFromReservedToEngaged(reservedSlotnum)
+			resource.notify(controller.getJsonStatus())
+		#]
+		}
+		println("[parkingslotscontroller] | [State] handleConfirmParkingSlot | Exit point.") 
+	} Goto wait
+	
+	State handleUndoneReservation {
+		println("[parkingslotscontroller] | [State] handleUndoneReservation | Entry point.") 
+		printCurrentMessage
+		onMsg(undone_reservation : undone_reservation(SLOTNUM,TOKENID)) {
+			
+		[#
+			val reservedSlotnum = payloadArg(0).toInt()
+			val reservedTokenId = payloadArg(1)
+			println("[parkingslotscontroller] | [State] handleUndoneReservation | Undone reservation for $reservedSlotnum with TOKENID $reservedTokenId.") 
+			controller.moveFromReservedToFree(reservedSlotnum)
+			resource.notify(controller.getJsonStatus())
+		#]
+		}
+		println("[parkingslotscontroller] | [State] handleUndoneReservation | Exit point.") 
+	} Goto wait
+	
+	State handleValidateTokenId {
+		println("[parkingslotscontroller] | [State] handleValidateTokenId | Entry point.") 
+		printCurrentMessage
+		onMsg(validate_tokenid : validate_tokenid(TOKENID)) {
+			[# val TOKENID = payloadArg(0) #]
+			[# var SLOTNUM = -1 #]
+			[# try {
+					SLOTNUM = controller.checkTokenId(TOKENID)
+			   } catch(ignore : Exception) {} #]
+			
+			if [# SLOTNUM < 0 #] {
+				println("[parkingslotscontroller] | [State] handleValidateTokenId | TokenID $TOKENID is not valid.")
+				replyTo validate_tokenid with invalid_tokenid : invalid_tokenid(X)
+			} else {
+				println("[parkingslotscontroller] | [State] handleValidateTokenId | TokenID $TOKENID is valid.")
+				replyTo validate_tokenid with valid_tokenid : valid_tokenid($SLOTNUM)
+			}
+		}
+		println("[parkingslotscontroller] | [State] handleValidateTokenId | Exit point.") 
+	} Goto wait
+	
+	State handleFreeParkingSlot {
+		println("[parkingslotscontroller] | [State] handleFreeParkingSlot | Entry point.") 
+		printCurrentMessage
+		onMsg(free_parking_slot : free_parking_slot(SLOTNUM,TOKENID)) {
+		[#
+			val SLOTNUM = payloadArg(0)
+			val TOKENID = payloadArg(1)
+			println("[parkingslotscontroller] | [State] handleFreeParkingSlot | Move from engaged to free parking slot $SLOTNUM.")
+			controller.moveFromEngagedToFree(TOKENID)
+			resource.notify(controller.getJsonStatus())
+		#]
+		}
+		println("[parkingslotscontroller] | [State] handleFreeParkingSlot | Exit point.") 
+	} Goto wait
+	
+	State handleReset {
+		println("[parkingslotscontroller] | [State] handleReset | Entry point.") 
+		printCurrentMessage
+		onMsg(reset : reset(X)) {
+		[#
+			controller.reset()
+			resource.notify(controller.getJsonStatus())
+		#]
+		}
+		println("[parkingslotscontroller] | [State] handleReset | Exit point.") 
+	} Goto wait
+	
+
+}
+
+
+QActor thermometerfilter context ctxbusinesslogic {
+	
+	[# 
+		var TMAX : Int = 0
+
+            var high = false
+		
+		val resource = itunibo.qakobserver.FactoryQakResource.create(myself)
+		
+		val thermometerObserver = itunibo.qakobserver.FactoryQakObserver.create(myself, "thermometer", itunibo.automatedcarparking.parkingarea.ParkingAreaTemperatureAutoMessage)
+		
+		fun getJsonStatus() : String {
+			return "status"
+		}
+	#]
+	
+	State init initial {
+		[# thermometerObserver.observe() #] 
+		[# TMAX = config.TMAX #]  
+            // TODO read TMAX from configuration file
+		[# resource.notify(getJsonStatus()) #]
+	} Goto loop
+	
+	State loop {
+		onMsg (auto_parking_area_temperature : auto_parking_area_temperature(T)) {
+			printCurrentMessage
+			[# val T = payloadArg(0).toInt() #]
+			[# var update_status = false #]
+			if [# T > TMAX && !high #] {
+				[# high = true #]
+				[# update_status = true #]
+			}
+			if [# T <= TMAX && high #] {
+				[# high = false #]
+				[# update_status = true #]
+			}
+			
+			if [# update_status #] {
+				[# resource.notify(getJsonStatus()) #]
+			}
+		}
+	} Transition t0
+	whenMsg auto_parking_area_temperature -> loop
+}
+
+QActor fancontroller context ctxbusinesslogic {
+	[# 
+		var send_on = false
+		var send_command = false
+
+            var status_on = false
+            var status_automatic = false
+            var status_failure = "X"
+		
+		val resource = itunibo.qakobserver.FactoryQakResource.create(myself)
+		
+		val thermometerfilterObserver = itunibo.qakobserver.FactoryQakObserver.create(myself, "thermometerfilter", itunibo.automatedcarparking.parkingarea.ParkingAreaTemperatureLevelAutoMessage)
+		
+		fun getJsonStatus() : String {
+			return "status"
+		}
+	#]
+	
+	State init initial {
+		[# resource.notify(getJsonStatus()) #]
+	} Goto wait
+	
+	State wait {
+	} Transition t0
+	whenMsg     manager_fan_on  ->  handleCommand
+	whenMsg     manager_fan_off ->  handleCommand
+	whenMsg     manager_fan_manual_mode -> handleMode
+	whenMsg     manager_fan_automatic_mode -> handleMode
+	whenMsg     auto_parking_area_temperature_level -> handleCommand
+
+	State handleCommand {
+		if [# status_automatic #] {
+			onMsg (auto_parking_area_temperature_level : auto_parking_area_temperature_level(LEVEL)) {
+				[# val HIGH = payloadArg(0).toBoolean() #]
+				if [# status_on && !HIGH #] {
+					[# send_command = true #]
+					[# send_on = false #]
+				}
+				if [# !status_on && HIGH #] {
+					[# send_command = true #]
+					[# send_on = true #]
+				}
+			}
+		} else {
+			onMsg (manager_fan_on : manager_fan_on(X)) {
+				[# send_command = true #]
+				[# send_on = true #]
+			}
+			onMsg (manager_fan_off : manager_fan_off(X)) {
+				[# send_command = true #]
+				[# send_on = false #]
+			}
+		}
+	} Goto sendFanCommand if [# send_command #] else wait
+	
+	State handleMode {
+		[# var update_status = false #]
+		if [# status_automatic #] {
+			onMsg (manager_fan_manual_mode : manager_fan_manual_mode(X)) {
+				[# status_automatic = false #]
+				[# update_status = true #]
+				[# thermometerfilterObserver.cancel() #]
+			}
+		} else {
+			onMsg (manager_fan_automatic_mode : manager_fan_automatic_mode(X)) {
+				[# status_automatic = true #]
+				[# update_status = true #]
+				[# thermometerfilterObserver.observe() #]
+			}
+		}
+		
+		if [# update_status #] {
+			[# resource.notify(getJsonStatus()) #]
+		}
+	} Goto wait
+	
+	State sendFanCommand {
+		[# send_command = false #]
+		if [# send_on #] {
+			request fan -m fan_on : fan_on(X)
+		} else {
+			request fan -m fan_off : fan_off(X)
+		}
+	} Transition t1
+	whenReply fan_done -> handleFanReply
+	whenReply fan_fail -> handleFanReply
+	
+	State handleFanReply {
+		[# var update_status = false #]
+		onMsg (fan_done : fan_done(X)) {
+			if [# send_on && !status.on #] {
+				[# update_status = true #]
+				[# status_on = true #]
+				[# status_failure = "X" #]
+			} 
+			if [# !send_on && status.on #] {
+				[# update_status = true #]
+				[# status_on = false #]
+				[# status_failure = "X" #]
+			}
+		}
+		onMsg (fan_fail : fan_fail(REASON)) {
+			[# val REASON = payloadArg(0) #]
+			[# status_failure = REASON #]
+			[# update_status = true #]
+		}
+		
+		if [# update_status #] {
+			[# resource.notify(getJsonStatus()) #]
+		}
+	} Goto wait
+}
+
+QActor transporttrolley context ctxbusinesslogic {
+	
+	[# 
+		var DESTINATION = "HOME"
+		var car_taken_over = false
+		var handling_job = false
+		var auto_back_to_home = false
+		val resource = itunibo.qakobserver.FactoryQakResource.create(myself)
+		lateinit var status : itunibo.automatedcarparking.transporttrolley.TransportTrolleyStatus
+		val jsonStatus = itunibo.automatedcarparking.utilities.JsonStatus
+		lateinit var planner : itunibo.automatedcarparking.transporttrolley.planner.IPlanner
+		val basicRobotUtil = itunibo.automatedcarparking.transporttrolley.basicrobot.BasicRobotUtility
+		lateinit var watchdog : itunibo.qakutils.watchdog.Watchdog
+		val transportTrolleyRolodex = itunibo.automatedcarparking.rolodex.TransportTrolleyRolodex
+		
+		lateinit var config : itunibo.automatedcarparking.transporttrolley.TransportTrolleyConfiguration
+	#]
+	  
+	State init initial {
+		println("[transporttrolley] | [State] init | Entry point.") 
+		[#
+			config = itunibo.automatedcarparking.configuration.TransportTrolleyConfigurationReader.read(transportTrolleyRolodex.filenameConfiguration)
+			basicRobotUtil.setStepMoveDuration(config.stepMoveDuration)
+			watchdog = itunibo.qakutils.watchdog.Watchdog(myself, config.timeLimitBackToHome, itunibo.automatedcarparking.transporttrolley.BackToHomeAutoMessage)
+			planner = itunibo.automatedcarparking.transporttrolley.planner.PlannerFactory.create()
+			planner.setPosition("HOME")
+			val homePosition = planner.getCurrentPosition()
+			status = itunibo.automatedcarparking.transporttrolley.TransportTrolleyStatus(stopped=false, idle=true, moveFailed=false, coordinate=homePosition)
+			resource.notify(jsonStatus.getJsonString(status))
+		#]
+		println("[transporttrolley] | [State] init | Exit point.") 
+	} Goto wait
+	
+	State wait {
+		println("[transporttrolley] | [State] wait | Entry point.") 	
+		println("[transporttrolley] | [State] wait | Exit point.") 
+	} Transition t0
+	whenMsg     transport_trolley_start                                                     -> handleResumableMessages
+	whenMsg     transport_trolley_stop                                                      -> handleResumableMessages
+	whenRequest transport_trolley_new_job       and [# !status.stopped && !handling_job #]  -> handleNewJob // maybe sent by multiple QActors
+	whenRequest transport_trolley_go_to         and [# !status.stopped #]                   -> handleNewDestination
+	whenMsg     move_done                       and [# !status.stopped #]                   -> handleMoveReply
+	whenMsg     move_fail                       and [# !status.stopped #]                   -> handleMoveReply
+	whenReply   stepdone                                                                    -> convertStepReply
+	whenReply   stepfail                                                                    -> convertStepReply
+	whenRequest transport_trolley_take_over_car and [# !status.stopped #]                   -> handleCarTask
+	whenRequest transport_trolley_release_car   and [# !status.stopped #]                   -> handleCarTask
+	whenMsg     transport_trolley_job_done                                                  -> handleJobDone
+	whenMsg     auto_transport_trolley_go_home  and [# !status.stopped #]                   -> handleGoHome
+	
+	State handleResumableMessages {
+		println("[transporttrolley] | [State] handleResumableMessages | Entry point.") 
+		onMsg(transport_trolley_start : transport_trolley_start(X)) {
+			println("[transporttrolley] | [State] handleResumableMessages | Received START!.") 
+			[# status.stopped = false #] 
+			
+			if [# status.moveFailed #] {
+				println("[transporttrolley] | [State] handleResumableMessages | Last move is failed, reposition transport trolley at HOME!.") 
+				[# planner.setPosition("HOME") #]
+				[# status.coordinate = planner.getCurrentPosition() #]
+				if [# !DESTINATION.equals("HOME", true) #] {
+					println("[transporttrolley] | [State] handleResumableMessages | Uh, need to replan a path to $DESTINATION starting from HOME...") 
+					[# planner.buildPlan(DESTINATION) #]
+				} else {
+					println("[transporttrolley] | [State] handleResumableMessages | Uh, destination is HOME and I am arrived at HOME now!") 
+					if [# handling_job #] {
+						replyTo transport_trolley_go_to with transport_trolley_arrived_at : transport_trolley_arrived_at(HOME)
+					} else {
+						[# status.idle = true #]
+					}
+				}
+				[# auto_back_to_home = false #]
+				[# status.moveFailed = false #]
+			}
+			
+			if [# !planner.isWaitingMoveResult() #] {
+				[# 
+				val move = planner.nextMove()
+				move?.let {
+					println("[transporttrolley] | [State] handleResumableMessages | Doing move $move...")
+					basicRobotUtil.sendMove(myself, move)
+				}
+				#]
+			}
+		}
+		onMsg(transport_trolley_stop : transport_trolley_stop(X)) {
+			println("[transporttrolley] | [State] handleResumableMessages | Received STOP!.") 
+			[# status.stopped = true #]
+		}
+		
+		// update status
+		[# resource.notify(jsonStatus.getJsonString(status))#]
+		
+		println("[transporttrolley] | [State] handleResumableMessages | Exit point.") 
+	} Goto wait
+	
+	State convertStepReply {
+		println("[transporttrolley] | [State] convertStepReply | Entry point.") 
+		
+		onMsg (stepdone : stepdone(X)) {
+			println("[transporttrolley] | [State] convertStepReply | Received stepdone!") 
+			// change reply stepdone into dispatch move_done
+			[# myself.scope.launch { myself.autoMsg("move_done", "move_done(w)") } #]
+		}
+		onMsg (stepfail : stepfail(DURATION,CAUSE)) {
+			// change reply stepfail into dispatch move_fail
+			[# val DURATION = payloadArg(0) #]
+			[# val CAUSE = payloadArg(1) #]
+			println("[transporttrolley] | [State] convertStepReply | Received stepfail with {duration: $DURATION ms, cause: $CAUSE}...") 
+			[# myself.scope.launch { myself.autoMsg("move_fail", "move_fail(w,$DURATION,$CAUSE)") } #]
+		}
+		println("[transporttrolley] | [State] convertStepReply | Exit point.") 
+	} Goto wait
+	
+	State handleMoveReply { 
+		println("[transporttrolley] | [State] handleMoveReply | Entry point.") 
+		[# var doUpdate = false #]
+		onMsg(move_done : move_done(MOVE)) {
+			println("[transporttrolley] | [State] handleMoveReply | Move done.")
+			[#
+				val MOVE_DONE = payloadArg(0)
+				planner.moveDone()
+				status.moveFailed = false
+				
+				if (config.updatePositionAfterEachStep) {
+					if (MOVE_DONE.equals("w", true)) {
+						status.coordinate = planner.getCurrentPosition()
+						doUpdate = true
+					}
+				} 
+				
+				
+				val move = planner.nextMove()
+				if (move != null) {
+					println("[transporttrolley] | [State] handleMoveReply | Doing move $move...")
+					basicRobotUtil.sendMove(myself, move)
+				} else {
+					
+					// reached destination...
+					println("[transporttrolley] | [State] handleMoveReply | Reached destination $DESTINATION!") 
+					
+					if (!DESTINATION.equals("HOME", true) || !auto_back_to_home) {
+					#]
+						replyTo transport_trolley_go_to with transport_trolley_arrived_at : transport_trolley_arrived_at($DESTINATION)
+					[#
+					}
+					
+					if (DESTINATION.equals("HOME", true) && auto_back_to_home) {
+						status.idle = true
+					}
+					
+					auto_back_to_home = false
+					status.coordinate = planner.getCurrentPosition()
+					
+					doUpdate = true
+				}
+			#]
+			
+		}
+		onMsg(move_fail : move_fail(MOVE,DURATION,CAUSE)) {
+			[# val CAUSE = payloadArg(2) #]
+			println("[transporttrolley] | [State] handleMoveReply | Failure: $CAUSE.") 
+			
+			[# planner.moveFail() #]
+			[# status.stopped = true #]
+			[# status.moveFailed = true #]
+			
+			[# doUpdate = true #]
+		}
+		
+		if [# doUpdate #] {
+			// update status
+			[# resource.notify(jsonStatus.getJsonString(status)) #]
+		}
+		
+		println("[transporttrolley] | [State] handleMoveReply | Exit point.") 
+	} Goto wait
+	
+	State handleNewJob {
+		println("[transporttrolley] | [State] handleNewJob | Entry point.") 
+		[# handling_job = true #]
+		[# watchdog.stop() #]
+		[# status.idle = false #]
+		[# resource.notify(jsonStatus.getJsonString(status)) #]
+		replyTo transport_trolley_new_job with transport_trolley_job_accepted : transport_trolley_job_accepted(X)
+		println("[transporttrolley] | [State] handleNewJob | Exit point.") 
+	} Goto wait
+	
+	State handleNewDestination {
+		println("[transporttrolley] | [State] handleNewDestination | Entry point.") 
+		onMsg (transport_trolley_go_to : transport_trolley_go_to(DESTINATION)) {
+		[#
+			DESTINATION = payloadArg(0)
+			println("[transporttrolley] | [State] handleNewDestination | Received destination: $DESTINATION.") 
+			val ok = planner.buildPlan(DESTINATION)
+			if (ok) {
+				println("[transporttrolley] | [State] handleNewDestination | Known destination!.") 
+				if (!planner.isWaitingMoveResult()) {
+					val move = planner.nextMove()
+					if (move != null) {
+						println("[transporttrolley] | [State] handleNewDestination | Doing move $move...")
+						basicRobotUtil.sendMove(myself, move)
+					} else {
+						#]
+						println("[transporttrolley] | [State] handleNewDestination | I'm already at $DESTINATION...") 
+						replyTo transport_trolley_go_to with transport_trolley_arrived_at : transport_trolley_arrived_at($DESTINATION)
+						[#
+					}
+				}
+				// else the first move of the new plan will be handled when the current move terminates...
+			} else {
+				println("[transporttrolley] | [State] handleNewDestination | Unknown destination...") 
+				#]
+				replyTo transport_trolley_go_to with transport_trolley_error : transport_trolley_error(UNKNOWN_DESTINATION)
+				[#
+			}
+			
+			auto_back_to_home = false
+		#]
+		}
+
+		println("[transporttrolley] | [State] handleNewDestination | Exit point.") 
+	} Goto wait
+
+	State handleJobDone {
+		println("[transporttrolley] | [State] handleJobDone | Entry point.") 
+		[# handling_job = false #]
+		if [# planner.isHomePosition(planner.getCurrentPosition()) #] {
+			[# status.idle = true #]
+		} else {
+			[# watchdog.start() #]
+		}
+		println("[transporttrolley] | [State] handleJobDone | Exit point.") 
+	} Goto wait
+	
+	State handleGoHome {
+		println("[transporttrolley] | [State] handleGoHome | Entry point.") 
+		if [# !handling_job #] {
+		[#
+			DESTINATION = "HOME"
+			planner.buildPlan("HOME")
+			auto_back_to_home = true
+			
+			if (!planner.isWaitingMoveResult()) {
+				val move = planner.nextMove() 
+			
+				if (move != null) {
+					println("[transporttrolley] | [State] handleGoHome | Doing move $move...")
+					basicRobotUtil.sendMove(myself, move)
+				} else {
+					println("[transporttrolley] | [State] handleGoHome | I'm already at HOME...")
+					auto_back_to_home = false
+				}
+			}
+			
+		#]
+		} else {
+			println("[transporttrolley] | [State] handleGoHome | Skipping auto back to HOME because I'm handling another job...")
+		}
+		println("[transporttrolley] | [State] handleGoHome | Exit point.") 
+	} Goto wait
+	
+	State handleCarTask {
+		println("[transporttrolley] | [State] handleCarTask | Entry point.")
+		onMsg(transport_trolley_take_over_car : transport_trolley_take_over_car(X)) {
+			if [# !car_taken_over #] {
+				println("[transporttrolley] | [State] handleCarTask | Taking over car...")
+				delay 1000
+				[# car_taken_over = true #]
+				println("[transporttrolley] | [State] handleCarTask | Car taken over!")
+				replyTo transport_trolley_take_over_car with transport_trolley_car_taken_over : transport_trolley_car_taken_over(X)
+			} else {
+				[# val REASON = "CANNOT TAKE OVER MORE THAN ONE CAR"#]
+				replyTo transport_trolley_take_over_car with transport_trolley_error : transport_trolley_error($REASON)
+			}
+
+		}
+		onMsg(transport_trolley_release_car : transport_trolley_release_car(X)) {
+			if [# car_taken_over #] {
+				println("[transporttrolley] | [State] handleCarTask | Releasing car...")
+				delay 1000
+				[# car_taken_over = false #]
+				println("[transporttrolley] | [State] handleCarTask | Car released!")
+				replyTo transport_trolley_release_car with transport_trolley_car_released : transport_trolley_car_released(X)
+			} else {
+				[# val REASON = "NO CAR TAKED OVER" #]
+				replyTo transport_trolley_release_car with transport_trolley_error : transport_trolley_error($REASON)		
+			}
+		}
+		println("[transporttrolley] | [State] handleCarTask | Exit point.") 
+	} Goto wait
+	
+}
+
+QActor statusaggregator context ctxbusinesslogic {
+	[#
+		val resource = itunibo.qakobserver.FactoryQakResource.create(myself)
+
+            var weightsensor_on = false
+            var outsonar_on = false
+		
+            // support classes for Aggregator* messages will be defined in project phase. here we just setup the "skeleton"
+		val weightsensorObserver = itunibo.qakobserver.FactoryQakObserver.create(myself, "weightsensor", itunibo.automatedcarparking.parkingarea.AggregatorWeightSensorAutoMessage)
+		val outsonarObserver = itunibo.qakobserver.FactoryQakObserver.create(myself, "outsonar", itunibo.automatedcarparking.parkingarea.AggregatorOutSonarAutoMessage)
+		val thermometerObserver = itunibo.qakobserver.FactoryQakObserver.create(myself, "thermometer", itunibo.automatedcarparking.parkingarea.AggregatorThermometerAutoMessage)
+		val indoorcontrollerObserver = itunibo.qakobserver.FactoryQakObserver.create(myself, "indoorcontroller", itunibo.automatedcarparking.parkingarea.AggregatorIndoorControllerAutoMessage)
+		val outdoorcontrollerObserver = itunibo.qakobserver.FactoryQakObserver.create(myself, "outdoorcontroller", itunibo.automatedcarparking.parkingarea.AggregatorOutdoorControllerAutoMessage)
+		val parkingslotscontrollerObserver = itunibo.qakobserver.FactoryQakObserver.create(myself, "parkingslotscontroller", itunibo.automatedcarparking.parkingarea.AggregatorParkingSlotsControllerAutoMessage)
+		val thermometerfilterObserver = itunibo.qakobserver.FactoryQakObserver.create(myself, "thermometerfilter", itunibo.automatedcarparking.parkingarea.AggregatorThermometerFilterAutoMessage)
+		val fancontrollerObserver = itunibo.qakobserver.FactoryQakObserver.create(myself, "fancontroller", itunibo.automatedcarparking.parkingarea.AggregatorFanControllerAutoMessage)
+		val transporttrolleyObserver = itunibo.qakobserver.FactoryQakObserver.create(myself, "transporttrolley", itunibo.automatedcarparking.parkingarea.AggregatorTransportTrolleyAutoMessage)
+
+		fun getJsonStatus() : String {
+			return "status"
+		}
+	#]
+	
+	State init initial {	
+		[# resource.notify(getJsonStatus()) #]
+		[# thermometerObserver.observe() #]
+		[# indoorcontrollerObserver.observe() #]
+		[# outdoorcontrollerObserver.observe() #]
+		[# parkingslotscontrollerObserver.observe() #]
+		[# thermometerfilterObserver.observe() #]
+		[# fancontrollerObserver.observe() #]
+		[# transporttrolleyObserver.observe() #]
+		
+		[# resource.notify(getJsonStatus()) #]
+	} Goto loop
+	
+	State loop {
+		printCurrentMessage
+		if [# weightsensor_on #] {
+			onMsg (weightsensor_info_off : weightsensor_info_off(X)) {
+				[# weightsensor_on = false #]
+				[# weightsensorObserver.cancel() #]
+			}
+			onMsg (auto_aggregator_weightsensor : auto_aggregator_weightsensor(W)) {
+				[# val W = payloadArg(0).toInt() #]
+				// TODO save weight into status
+			}	
+		} else {
+			onMsg (weightsensor_info_on : weightsensor_info_on(X)) {
+				[# weightsensor_on = true #]
+				[# weightsensorObserver.observe() #]
+			}
+		}
+		if [# outsonar_on #] {
+			onMsg (outsonar_info_off : outsonar_info_off(X)) {
+				[# outsonar_on = false #]
+				[# outsonarObserver.cancel() #]
+			}
+			onMsg (auto_aggregator_outsonar : auto_aggregator_outsonar(D)) {
+				[# val D = payloadArg(0).toInt() #]
+				// TODO save distance into status
+			}
+		} else {
+			onMsg (outsonar_info_on : outsonar_info_on(X)) {
+				[# status.outsonarOn = true #]
+				[# outsonarObserver.observe() #]
+			}
+		}
+		onMsg (auto_aggregator_thermometer : auto_aggregator_thermometer(T)) {
+			[# val T = payloadArg(0).toInt() #]
+			// TODO save temperature into status
+		}
+		onMsg (auto_aggregator_indoorcontroller : auto_aggregator_indoorcontroller(RESERVED,ENGAGEDBYCAR,CARENTERTIMEOUTALARM)) {
+			[# val indoorAreaReserved = payloadArg(0).toBoolean() #]
+			[# val indoorAreaEngaged = payloadArg(1).toBoolean() #]
+			[# val indoorAreaCarEnterTimeoutAlarm = payloadArg(2).toBoolean() #]
+                  // TODO save indoor area info into status
+		}
+		onMsg (auto_aggregator_outdoorcontroller : auto_aggregator_outdoorcontroller(RESERVED,ENGAGEDBYCAR,DTFREETIMEOUTALARM)) {
+			[# val outdoorAreaReserved = payloadArg(0).toBoolean() #]
+			[# val outdoorAreaEngaged = payloadArg(1).toBoolean() #]
+			[# val outdoorAreaDTFREETimeoutAlarm = payloadArg(2).toBoolean() #]
+                  // TODO save outdoor area info into status
+		}
+		onMsg (auto_aggregator_parkingslotscontroller : auto_aggregator_parkingslotscontroller(P1,P2,P3,P4,P5,P6)) {
+			[#
+				// TODO reset parking slots status
+				for (i in 1..6) {
+					val PiStatus = payloadArg(i-1)
+                              // TODO save parking slot i info into status
+				}
+			#]
+		} 
+		onMsg (auto_aggregator_thermometerfilter : auto_aggregator_thermometerfilter(HIGH)) {
+			[# val parkingAreaTemperatureHigh = payloadArg(0).toBoolean() #]
+                  // TODO save temperature info into status
+		}
+		onMsg (auto_aggregator_fancontroller : auto_aggregator_fancontroller(ON,AUTOMATIC,FAILUREREASON)) {
+			[# val fanOn = payloadArg(0).toBoolean() #]
+			[# val fanAutomatic = payloadArg(1).toBoolean() #]
+			[# val fanFailureReason = payloadArg(2) #]
+                  // TODO save fan info into status
+		}
+		onMsg (auto_aggregator_transporttrolley : auto_aggregator_transporttrolley(STOPPED,IDLE,MOVEFAILED,COLUMN,ROW,DIRECTION)) {
+			[# val transportTrolleyStopped = payloadArg(0).toBoolean() #]
+			[# val transportTrolleyIdle = payloadArg(1).toBoolean() #]
+			[# val transportTrolleyMoveFailed = payloadArg(2).toBoolean() #]
+			[# val transportTrolleyCoordinate.column = payloadArg(3).toInt() #]
+			[# val transportTrolleyCoordinate.row = payloadArg(4).toInt() #]
+			[# val transportTrolleyCoordinate.direction = payloadArg(5) #]
+                  // TODO save transport trolley info into status
+		}
+		[# resource.notify(getJsonStatus()) #]
+	} Transition t0
+	whenMsg weightsensor_info_on -> loop
+	whenMsg weightsensor_info_off -> loop
+	whenMsg outsonar_info_on -> loop
+	whenMsg outsonar_info_off -> loop
+	whenMsg auto_aggregator_weightsensor -> loop
+	whenMsg auto_aggregator_outsonar -> loop
+	whenMsg auto_aggregator_thermometer -> loop
+	whenMsg auto_aggregator_indoorcontroller -> loop
+	whenMsg auto_aggregator_outdoorcontroller -> loop
+	whenMsg auto_aggregator_parkingslotscontroller -> loop
+	whenMsg auto_aggregator_thermometerfilter -> loop
+	whenMsg auto_aggregator_fancontroller -> loop
+	whenMsg auto_aggregator_transporttrolley -> loop
+}
+
+QActor managercontroller context ctxbusinesslogic {
+
+	State init initial {
+	} Goto loop
+	
+	State loop {
+		printCurrentMessage
+		onMsg (manager_fan_automatic_mode : manager_fan_automatic_mode(X)) {
+			forward fancontroller -m manager_fan_automatic_mode : manager_fan_automatic_mode(X)
+		}
+		onMsg (manager_fan_manual_mode : manager_fan_manual_mode(X)) {
+			forward fancontroller -m manager_fan_manual_mode : manager_fan_manual_mode(X)
+		}
+		onMsg (manager_fan_on : manager_fan_on(X)) {
+			forward fancontroller -m manager_fan_on : manager_fan_on(X)
+		}
+		onMsg (manager_fan_off : manager_fan_off(X)) {
+			forward fancontroller -m manager_fan_off : manager_fan_off(X)
+		}
+		onMsg (manager_transport_trolley_start : manager_transport_trolley_start(X)) {
+			forward transporttrolley -m transport_trolley_start : transport_trolley_start(X)
+		}
+		onMsg (manager_transport_trolley_stop : manager_transport_trolley_stop(X)) {
+			forward transporttrolley -m transport_trolley_stop : transport_trolley_stop(X)
+		}
+		onMsg (weightsensor_info_on : weightsensor_info_on(X)) {
+			forward statusaggregator -m weightsensor_info_on : weightsensor_info_on(X)
+		}
+		onMsg (weightsensor_info_off : weightsensor_info_off(X)) {
+			forward statusaggregator -m weightsensor_info_off : weightsensor_info_off(X)
+		}
+		onMsg (outsonar_info_on : outsonar_info_on(X)) {
+			forward statusaggregator -m outsonar_info_on : outsonar_info_on(X)
+		}
+		onMsg (outsonar_info_off : outsonar_info_off(X)) {
+			forward statusaggregator -m outsonar_info_off : outsonar_info_off(X)
+		}
+	} Transition t0
+	whenMsg manager_fan_automatic_mode -> loop
+	whenMsg manager_fan_manual_mode -> loop
+	whenMsg manager_fan_on -> loop
+	whenMsg manager_fan_off -> loop
+	whenMsg manager_transport_trolley_start -> loop
+	whenMsg manager_transport_trolley_stop -> loop
+	whenMsg weightsensor_info_on -> loop
+	whenMsg weightsensor_info_off -> loop
+	whenMsg outsonar_info_on -> loop
+	whenMsg outsonar_info_off -> loop
+}
