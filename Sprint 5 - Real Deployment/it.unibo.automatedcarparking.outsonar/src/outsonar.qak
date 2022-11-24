@@ -1,0 +1,73 @@
+/*
+ * ==================================
+ * ================================== | ROUTINE OUTSONAR MEASURE DISTANCE
+ * ==================================
+ * outsonar                           | received input_distance(D)
+ *                                    | update observers with new distance D
+ * 
+ */
+System systemoutsonar
+
+Dispatch  input_distance  : input_distance(D)
+
+Request   outsonar_config : outsonar_config(X)
+Reply     outsonar_real : outsonar_real(X)
+Reply     outsonar_virtual : outsonar_virtual(X)
+
+Context ctxoutsonar        ip [host="localhost" port=8061] 
+
+
+QActor outsonar context ctxoutsonar {
+	
+	[# 
+		val gson = com.google.gson.Gson()
+		val resource = itunibo.qakobserver.FactoryQakResource.create(myself)
+		
+		lateinit var support : itunibo.automatedcarparking.outsonar.OutSonarSupport
+		
+		fun getJsonDistance(distance : Int) : String {
+		return gson.toJson(itunibo.automatedcarparking.outsonar.Distance(distance))
+		}
+	#]
+
+	State init initial {
+		println("[outsonar] | [State] init | Entry point.")
+		
+		[# resource.notify(getJsonDistance(200)) #]
+		
+		[# support = itunibo.automatedcarparking.outsonar.OutSonarSupport(myself) #]
+		
+		println("[outsonar] | [State] init | Exit point.")
+	} Goto wait
+	
+	State wait {
+		println("[outsonar] | [State] wait | Entry point.")
+		println("[outsonar] | [State] wait | Exit point.")
+	} Transition t0
+	whenMsg     input_distance -> updateDistance
+	whenRequest outsonar_config -> getConfig
+	
+	State updateDistance {
+		println("[outsonar] | [State] updateDistance | Entry point.")
+		onMsg(input_distance : input_distance(D)) {
+			[# var D = payloadArg(0).toInt() #]
+			println("[outsonar] | [State] updateDistance | Distance: $D cm.")
+			[# resource.notify(getJsonDistance(D)) #]
+		} // end onMsg
+		
+		println("[outsonar] | [State] updateDistance | Exit point.")
+	} Goto wait
+	
+	State getConfig {
+	        println("[outsonar] | [State] getConfig | Entry point.")
+		onMsg(outsonar_config : outsonar_config(X)) {
+		        if [# support.isVirtual() #] {
+		            replyTo outsonar_config with outsonar_virtual : outsonar_virtual(X)
+		        } else {
+		            replyTo outsonar_config with outsonar_real : outsonar_real(X)
+		        }
+		} // end onMsg
+		
+		println("[outsonar] | [State] getConfig | Exit point.")
+	} Goto wait
+}

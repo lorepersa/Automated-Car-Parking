@@ -1,0 +1,6 @@
+version: '3'
+services:
+  fan:
+    image: docker.io/lorenzopersampieri/fan:manifest-arm32v7
+    privileged: true
+    network_mode: "host"

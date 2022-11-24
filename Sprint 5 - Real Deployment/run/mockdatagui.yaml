@@ -1,0 +1,5 @@
+version: '3'
+services:
+  mockdatagui:
+    image: docker.io/lorenzopersampieri/mockdatagui
+    network_mode: "host"

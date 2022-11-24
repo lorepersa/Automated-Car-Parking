@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MockDataGUI</title>
+    <script src="/sockjs.min.js"></script>
+    <script src="/stomp.min.js"></script>
+    <script src="/mockdatagui.js"></script>
+    <style>
+      .slidecontainer {
+      width: 100%; /* Width of the outside container */
+      }
+
+      /* The slider itself */
+      .slider {
+      -webkit-appearance: none;  /* Override default CSS styles */
+      appearance: none;
+      width: 100%; /* Full-width */
+      height: 25px; /* Specified height */
+      background: #d3d3d3; /* Grey background */
+      outline: none; /* Remove outline */
+      opacity: 0.7; /* Set transparency (for mouse-over effects on hover) */
+      -webkit-transition: .2s; /* 0.2 seconds transition on hover */
+      transition: opacity .2s;
+      }
+
+      /* Mouse-over effects */
+      .slider:hover {
+      opacity: 1; /* Fully shown on mouse-over */
+      }
+
+      /* The slider handle (use -webkit- (Chrome, Opera, Safari, Edge) and -moz- (Firefox) to override default look) */
+      .slider::-webkit-slider-thumb {
+      -webkit-appearance: none; /* Override default look */
+      appearance: none;
+      width: 25px; /* Set a specific slider handle width */
+      height: 25px; /* Slider handle height */
+      background: #04AA6D; /* Green background */
+      cursor: pointer; /* Cursor on hover */
+      }
+
+      .slider::-moz-range-thumb {
+      width: 25px; /* Set a specific slider handle width */
+      height: 25px; /* Slider handle height */
+      background: #04AA6D; /* Green background */
+      cursor: pointer; /* Cursor on hover */
+      }
+
+      #thermometer.slider::-webkit-slider-thumb, #thermometer.slider::-moz-range-thumb{
+        background: red; /* Red background */
+      }
+
+      /* HIDDEN */
+      .hidden { visibility: hidden; display: none; }
+
+    </style>
+</head>
+<body>
+  <div class="slidecontainer">
+    <div id="weightsensor-mock">
+      <h2>WEIGHT SENSOR</h2>
+      <input type="range" min="1" max="1000" value="50" class="slider" id="weightsensor"></input>
+      <span id="weightsensor_value"></span><span> kg</span>
+    </div>
+    <div id="outsonar-mock">
+      <h2>OUT SONAR</h2>
+      <input type="range" min="1" max="1000" value="950" class="slider" id="outsonar"></input>
+      <span id="outsonar_value"></span><span> cm</span>
+    </div>
+    <div id="thermometer-mock">
+      <h2>THERMOMETER</h2>
+      <input type="range" min="0" max="50" value="25" class="slider" id="thermometer"></input>
+      <span id="thermometer_value"></span><span> °C</span>
+    </div>
+    <h2>PARKING SLOTS CONTROLLER</h2>
+    <button type="button" id="reset_parkingslots_button">Reset parking slots</button>
+  </div>
+</body>
+</html>

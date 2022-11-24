@@ -1,0 +1,6 @@
+version: '3'
+services:
+  outsonar:
+    image: docker.io/lorenzopersampieri/outsonar:manifest-arm32v7
+    privileged: true
+    network_mode: "host"

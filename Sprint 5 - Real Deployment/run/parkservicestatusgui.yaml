@@ -1,0 +1,5 @@
+version: '3'
+services:
+  parkservicestatusgui:
+    image: docker.io/lorenzopersampieri/parkservicestatusgui
+    network_mode: "host"

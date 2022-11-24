@@ -1,0 +1,5 @@
+version: '3'
+services:
+  weightsensor:
+    image: docker.io/lorenzopersampieri/weightsensor:manifest-arm32v7
+    network_mode: "host"

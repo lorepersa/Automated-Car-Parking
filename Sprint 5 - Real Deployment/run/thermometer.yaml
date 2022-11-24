@@ -1,0 +1,5 @@
+version: '3'
+services:
+  thermometer:
+    image: docker.io/lorenzopersampieri/thermometer:manifest-arm32v7
+    network_mode: "host"

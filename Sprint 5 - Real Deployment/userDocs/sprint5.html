@@ -1,0 +1,648 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+    <!--
+<link rel="stylesheet" type="text/css" href="../css/issStyle1.css">
+<script type="text/javascript" src="../css/issStyle.js"></script>
+-->
+
+<head>
+  <link href="style/style.css" rel="stylesheet" type="text/css">
+  <title>Sprint 5 - Real Deployment</title>
+
+  <style>
+  #step-a { list-style-type: none; counter-reset: elementcounter; padding-left: 0; margin-left: 2em; }
+  #step-a li:before { content: "a." counter(elementcounter) ") "; counter-increment: elementcounter; font-weight: bold; margin-left: -1.8em; }
+  #step-b { list-style-type: none; counter-reset: elementcounter; padding-left: 0; margin-left: 2em; }
+  #step-b li:before { content: "b." counter(elementcounter) ") "; counter-increment: elementcounter; font-weight: bold; margin-left: -1.8em; }
+  #step-c { list-style-type: none; counter-reset: elementcounter; padding-left: 0; margin-left: 2em; }
+  #step-c li:before { content: "c." counter(elementcounter) ") "; counter-increment: elementcounter; font-weight: bold; margin-left: -1.8em; }
+  </style>
+</head>
+
+<body>
+  <div id="top">
+    <h1>LABORATORIO DI INGEGNERIA DEI SISTEMI SOFTWARE <font size="5"></font> </h1>
+  </div>
+
+  <div class="body">
+    <h2>Introduction</h2>
+
+
+    <h2 id="requirements">Requirements</h2>
+    <div class="remark">
+    Customer's requirements are available <a href="https://raw.githubusercontent.com/anatali/issLab2021/main/it.unibo.issLabStart/userDocs/TFBO21ISS.pdf">here</a>.
+    </div>
+
+    <h2 id="requirement-analysis">Requirement analysis</h2>
+    <div class="remark">
+    Requirements analysis is available <a href="../../Requirements%20Analysis/Requirements%20analysis.html">here</a>.
+    </div>
+
+    <h2 id="first-problem-analysis">First Problem Analysis</h2>
+    <div class="remark">
+    A First Problem analysis is available <a href="../../First%20Problem%20Analysis/userDocs/First%20Problem%20Analysis.html">here</a>.
+    </div>
+
+    <h2 id="sprint-1">Sprint 1</h2>
+    <div class="remark">
+    Sprint 1 is available <a href="../../Sprint%201%20-%20TransportTrolley/userDocs/sprint1.html">here</a>.
+    </div>
+
+    <h2 id="sprint-2">Sprint 2</h2>
+    <div class="remark">
+    Sprint 2 is available <a href="../../Sprint%202%20-%20Car%20Parking/userDocs/sprint2.html">here</a>.
+    </div>
+
+    <h2 id="sprint-3">Sprint 3</h2>
+    <div class="remark">
+    Sprint 3 is available <a href="../../Sprint%203%20-%20Car%20Pick%20Up/userDocs/sprint3.html">here</a>.
+    </div>
+
+    <h2 id="sprint-3">Sprint 4</h2>
+    <div class="remark">
+    Sprint 4 is available <a href="../../Sprint%204%20-%20Parking%20Manager/userDocs/sprint4.html">here</a>.
+    </div>
+
+    <h2 id="sprint-backlog">Sprint Backlog</h2>
+    <div class="remark">
+      <h3>Real Deployment</h3>
+      The goals of this sprint are the following:
+      <table>
+        <tr>
+          <th>Description</th>
+          <th>Requirements</th>
+        </tr>
+        <tr>
+          <td>
+            A real device is used for the OutSonar.
+          </td>
+          <td>
+            <a href="../../Requirements%20Analysis/Requirements%20analysis.html#F18">F18</a>, <a href="../../Requirements%20Analysis/Requirements%20analysis.html#NF2">NF2</a>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            The system is deployed in a distributed environment.
+          </td>
+          <td>
+            <a href="../../Requirements%20Analysis/Requirements%20analysis.html#NF5">NF5</a>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <h2 id="summary">Summary</h2>
+    <div class="remark">
+      <ol>
+        <li><a href="#logical-architecture">Logical Architecture</a></li>
+        <li><a href="#real-components">Real Components</a></li>
+        <li><a href="#distributed-system">Distributed System</a></li>
+        <li><a href="#system-configuration">System Configuration</a></li>
+        <li><a href="#test-plan">Test Plan</a></li>
+        <li><a href="#workload-division">Workload Division</a></li>
+        <li><a href="#deployment">Deployment</a></li>
+      </ol>
+    </div>
+
+    <h2 id="logical-architecture">Logical Architecture</h2>
+    <div class="remark">
+      <h3>Sprint 4 Logical Architecture</h3>
+      <p align="center"><a href="./img/legenda.png">Legenda</a></p>
+      <div class="interactions__image">
+        <center>
+          <img src="./img/sprint4_final_logical_architecture.png" alt="sprint4_final_logical_architecture.png">
+        </center>
+      </div>
+    </div>
+
+    <h2 id="real-components">Real Components</h2>
+    <div class="remark">
+      <h3 id="real-outsonar">Real OutSonar</h3>
+      <div>
+        By requirements, the outsonar placed into the outdoor area must be a real one. The real outsonar is deployed on a Raspberry Pi Board. <br>
+        To misure distances we use a <k>HC-SR04 distance sensor</k>. Note that the customer provided us the <a href="https://github.com/anatali/issLab2021/blob/main/it.unibo.rasp2021/resources/rasp/sonar/SonarAlone.c">code</a> to control this sensor by means of a C program. However, we decided to use Python to control the real components of our system, so the code to control the HC-SR04 can be found <a href="../it.unibo.automatedcarparking.outsonar/sonar.py">here</a>.
+        In order to integrate the real sensor in our system we also implemented the <a href="../it.unibo.automatedcarparking.outsonar/resources/itunibo/automatedcarparking/outsonar/RealOutSonarSupport.kt">RealOutSonarSupport.kt</a>
+        which is the object used by the outsonar QActor (only when the configuration is "real") in the way illustrated in <a href="../../Sprint%203%20-%20Car%20Pick%20Up/userDocs/sprint3.html#project-outsonar-configuration">Sprint 3</a>.
+        <br><br>
+        Since the OutSonar configuration could be both real or virtual, we also added the possibility to ask the system in which configuration the outsonar is working.
+        So, when an <k>outsonar_config</k> request is sent, it is replied by means of <k>outsonar_real</k> or <k>outsonar_virtual</k> response.
+        <br>
+        <b>This information is useful to the MockDataGUI</b> in order to show the outsonar distance control slider only when the configuration is "virtual".
+      </div>
+      <h3 id="real-fan">Real Fan</h3>
+      <div>
+        By requirements, the fan is not required to be real. However, since we designed the system to work with both a virtual fan and a real one, and since we obtained such component at no cost, we decided to <b>deploy the system with this
+        additional real component</b> on a Raspberry Pi Board. <br>
+        The <k>real fan</k> is just an on/off component and only a raspberry GPIO pin is required to control it. <br>
+        The code (written in Python) that permits to switch the fan on/off can be found <a href="../it.unibo.automatedcarparking.fan/fan.py">here</a>. <br>
+        In order to integrate the real fan in our system we also implemented the <a href="../it.unibo.automatedcarparking.fan/resources/itunibo/automatedcarparking/fan/RealFanSupport.kt">RealFanSupport.kt</a>
+        which is the object used by the fan QActor (only when the configuration is "real") in the way illustrated in <a href="../../Sprint%204%20-%20Parking%20Manager/userDocs/sprint4.html#project-fan-configuration">Sprint 4</a>.
+      </div>
+
+      <h3 id="raspberry">Raspberry Real Components</h3>
+      <table class="table_no_border" style="text-align: center;">
+        <tr>
+          <td>
+              <div class="in-depth-content" style="width: 568px; height: 590px;">
+                <h4>Electric Circuit</h4>
+                <center>
+                  <img src="./img/raspberry_electric_circuit.png" alt="raspberry_electric_circuit" style="margin-top: 70px; width: 500px;">
+                </center>
+              </div>
+            </center>
+          </td>
+          <td>
+            <center>
+              <div class="in-depth-content" style="width: 568px; height: 590px;">
+                <h4>Schematic Circuit</h4>
+                <center>
+                  <img src="./img/raspberry_schematic_circuit.png" alt="raspberry_schematic_circuit" style="width:500px">
+                </center>
+              </div>
+            </center>
+          </td>
+        </tr>
+
+        <tr>
+          <td colspan="2">
+            <div class="in-depth-content" style="width: 50vw; height: 87vh;">
+              <h4>Photo</h4>
+              <center>
+                <img src="./img/raspberry_photo.jpg" alt="raspberry_photo" style="margin-top: 20px; width:600px">
+              </center>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div> <!-- end Test Plan section (</div class="remark">) -->
+
+    <h2 id="distributed-system">Distributed System</h2>
+    <div class="remark">
+      <h3 id="distributed-system">Distributed System</h3>
+      <div>
+        <div class="interactions__image" style="margin-top: 40px;">
+          <center>
+            <img src="./img/sistema_distribuito.png" alt="sistema_distribuito" style="width:55%">
+          </center>
+        </div>
+        <div class="in-depth-content">
+          Each component is deployed in a Docker container. All the containers are publicly available in our <a href="https://hub.docker.com/u/lorenzopersampieri">Docker Hub</a>.<br>
+          For each container there is a different docker-compose file<b>.yaml</b> that allows each component of the distributed system to be started on the desired machine.<br>
+          In addition, we also provide a bash script to start/stop the system in an automatic way. They are mainly intended to be used for the demo we will show to the customer.<br>
+          These .yaml files and the start/stop script can be found in the <a href="../run">run directory</a>.
+        </div>
+      </div>
+      <h3>DNS</h3>
+      <div>
+        We use a local <k>DNS</k> service to simplify the relocation of the distributed system components.<br>
+        Thanks to the hostname-ip mapping service, offered by the DNS, we may in the future change the ip addresss of a device (in which a component resides) without change the configuration of the entire system.<br>
+        <table style="width: 70%;">
+          <tbody>
+            <tr>
+              <th>Component Hostname</th>
+              <th>IP</th>
+            </tr>
+            <tr>
+              <td>weightsensor.iss</td>
+              <td>192.168.1.242</td>
+            </tr>
+            <tr>
+              <td>thermometer.iss</td>
+              <td>192.168.1.242</td>
+            </tr>
+            <tr>
+              <td>outsonar.iss</td>
+              <td>192.168.1.241</td>
+            </tr>
+            <tr>
+              <td>fan.iss</td>
+              <td>192.168.1.241</td>
+            </tr>
+            <tr>
+              <td>mockdatagui.iss</td>
+              <td>192.168.1.230</td>
+            </tr>
+            <tr>
+              <td>parkservicegui.iss</td>
+              <td>192.168.1.230</td>
+            </tr>
+            <tr>
+              <td>parkservicestatusgui.iss</td>
+              <td>192.168.1.230</td>
+            </tr>
+            <tr>
+              <td>basicrobot.iss</td>
+              <td>192.168.1.243</td>
+            </tr>
+            <tr>
+              <td>businesslogic.iss</td>
+              <td>192.168.1.243</td>
+            </tr>
+            <tr>
+              <td>wenv.iss</td>
+              <td>192.168.1.243</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="park-service-gui">Park Service GUI Responsive</h3>
+      <div>
+        Since the <b>Park Service GUI</b> was designed and implemented as a <b>web app</b>, it is reachable from any browser on any type of device. <br>
+        Therefore, in this sprint, we decided to make the Park Service GUI <k>responsive</k>, to improve the user experience of the customer who almost certainly accesses and interacts with this GUI from his smartphone.
+        <br>
+        Here, there are some screenshots of the smartphone view of the Park Service GUI:
+        <br>
+        <table class="table_no_border" style="text-align:center;">
+          <tbody>
+            <tr>
+              <td style="padding-bottom: 0;"><center><img src="./img/sm_park_service_gui_2.png" alt="park_service_gui_1" style="width: 200px; height: 300px;"></center></td>
+              <td style="padding-bottom: 0;"><center><img src="./img/sm_park_service_gui_2.png" alt="park_service_gui_2" style="width: 200px; height: 300px;"></center></td>
+              <td style="padding-bottom: 0;"><center><img src="./img/sm_park_service_gui_3.png" alt="park_service_gui_3" style="width: 200px; height: 300px;"></center></td>
+              <td style="padding-bottom: 0;"><center><img src="./img/sm_park_service_gui_4.png" alt="park_service_gui_4" style="width: 200px; height: 300px;"></center></td>
+            </tr>
+            <tr>
+              <td style="padding-top: 3px; padding-bottom: 18px;" style="padding-top: 3px; padding-bottom: 10px;"><i>Park Service GUI<br><b>Home</b></i></td>
+              <td style="padding-top: 3px; padding-bottom: 18px;"><i>Park Service GUI<br><b>Park Interest</b></i></td>
+              <td style="padding-top: 3px; padding-bottom: 18px;"><i>Park Service GUI<br><b>Car Enter</b></i></td>
+              <td style="padding-top: 3px; padding-bottom: 18px;"><i>Park Service GUI<br><b>Car Enter Success</b></i></td>
+            </tr>
+            <tr>
+              <td style="padding-bottom: 0;"><center><img src="./img/sm_park_service_gui_5.png" alt="park_service_gui_5" style="width: 200px; height: 300px;"></center></td>
+              <td style="padding-bottom: 0;"><center><img src="./img/sm_park_service_gui_6.png" alt="park_service_gui_6" style="width: 200px; height: 300px;"></center></td>
+              <td style="padding-bottom: 0;"><center><img src="./img/sm_park_service_gui_7.png" alt="park_service_gui_7" style="width: 200px; height: 300px;"></center></td>
+              <td style="padding-bottom: 0;"><center><img src="./img/sm_park_service_gui_8.png" alt="park_service_gui_8" style="width: 200px; height: 300px;"></center></td>
+            </tr>
+            <tr>
+              <td style="padding-top: 3px;"><i>Park Service GUI<br><b>Car Pick Up</b></i></td>
+              <td style="padding-top: 3px;"><i>Park Service GUI<br><b>Car Pick Up Success</b></i></td>
+              <td style="padding-top: 3px;"><i>Park Service GUI<br><b>Failure</b></i></td>
+              <td style="padding-top: 3px;"><i>Park Service GUI<br><b>Waiting Animation</b></i></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>  <!--  end Distributed System </div class="remark"> -->
+
+    <h2 id="system-configuration">System Configuration</h2>
+    <div class="remark">
+      For the demo shown to the customer, the startup system configuration, explained in the previous sprints, is set as below:
+      <br>
+      <table style="width: 55%;">
+        <tbody>
+          <tr>
+            <th>Component</th>
+            <th>Parameter</th>
+            <th>Value</th>
+          </tr>
+          <tr>
+            <td>Weight sensor</td>
+            <td>mode</td>
+            <td>virtual</td>
+          </tr>
+          <tr>
+            <td>Out sonar</td>
+            <td>mode</td>
+            <td>real</td>
+          </tr>
+          <tr>
+            <td>Thermometer</td>
+            <td>mode</td>
+            <td>virtual</td>
+          </tr>
+          <tr>
+            <td>Fan</td>
+            <td>mode</td>
+            <td>real</td>
+          </tr>
+          <tr>
+            <td rowspan="3">Transport Trolley</td>
+            <td>timeLimitBackToHome</td>
+            <td>1000 ms</td>
+          </tr>
+          <tr>
+            <td>updatePositionAfterEachStep</td>
+            <td>true</td>
+          </tr>
+          <tr>
+            <td>stepMoveDuration</td>
+            <td>350 ms</td>
+          </tr>
+          <tr>
+            <td rowspan="4">Indoor Controller</td>
+            <td>WMAX</td>
+            <td>500 Kg</td>
+          </tr>
+          <tr>
+            <td>DTOCCUPIED</td>
+            <td>30000 ms</td>
+          </tr>
+          <tr>
+            <td>DTCARENTER</td>
+            <td>30000 ms</td>
+          </tr>
+          <tr>
+            <td>doorName</td>
+            <td>INDOOR</td>
+          </tr>
+          <tr>
+            <td rowspan="3">Outdoor Controller</td>
+            <td>DMIN</td>
+            <td>10 cm</td>
+          </tr>
+          <tr>
+            <td>DTFREE</td>
+            <td>30000 ms</td>
+          </tr>
+          <tr>
+            <td>doorName</td>
+            <td>OUTDOOR</td>
+          </tr>
+          <tr>
+            <td>Thermometer Filter</td>
+            <td>TMAX</td>
+            <td>35 °C</td>
+          </tr>
+        </tbody>
+      </table>
+    </div> <!--  end System Configuration </div class="remark"> -->
+
+    <h2 id="test-plan">Test Plan</h2>
+    <div class="remark">
+
+      <h3 id="demotest">Demo Test (from requirements)</h3>
+      <h4>Requirements Text</h4>
+      <pre>
+1) Porre il sistema in uno stato con 0 < nfree < 6 slot liberi e 0 < nbusy < 6 slot occupati.
+2) Ipotizzare che la temperatura sia e permanga ok, il fan spento, INDOOR e OUTDOOR libere.
+3) Simulare che il sistema riceva, a distanza di 2 sec l'una dall'altra:
+     a) una enterrequest
+     b) una carenter
+     c) una pickup request
+4) Definire le variazioni di stato che il SISTEMA REALIZZATO effettua.
+   Ad esempio:
+   Il sistema risponde al client al punto a) e poi inizia una acceptin al punto b).
+   In questa fase, il cliente vede ... mentre il manager vede ...
+   Quando arriva c) ...
+5) Indicare la strategia seguita per poter automatizzare un test di questo tipo.
+      </pre>
+
+      <h4>Test Preconditions</h4>
+      To meet the test preconditions (see the first test requirement), the system must be started with a properly configured parking slot database: i.e. one parking slot occupied and the other ones free. <br>
+      <h4>System behavior</h4>
+      <table>
+        <tr>
+          <th>Request name in test description</th>
+          <th>Request name in ParkServiceGUI POST API</th>
+          <th>Request name in domain logic (QAK)</th>
+        </tr>
+        <tr>
+          <td>enterrequest</td>
+          <td>/parking_car_interest</td>
+          <td>parking_car_interest</td>
+        </tr>
+        <tr>
+          <td>carenter</td>
+          <td>/car_enter</td>
+          <td>car_enter</td>
+        </tr>
+        <tr>
+          <td>pickup request</td>
+          <td>/car_pick_up</td>
+          <td>car_pick_up</td>
+        </tr>
+      </table>
+      <ol id="step-a">
+        <li>
+          The system receives a enterrequest and reserve a parking slot (SLOTNUM_A). The reserved parking slot (SLOTNUM_A) is sent as reply to the client. <br>
+          The client sees the SLOTNUM_A. <br>
+          The manager sees a status transition (for both INDOOR AREA and SLOTNUM_A) from FREE to RESERVED.
+        </li>
+        <li>
+          The system starts to observe the weightsensor. <br>
+          The manager sees an INDOOR AREA status transition from RESERVED to OCCUPIED when a car in the INDOOR AREA is detected.
+        </li>
+      </ol>
+      <br>
+      <ol id="step-b">
+        <li>
+          The system receives carenter and starts the transport trolley car park task. <br>
+          The manager sees a transport trolley status transition from IDLE to WORKING.
+        </li>
+        <li>
+          The transport trolley is moved from HOME to INDOOR. <br>
+          The manager sees the transport trolley in movement.
+        </li>
+        <li>
+          The transport trolley takes the car from the INDOOR AREA and the system reply to carenter with the TOKENID_B. The system stops to observe the weightsensor. <br>
+          The client sees the TOKENID_B. <br>
+          The manager sees a status transition from OCCUPIED to FREE in the INDOOR AREA.
+        </li>
+        <li>
+          The transport trolley is moved from INDOOR to SLOTNUM_A. <br>
+          The manager sees the transport trolley in movement.
+        </li>
+        <li>
+          The transport trolley release the car at SLOTNUM_A and the persistent status of the parking slot (SLOTNUM_A) becomes OCCUPIED. <br>
+          The manager sees a SLOTNUM_A status transition from RESERVED to OCCUPIED. <br>
+          Note: a transport trolley back to home task might be initiated if the task of step c) has not yet been started.
+        </li>
+      </ol>
+      <br>
+      <ol id="step-c">
+        <li>
+          The system receives a pickup request and validate the TOKENID_C (request input). <br>
+          The manager sees an OUTDOOR AREA status transition from FREE to RESERVED.
+        </li>
+        <li>
+          The TOKENID_C is valid (mapped to parking slot SLOTNUM_C) so the system starts the transport trolley car pick up task. <br>
+          Note: a transport trolley status transition from IDLE to WORKING might happen if the transport trolley was not already in WORKING state.
+        </li>
+        <li>
+          The car pick up task is delayed until the car park task of step b) is running...
+        </li>
+        <li>
+          The transport trolley is moved from its actual position (time-dependent, probably the SLOTNUM position of step b)) to SLOTNUM_C position. <br>
+          The manager sees the transport trolley in movement.
+        </li>
+        <li>
+          The transport trolley takes the car from SLOTNUM_C and the persistent status of the parking slot (SLOTNUM_C) becomes FREE. <br>
+          The manager sees a SLOTNUM_C status transition from OCCUPIED to FREE.
+        </li>
+        <li>
+          The transport trolley is moved from SLOTNUM_C to OUTDOOR. <br>
+          The manager sees the transport trolley in movement.
+        </li>
+        <li>
+          The transport trolley release the car in the OUTDOOR AREA and the system starts to observe the outsonar. <br>
+          The manager sees an OUTDOOR AREA status transition from FREE to RESERVED. <br>
+          The manager sees an OUTDOOR AREA status transition from RESERVED to OCCUPIED when a car in the OUTDOOR AREA is detected.
+        </li>
+        <li>
+          The system reply with success to the pickup request. <br>
+          The client sees that its car is now in the OUTDOOR AREA.
+        </li>
+        <li>
+          The client takes the car from the OUTDOOR AREA. The system stops to observe the OUTDOOR AREA. <br>
+          The manager sees an OUTDOOR AREA status transition from OCCUPIED to FREE.
+        </li>
+        <li>
+          Since there are not other request, the transport trolley start the back to home task. <br>
+          The manager sees the transport trolley in movement. <br>
+          The manager sees a transport trolley status transition from WORKING to IDLE when the transport trolley is arrived at HOME.
+        </li>
+      </ol>
+      <b>Note</b>: <b>c.9)</b> and <b>c.10)</b> might run concurrently. <br>
+      <b>Note</b>: timer(s) like DTFREE and DTOCCUPIED are not discussed in this description since they have not effect in this test that simulate a correct client and system behaviour.
+      <br><br>
+
+      <div class="interaction_qak_example" style="width:90%;">
+        <p align="center">
+          In order to automate the test, we have written a <b>Kotlin</b> file which makes use of the <k>JUnit</k> framework. <br>
+          To interact with the system, the test uses the <k>POST APIs</k> exposed by our webservers. <br>
+          Moreover, to retrieve the current status of the system, the test register itself to the <k>STOMP</k> service <br>offered by the Park Service Status GUI.<br>
+          <b>Note</b> that by doing this, the test simulates the behavior of the client when he interacts with the GUI's buttons.
+        </p>
+        <a href="../it.unibo.automatedcarparking.demotest/test/it/unibo/automatedcarparking/demotest/TestPlan.kt">
+        <div class="interaction_qak_example_link">
+          DemoTest.kt
+        </div>
+        </a>
+      </div>
+
+    </div> <!-- end Test Plan section (</div class="remark">) -->
+
+    <h2 id="workload-division">Workload division</h2>
+    <div class="remark">
+      The team worked together on the main components of the system (both the analysis phase and the project phase of each sprint). Each task done by one team member was supervised by the other. Thus, in general, the workload was divided equally for each team member, who worked on more or less all aspects of the system.<br>
+      <br>
+      For each sprint, fields where there was a slightly sharper workload division (due to a better knowledge of the team member on a specific field) were:
+      <table>
+        <tbody>
+          <tr>
+            <th style="width: 50%;">Lorenzo Persampieri</th>
+            <th style="width: 50%;">Gianluca Soavi</th>
+          </tr>
+          <tr>
+            <td>
+              <ul>
+                <li>Docker Deployment</li>
+                <li>Real Components</li>
+              </ul>
+            </td>
+            <td>
+              <ul>
+                <li>GUI graphical design & implementation</li>
+              </ul>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="deployment">Deployment</h2>
+    <div class="remark">
+      We used Docker to deploy the software developed during this sprint. <br>
+      Below there is a guide about how we start the system in automatic way in order to show it to the customer. <br>
+      <b>Note</b>: before running the system a proper configuration of the <k>DNS</k> is required. The start/stop scripts make use also of <k>ssh</k> so a prior ssh keys exchange is required.
+      <h4>How to run</h4>
+      <p>
+        <ol>
+          <li>
+            Open a terminal inside the "run" directory
+          </li>
+          <li>
+            Start the system with:
+            <pre>[LINUX] ./automated-car-parking-start.sh</pre>
+          </li>
+          <li>
+            Wait until all the docker images are running...
+          </li>
+          <li>
+            Open the <a href="http://parkservicegui.iss:8100" target="_blank">ParkServiceGUI</a>, <a href="http://parkservicestatusgui.iss:8200" target="_blank">ParkServiceStatusGUI</a>, <a href="http://mockdatagui.iss:8099" target="_blank">MockDataGUI</a> and use them.
+          </li>
+          <li>
+            Stop the system with:
+            <pre>[LINUX] ./automated-car-parking-stop.sh</pre>
+          </li>
+        </ol>
+      </p>
+      <h4>Logging</h4>
+      <ul>
+        <li>
+          <p>weightsensor</p>
+          <pre>docker logs --timestamps -f run_weightsensor_1</pre>
+        </li>
+        <li>
+          <p>outsonar</p>
+          <pre>docker logs --timestamps -f run_outsonar_1</pre>
+        </li>
+        <li>
+          <p>thermometer</p>
+          <pre>docker logs --timestamps -f run_thermometer_1</pre>
+        </li>
+        <li>
+          <p>fan</p>
+          <pre>docker logs --timestamps -f run_fan_1</pre>
+        </li>
+        <li>
+          <p>businesslogic</p>
+          <pre>docker logs --timestamps -f run_businesslogic_1</pre>
+        </li>
+        <li>
+          <p>parkservicegui</p>
+          <pre>docker logs --timestamps -f run_parkservicegui_1</pre>
+        </li>
+        <li>
+          <p>parkservicestatusgui</p>
+          <pre>docker logs --timestamps -f run_parkservicestatusgui_1</pre>
+        </li>
+        <li>
+          <p>mockdatagui</p>
+          <pre>docker logs --timestamps -f run_mockdatagui_1</pre>
+        </li>
+      </ul>
+
+    </div> <!-- end Deployment section (</div class="remark">) -->
+
+    <div class="contact-us" id="contact-us">
+      <table>
+        <tr>
+          <td colspan="2"><h3>By:</h3></td>
+        </tr>
+        <tr>
+          <td>
+            <div class="student__image">
+              <center>
+                <img src="./img/students/lorenzo_persampieri.jpg" alt="lorenzo_persampieri.jpg"/>
+              </center>
+            </div>
+          </td>
+          <td>
+            <div class="student__image">
+              <center>
+                <img src="./img/students/gianluca_soavi.jpg" alt="gianluca_soavi.jpg"/>
+              </center>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <th>Lorenzo Persampieri</th>
+          <th>Gianluca Soavi</th>
+        </tr>
+        <tr style="padding-bottom: 10px;">
+          <td>lorenzo.persampieri@studio.unibo.it</td>
+          <td>gianluca.soavi@studio.unibo.it</td>
+        </tr>
+        <tr>
+          <th colspan="2" style="border-top: 1px solid black; padding-top: 10px;">Github Repository</th>
+        </tr>
+        <tr>
+          <td colspan="2"><a href="https://github.com/lorepersa/Automated-Car-Parking">https://github.com/lorepersa/Automated-Car-Parking</a></td>
+        </tr>
+      </table>
+    </div><!-- End Contact Us class remark -->
+
+  </div>
+</body>
+</html>

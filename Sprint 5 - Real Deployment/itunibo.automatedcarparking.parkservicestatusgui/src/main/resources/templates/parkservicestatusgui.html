@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Park Service Status GUI</title>
+    <!-- JAVASCRIPT -->
+    <script src="/sockjs.min.js"></script>
+    <script src="/stomp.min.js"></script>
+    <script src="/parkservicestatusgui.js"></script>
+    <!-- CSS -->
+    <link rel="stylesheet" href="font-awesome-4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="font.css">
+    <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+  <div id="header" class="header">
+    <div id="title">
+      <h1 class="title">PARK SERVICE STATUS GUI</h1>
+    </div>
+  </div>
+
+  <div class="gui horizontal" id="gui">
+    <div id="robot_position" class="section vertical">
+
+      <div class="wenv">
+        <iframe id="wenv" src="" title="WENV"></iframe>
+      </div>
+      <!-- <table class="map" id="map">
+        <tr>
+          <td colspan="6" class="td_null"></td>
+          <td id="indoor_area" class="free"></td>
+        </tr>
+        <tr>
+          <td id="cell_0_0" ></td>
+          <td id="cell_1_0" class="robot"></td>
+          <td id="cell_2_0"></td>
+          <td id="cell_3_0"></td>
+          <td id="cell_4_0"></td>
+          <td id="cell_5_0"></td>
+          <td id="cell_6_0"></td>
+        </tr>
+        <tr>
+          <td id="cell_0_1"></td>
+          <td id="cell_1_1"></td>
+          <td id="cell_2_1" class="parking_slot occupied"></td>
+          <td id="cell_3_1" class="parking_slot occupied"></td>
+          <td id="cell_4_1"></td>
+          <td id="cell_5_1"></td>
+          <td id="cell_6_1"></td>
+        </tr>
+        <tr>
+          <td id="cell_0_2"></td>
+          <td id="cell_1_2"></td>
+          <td id="cell_2_2" class="parking_slot"></td>
+          <td id="cell_3_2" class="parking_slot"></td>
+          <td id="cell_4_2"></td>
+          <td id="cell_5_2"></td>
+          <td id="cell_6_2"></td>
+        </tr>
+        <tr>
+          <td id="cell_0_3"></td>
+          <td id="cell_1_3"></td>
+          <td id="cell_2_3" class="parking_slot"></td>
+          <td id="cell_3_3" class="parking_slot"></td>
+          <td id="cell_4_3"></td>
+          <td id="cell_5_3"></td>
+          <td id="cell_6_3"></td>
+        </tr>
+        <tr>
+          <td id="cell_0_4"></td>
+          <td id="cell_1_4"></td>
+          <td id="cell_2_4"></td>
+          <td id="cell_3_4"></td>
+          <td id="cell_4_4"></td>
+          <td id="cell_5_4"></td>
+          <td id="cell_6_4"></td>
+        </tr>
+        <tr>
+          <td colspan="6" class="td_null"></td>
+          <td id="outdoor_area" class="free"></td>
+        </tr>
+      </table> -->
+      <h3>Position: <span id="transport_trolley_position"></span></h3>
+    </div>
+
+    <div id="right_part" class="section vertical">
+      <div id="alarm" class="section vertical">
+        <h3><b>Alarms</b></h3>
+      </div>
+      <div id="sensors_actuators" class="section-no-padding horizontal">
+        <div id="actuator_fan" class="section">
+          <table class="table_no_border centered">
+            <tr>
+              <td colspan="2" style="width: 50px; height: 50px; background-color: transparent; background-image: url('fan.png'); background-repeat:no-repeat; background-size:50px 50px; background-position: center;"></td>
+            </tr>
+            <tr>
+              <td colspan="2"><h2 style="margin-bottom: 5px;">Fan</h2></td>
+            </tr>
+            <tr>
+              <td colspan="2" style="text-align: center;" id="fan_status">AUTOMATIC | OFF</td>
+            </tr>
+            <tr>
+              <td colspan="2"><button type="button" id="manual_automatic_button">manual</button></td>
+            </tr>
+            <tr>
+              <td colspan="2"><button type="button" id="start_stop_fan_button">Start</button></td>
+            </tr>
+          </table>
+        </div>
+        <div id="sensors" class="section vertical">
+          <table class="table_no_border">
+            <tr>
+              <td colspan="4" style="width: 150px; height: 50px; background-color: transparent; background-image: url('sensors.png'); background-repeat:no-repeat; background-size:150px 50px; background-position: center;"></td>
+            </tr>
+            <tr>
+              <td colspan="4"><h2 style="margin-bottom: 15px; text-align: center;">Sensors</h2></td>
+            </tr>
+            <tr id="thermometer">
+              <td style="padding:5px;"></td>
+              <!-- <td class="sensor_icon" style="background-image: url('thermometer.png');"></td> -->
+              <td><b>Temperature: </b></td>
+              <td style="text-align:right; width:40px" id="temperature">50</td>
+              <td style="text-align:left">°C</td>
+            </tr>
+            <tr id="out_sonar">
+              <td style="padding:5px;"><button type="button" class="turn_on_off_sensor" id="turn_on_off_out_sonar_button"><i class="fa fa-power-off"></i></button></td>
+              <!-- <td class="sensor_icon" style="background-image: url('out_sonar.png');"></td> -->
+              <td><b>Distance: </b></td>
+              <td style="text-align:right; width:40px" id="distance">120</td>
+              <td style="text-align:left">cm</td>
+            </tr>
+            <tr id="weight_sensor">
+              <td style="padding:5px;"><button type="button" class="turn_on_off_sensor" id="turn_on_off_weight_sensor_button"><i class="fa fa-power-off"></i></button></td>
+              <!-- <td class="sensor_icon" style="background-image: url('weight_sensor.png');"></td> -->
+              <td><b>Weight: </b></td>
+              <td style="text-align:right; width:40px" id="weight">0</td>
+              <td style="text-align:left">kg</td>
+            </tr>
+          </table>
+        </div>
+        <!-- <div id="actuators" class="section">
+          <table class="table_no_border centered">
+            <tr>
+              <td colspan="2" style="width: 50px; height: 50px; background-color: transparent; background-image: url('fan.png'); background-repeat:no-repeat; background-size:50px 50px; background-position: center;"></td>
+              <td colspan="2" style="width: 50px; height: 50px; background-color: transparent; background-image: url('transport_trolley.png'); background-repeat:no-repeat; background-size:50px 50px; background-position: center;"></td>
+            </tr>
+            <tr>
+              <td colspan="2"><h2>Fan</h2></td>
+              <td colspan="2"><h2>Transport Trolley</h2></td>
+            </tr>
+            <tr>
+              <td colspan="2"><button type="button" id="manual_automatic_button">Manual</button></td>
+              <td colspan="2"><button type="button" id="start_stop_transport_trolley_button">Start</button></td>
+            </tr>
+            <tr>
+              <td colspan="2"><button type="button" id="start_stop_fan_button">Start</button></td>
+              <td colspan="2"><button type="button" id="refresh_wenv_button">Refresh wenv</button></td>
+            </tr>
+          </table>
+        </div> -->
+
+        <div id="actuator_transport_trolley" class="section">
+          <table class="table_no_border centered">
+            <tr>
+              <td colspan="2" style="width: 50px; height: 50px; background-color: transparent; background-image: url('transport_trolley.png'); background-repeat:no-repeat; background-size:50px 50px; background-position: center;"></td>
+            </tr>
+            <tr>
+              <td colspan="2"><h3 style="margin-bottom: 5px;">Transport Trolley</h3></td>
+            </tr>
+            <tr>
+              <td colspan="2" style="text-align:center" id="status_iws">Stopped</td>
+            </tr>
+            <tr>
+              <td colspan="2"><button type="button" id="start_stop_transport_trolley_button">Start</button></td>
+            </tr>
+            <tr>
+              <td colspan="2"><button type="button" id="refresh_wenv_button">Refresh wenv</button></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+
+  </div>
+</body>
+</html>
